@@ -38,11 +38,15 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
             },
             {
               "$type": "Document",
@@ -52,7 +56,7 @@
               "RelativeDocumentMoniker": "ProgramConfig\\Huy.cs",
               "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Huy.cs",
               "RelativeToolTip": "ProgramConfig\\Huy.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-26T16:40:11.366Z",
               "EditorCaption": ""
