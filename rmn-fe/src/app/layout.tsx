@@ -1,30 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "RMN Frontend",
-  description: "Restaurant management starter frontend",
+  title: "Nhà Hàng G26 – Đặt Bàn Trực Tuyến",
+  description: "Đặt bàn tại Nhà Hàng G26 dễ dàng, nhanh chóng. Thực đơn phong phú, không gian sang trọng.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="vi">
+      <body className={inter.variable}>
         {children}
       </body>
     </html>

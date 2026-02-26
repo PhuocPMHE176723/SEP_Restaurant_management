@@ -7,7 +7,42 @@ export interface components {
       title?: string;
       description?: string;
     };
+    MenuItem: {
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+      image: string;
+      categoryId: string;
+      categoryName: string;
+      isAvailable: boolean;
+      isFeatured?: boolean;
+      prepTimeMinutes?: number;
+      rating?: number;
+      reviewCount?: number;
+    };
+    Category: {
+      id: string;
+      name: string;
+      icon: string;
+      itemCount?: number;
+    };
+    Booking: {
+      id?: string;
+      guestName: string;
+      phone: string;
+      email: string;
+      date: string;         // YYYY-MM-DD
+      timeSlot: string;     // e.g. "18:00"
+      partySize: number;
+      specialRequests?: string;
+      status?: "pending" | "confirmed" | "cancelled";
+      confirmedAt?: string;
+    };
   };
 }
 
 export type RmnItem = components["schemas"]["RmnItem"];
+export type MenuItem = components["schemas"]["MenuItem"];
+export type Category = components["schemas"]["Category"];
+export type Booking = components["schemas"]["Booking"];
