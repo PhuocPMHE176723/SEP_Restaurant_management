@@ -1,0 +1,31 @@
+# .NET build
+bin/
+obj/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Next.js / Node
+node_modules/
+.npm
+.npmrc
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Next.js output
+.next/
+out/
+
+# macOS
+.DS_Store
