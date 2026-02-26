@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen:types": "openapi-typescript http://localhost:5280/swagger/v1/swagger.json -o src/types/generated.ts"
   },
   "dependencies": {
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sweetalert2": "^11.14.5",
+    "sweetalert2-react-content": "^5.0.3"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -19,6 +22,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "openapi-typescript": "^6.7.0",
     "typescript": "^5"
   }
 }
