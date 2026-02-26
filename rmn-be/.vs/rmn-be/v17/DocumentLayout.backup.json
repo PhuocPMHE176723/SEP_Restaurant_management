@@ -1,0 +1,137 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\programconfig\\huy.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:programconfig\\huy.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\programconfig\\dat.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:programconfig\\dat.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\programconfig\\tuan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:programconfig\\tuan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\programconfig\\vu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:programconfig\\vu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\rmn-be.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:rmn-be.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|c:\\users\\admin\\desktop\\sep_restaurant_management\\rmn-be\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{36179B6D-69ED-3513-83A6-347213B33DF7}|rmn-be.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Huy.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Huy.cs",
+              "RelativeDocumentMoniker": "ProgramConfig\\Huy.cs",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Huy.cs",
+              "RelativeToolTip": "ProgramConfig\\Huy.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-26T16:40:11.366Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Dat.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Dat.cs",
+              "RelativeDocumentMoniker": "ProgramConfig\\Dat.cs",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Dat.cs",
+              "RelativeToolTip": "ProgramConfig\\Dat.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-26T16:40:09.604Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Tuan.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Tuan.cs",
+              "RelativeDocumentMoniker": "ProgramConfig\\Tuan.cs",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Tuan.cs",
+              "RelativeToolTip": "ProgramConfig\\Tuan.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-26T16:39:58.232Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Vu.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Vu.cs",
+              "RelativeDocumentMoniker": "ProgramConfig\\Vu.cs",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\ProgramConfig\\Vu.cs",
+              "RelativeToolTip": "ProgramConfig\\Vu.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-26T16:39:47.321Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-02-26T16:37:32.711Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "rmn-be.http",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\rmn-be.http",
+              "RelativeDocumentMoniker": "rmn-be.http",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\rmn-be.http",
+              "RelativeToolTip": "rmn-be.http",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003502|",
+              "WhenOpened": "2026-02-26T16:35:49.67Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\Admin\\Desktop\\SEP_Restaurant_management\\rmn-be\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-26T16:33:49.174Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
