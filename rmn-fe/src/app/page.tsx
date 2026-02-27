@@ -36,7 +36,7 @@ export default function Home() {
           </div>
           <div className={`container ${styles.heroContent}`}>
             <div className={styles.heroText}>
-              <span className={styles.heroEyebrow}>🍽️ Nhà Hàng G26 — Tân Cổ Điển</span>
+              <span className={styles.heroEyebrow}>Nhà Hàng Khói Quê — Tân Cổ Điển</span>
               <h1 className={styles.heroHeadline}>
                 Trải nghiệm ẩm thực<br />
                 <span className={styles.heroHighlight}>đẳng cấp</span> thật sự
@@ -87,7 +87,6 @@ export default function Home() {
                 ))}
               </div>
               <div className={styles.floatingCard}>
-                <span className={styles.fcIcon}>🌟</span>
                 <div>
                   <p className={styles.fcTitle}>Đặt bàn dễ dàng</p>
                   <p className={styles.fcSub}>Xác nhận trong 30 phút</p>
@@ -149,13 +148,12 @@ export default function Home() {
             </div>
             <div className={styles.whyGrid}>
               {[
-                { icon: "🏆", title: "Ẩm thực đẳng cấp", desc: "Đầu bếp 5 sao, nguyên liệu nhập khẩu hàng đầu, công thức độc quyền." },
-                { icon: "🌿", title: "Nguyên liệu tươi sạch", desc: "Chọn lọc kỹ từ các nguồn cung ứng uy tín, cam kết an toàn thực phẩm." },
-                { icon: "🎭", title: "Không gian sang trọng", desc: "Nội thất tân cổ điển, ánh sáng ấm áp, phù hợp mọi dịp đặc biệt." },
-                { icon: "🎂", title: "Sự kiện đặc biệt", desc: "Tổ chức sinh nhật, kỷ niệm, tiệc doanh nghiệp với menu và decor riêng." },
+                { title: "Ẩm thực đẳng cấp", desc: "Đầu bếp 5 sao, nguyên liệu nhập khẩu hàng đầu, công thức độc quyền." },
+                { title: "Nguyên liệu tươi sạch", desc: "Chọn lọc kỹ từ các nguồn cung ứng uy tín, cam kết an toàn thực phẩm." },
+                { title: "Không gian sang trọng", desc: "Nội thất tân cổ điển, ánh sáng ấm áp, phù hợp mọi dịp đặc biệt." },
+                { title: "Sự kiện đặc biệt", desc: "Tổ chức sinh nhật, kỷ niệm, tiệc doanh nghiệp với menu và decor riêng." },
               ].map((w) => (
                 <div key={w.title} className={styles.whyCard}>
-                  <span className={styles.whyIcon}>{w.icon}</span>
                   <h3 className={styles.whyTitle}>{w.title}</h3>
                   <p className={styles.whyDesc}>{w.desc}</p>
                 </div>

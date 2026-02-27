@@ -21,8 +21,8 @@ export default function LoginPage() {
     <div className={styles.page}>
       <div className={styles.left}>
         <Link href="/" className={styles.brandBack}>
-          <span>🍜</span>
-          <span>Nhà Ăn <strong>G26</strong></span>
+         
+          <span>Nhà Hàng <strong>Khói Quê</strong></span>
         </Link>
         <div className={styles.leftContent}>
           <h2 className={styles.leftTitle}>Bữa ngon mỗi ngày</h2>

@@ -19,9 +19,9 @@ export default function BookingPage() {
         <div className={styles.hero}>
           <div className="container">
             <div className={styles.heroInner}>
-              <span className={styles.eyebrow}>📅 Đặt bàn trực tuyến</span>
+              <span className={styles.eyebrow}>Đặt bàn trực tuyến</span>
               <h1 className={styles.heroTitle}>
-                {confirmed ? "Xác nhận đặt bàn" : "Đặt bàn tại Nhà Hàng G26"}
+                {confirmed ? "Xác nhận đặt bàn" : "Đặt bàn tại Nhà Hàng Khói Quê"}
               </h1>
               <p className={styles.heroSub}>
                 {confirmed
@@ -87,11 +87,11 @@ export default function BookingPage() {
                   <div className={styles.policyCard}>
                     <h3 className={styles.infoTitle}>Chính sách đặt bàn</h3>
                     <ul className={styles.policyList}>
-                      <li>✅ Đặt bàn miễn phí, không thu phí giữ chỗ</li>
-                      <li>⏱ Bàn được giữ 15 phút sau giờ hẹn</li>
-                      <li>📲 Xác nhận qua điện thoại trong vòng 30 phút</li>
-                      <li>🎂 Hỗ trợ tổ chức sinh nhật, sự kiện đặc biệt</li>
-                      <li>🚗 Bãi giữ xe miễn phí cho khách đặt bàn</li>
+                      <li>Đặt bàn miễn phí, không thu phí giữ chỗ</li>
+                      <li>Bàn được giữ 15 phút sau giờ hẹn</li>
+                      <li>Xác nhận qua điện thoại trong vòng 30 phút</li>
+                      <li>Hỗ trợ tổ chức sinh nhật, sự kiện đặc biệt</li>
+                      <li>Bãi giữ xe miễn phí cho khách đặt bàn</li>
                     </ul>
                   </div>
                 </aside>

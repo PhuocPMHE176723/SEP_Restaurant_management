@@ -9,9 +9,8 @@ export default function Header() {
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoIcon}>🍽️</span>
           <span className={styles.logoText}>
-            Nhà Hàng <strong>G26</strong>
+            Nhà Hàng <strong>Khói Quê</strong>
           </span>
         </Link>
 

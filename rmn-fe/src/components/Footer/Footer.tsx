@@ -9,8 +9,7 @@ export default function Footer() {
       <div className={`container ${styles.inner}`}>
         <div className={styles.brand}>
           <div className={styles.logo}>
-            <span>🍜</span>
-            <span>Nhà Ăn <strong>G26</strong></span>
+            <span>Nhà Hàng <strong>Khói Quê</strong></span>
           </div>
           <p className={styles.tagline}>
             Bữa ngon mỗi ngày – tươi sạch từ bếp đến bàn
@@ -48,15 +47,15 @@ export default function Footer() {
 
         <div className={styles.contact}>
           <h4 className={styles.groupTitle}>Liên hệ</h4>
-          <p className={styles.contactItem}>📍 123 Đường Lê Lợi, Quận 1, TP.HCM</p>
-          <p className={styles.contactItem}>📞 0900 123 456</p>
-          <p className={styles.contactItem}>⏰ 06:00 – 21:00, Thứ 2 – Chủ nhật</p>
+          <p className={styles.contactItem}>123 Đường Lê Lợi, Quận 1, TP.HCM</p>
+          <p className={styles.contactItem}>0900 123 456</p>
+          <p className={styles.contactItem}>06:00 – 21:00, Thứ 2 – Chủ nhật</p>
         </div>
       </div>
 
       <div className={styles.bottom}>
         <div className="container">
-          <p>© 2025 Nhà Ăn G26. Bản quyền thuộc về nhóm phát triển.</p>
+          <p>© 2025 Nhà Hàng Khói Quê. Bản quyền thuộc về nhóm phát triển.</p>
         </div>
       </div>
     </footer>

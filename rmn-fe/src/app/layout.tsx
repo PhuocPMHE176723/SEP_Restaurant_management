@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Nhà Hàng G26 – Đặt Bàn Trực Tuyến",
-  description: "Đặt bàn tại Nhà Hàng G26 dễ dàng, nhanh chóng. Thực đơn phong phú, không gian sang trọng.",
+  title: "Nhà Hàng Khói Quê – Đặt Bàn Trực Tuyến",
+  description: "Đặt bàn tại Nhà Hàng Khói Quê dễ dàng, nhanh chóng. Thực đơn phong phú, không gian sang trọng.",
 };
 
 export default function RootLayout({

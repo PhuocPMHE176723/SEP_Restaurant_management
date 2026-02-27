@@ -26,9 +26,9 @@ export default function BookingSuccess({ booking }: Props) {
         </div>
       </div>
 
-      <h2 className={styles.title}>Đặt bàn thành công! 🎉</h2>
+      <h2 className={styles.title}>Đặt bàn thành công!</h2>
       <p className={styles.subtitle}>
-        Cảm ơn bạn đã đặt bàn tại <strong>Nhà Hàng G26</strong>. Chúng tôi sẽ liên hệ xác nhận qua điện thoại.
+        Cảm ơn bạn đã đặt bàn tại <strong>Nhà Hàng Khói Quê</strong>. Chúng tôi sẽ liên hệ xác nhận qua điện thoại.
       </p>
 
       {/* Booking ID */}
@@ -40,29 +40,23 @@ export default function BookingSuccess({ booking }: Props) {
       {/* Details */}
       <div className={styles.details}>
         <div className={styles.detailRow}>
-          <div className={styles.detailIcon}>👤</div>
-          <div><p className={styles.detailLabel}>Khách hàng</p><p className={styles.detailValue}>{booking.guestName}</p></div>
+          <div className={styles.detailLabel}>Khách hàng</div><div className={styles.detailValue}>{booking.guestName}</div>
         </div>
         <div className={styles.detailRow}>
-          <div className={styles.detailIcon}>📞</div>
-          <div><p className={styles.detailLabel}>Điện thoại</p><p className={styles.detailValue}>{booking.phone}</p></div>
+          <div className={styles.detailLabel}>Điện thoại</div><div className={styles.detailValue}>{booking.phone}</div>
         </div>
         <div className={styles.detailRow}>
-          <div className={styles.detailIcon}>📅</div>
-          <div><p className={styles.detailLabel}>Ngày</p><p className={styles.detailValue}>{formatDate(booking.date)}</p></div>
+          <div className={styles.detailLabel}>Ngày</div><div className={styles.detailValue}>{formatDate(booking.date)}</div>
         </div>
         <div className={styles.detailRow}>
-          <div className={styles.detailIcon}>🕖</div>
-          <div><p className={styles.detailLabel}>Giờ</p><p className={styles.detailValue}>{booking.timeSlot}</p></div>
+          <div className={styles.detailLabel}>Giờ</div><div className={styles.detailValue}>{booking.timeSlot}</div>
         </div>
         <div className={styles.detailRow}>
-          <div className={styles.detailIcon}>👥</div>
-          <div><p className={styles.detailLabel}>Số khách</p><p className={styles.detailValue}>{booking.partySize} người</p></div>
+          <div className={styles.detailLabel}>Số khách</div><div className={styles.detailValue}>{booking.partySize} người</div>
         </div>
         {booking.specialRequests && (
           <div className={styles.detailRow}>
-            <div className={styles.detailIcon}>📝</div>
-            <div><p className={styles.detailLabel}>Ghi chú</p><p className={styles.detailValue}>{booking.specialRequests}</p></div>
+            <div className={styles.detailLabel}>Ghi chú</div><div className={styles.detailValue}>{booking.specialRequests}</div>
           </div>
         )}
       </div>

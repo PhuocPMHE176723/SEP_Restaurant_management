@@ -20,7 +20,7 @@ export default function MenuCard({ item }: Props) {
           sizes="(max-width: 768px) 50vw, 280px"
         />
         <span className={styles.categoryTag}>{item.categoryName}</span>
-        {item.isFeatured && <span className={styles.featuredBadge}>⭐ Nổi bật</span>}
+        {item.isFeatured && <span className={styles.featuredBadge}>Nổi bật</span>}
         {!item.isAvailable && <div className={styles.unavailable}>Tạm hết</div>}
       </div>
 
