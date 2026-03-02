@@ -10,35 +10,53 @@ public static class DbInitializer
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
 
-        string[] roleNames = { "Admin", "Staff", "Customer" };
-        IdentityResult roleResult;
+        // Seed all roles
+        string[] roleNames = { "Admin", "Staff", "Customer", "Warehouse", "Kitchen", "Cashier" };
 
         foreach (var roleName in roleNames)
         {
             var roleExist = await roleManager.RoleExistsAsync(roleName);
             if (!roleExist)
             {
-                roleResult = await roleManager.CreateAsync(new IdentityRole(roleName));
+                await roleManager.CreateAsync(new IdentityRole(roleName));
             }
         }
 
-        // Create a default Admin user if none exists
-        var adminEmail = "admin@restaurant.com";
-        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        // Seed default Admin account
+        await SeedUser(userManager, "admin@restaurant.com", "Admin@123", "Admin", "Admin");
 
-        if (adminUser == null)
+        // Seed default Staff accounts
+        await SeedUser(userManager, "staff@restaurant.com", "Staff@123", "Staff", "Staff");
+        await SeedUser(userManager, "warehouse@restaurant.com", "Warehouse@123", "Warehouse Staff", "Warehouse");
+        await SeedUser(userManager, "kitchen@restaurant.com", "Kitchen@123", "Kitchen Staff", "Kitchen");
+        await SeedUser(userManager, "cashier@restaurant.com", "Cashier@123", "Cashier Staff", "Cashier");
+
+        // Seed default Customer account
+        await SeedUser(userManager, "customer@restaurant.com", "Customer@123", "Customer", "Customer");
+    }
+
+    private static async Task SeedUser(
+        UserManager<UserIdentity> userManager,
+        string email,
+        string password,
+        string fullName,
+        string role)
+    {
+        var existingUser = await userManager.FindByEmailAsync(email);
+        if (existingUser == null)
         {
-            var admin = new UserIdentity
+            var user = new UserIdentity
             {
-                UserName = adminEmail,
-                Email = adminEmail,
+                UserName = email,
+                Email = email,
+                FullName = fullName,
                 EmailConfirmed = true
             };
 
-            var createPowerUser = await userManager.CreateAsync(admin, "Admin@123");
-            if (createPowerUser.Succeeded)
+            var result = await userManager.CreateAsync(user, password);
+            if (result.Succeeded)
             {
-                await userManager.AddToRoleAsync(admin, "Admin");
+                await userManager.AddToRoleAsync(user, role);
             }
         }
     }

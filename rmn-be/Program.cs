@@ -1,48 +1,137 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using SEP_Restaurant_management.Core.Data;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.ProgramConfig;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ─────────────────────────────────────────────────────────────
+//  DATABASE
+// ─────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<SepDatabaseContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn"));
 });
 
-// Register Huy's Services
-builder.Services.AddHuyServices();
-
-builder.Services.AddMyServices1();
-builder.Services.AddMyServices2();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
-
-builder.Services.AddCors(options =>
+// ─────────────────────────────────────────────────────────────
+//  IDENTITY
+// ─────────────────────────────────────────────────────────────
+builder.Services.AddIdentity<UserIdentity, IdentityRole>(options =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod()
-    );
-});
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
 
-// Add Identity
-builder.Services.AddIdentityApiEndpoints<UserIdentity>()
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<SepDatabaseContext>();
+    options.User.RequireUniqueEmail = true;
+    options.SignIn.RequireConfirmedEmail = false;
+})
+.AddEntityFrameworkStores<SepDatabaseContext>()
+.AddDefaultTokenProviders();
+
+// ─────────────────────────────────────────────────────────────
+//  JWT AUTHENTICATION
+// ─────────────────────────────────────────────────────────────
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwtSection["Key"]!;
+var jwtIssuer = jwtSection["Issuer"]!;
+var jwtAudience = jwtSection["Audience"]!;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.Zero   // Không cho phép trễ thêm thời gian khi kiểm tra token
+    };
+});
 
 builder.Services.AddAuthorization();
 
+// ─────────────────────────────────────────────────────────────
+//  APPLICATION SERVICES
+// ─────────────────────────────────────────────────────────────
+builder.Services.AddHuyServices();
+builder.Services.AddMyServices1();
+builder.Services.AddMyServices2();
+
+// ─────────────────────────────────────────────────────────────
+//  CORS
+// ─────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins("http://localhost:3000", "https://localhost:5000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+    );
+});
+
+// ─────────────────────────────────────────────────────────────
+//  SWAGGER – hỗ trợ Authorize bằng Bearer token
+// ─────────────────────────────────────────────────────────────
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Restaurant Management API",
+        Version = "v1"
+    });
+
+    // Thêm nút Authorize trong Swagger UI
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập JWT token theo dạng: Bearer {your_token}"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+builder.Services.AddControllers();
+
+// ─────────────────────────────────────────────────────────────
+//  BUILD
+// ─────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// Map built-in Identity endpoints (Register, Login, etc.)
-app.MapGroup("/api/identity").MapIdentityApi<UserIdentity>();
-
-// Seed Database
+// ─────────────────────────────────────────────────────────────
+//  SEED DATABASE
+// ─────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -57,16 +146,16 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// ─────────────────────────────────────────────────────────────
+//  MIDDLEWARE PIPELINE
+// ─────────────────────────────────────────────────────────────
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseCors();
+app.UseAuthentication();    // Phải đứng TRƯỚC UseAuthorization
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
