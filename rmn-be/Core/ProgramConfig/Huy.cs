@@ -19,7 +19,10 @@ public static class Huy
 
         // Register Services
         services.AddScoped<ICategoryService, CategoryService>();
-        
+
+        // Register Auth Service (JWT login / register)
+        services.AddScoped<IAuthService, AuthService>();
+
         // Register Email Service
         var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
         services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
