@@ -1,27 +1,51 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { loginApi } from "../../lib/api/auth";
+import { useAuth } from "../../contexts/AuthContext";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const auth = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    alert("Chức năng đăng nhập đang phát triển!");
+
+    try {
+      const data = await loginApi({ email, password });
+
+      // Cập nhật AuthContext (ghi cookie + set state ngay lập tức)
+      auth.login(data);
+
+      // Chuyển về trang được redirect hoặc home
+      const redirect = searchParams.get("redirect") ?? "/";
+      router.push(redirect);
+
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string; errors?: string[] };
+      setError(apiErr.errors?.[0] ?? apiErr.message ?? "Đăng nhập thất bại");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className={styles.page}>
+      {/* ── Left decorative panel ── */}
       <div className={styles.left}>
         <Link href="/" className={styles.brandBack}>
-         
           <span>Nhà Hàng <strong>Khói Quê</strong></span>
         </Link>
         <div className={styles.leftContent}>
@@ -35,6 +59,7 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* ── Right form panel ── */}
       <div className={styles.right}>
         <div className={styles.card}>
           <div className={styles.cardHead}>
@@ -42,9 +67,12 @@ export default function LoginPage() {
             <p className={styles.cardSub}>Chào mừng trở lại! Hãy đăng nhập để tiếp tục.</p>
           </div>
 
+          {/* Error banner */}
+          {error && <div className={styles.errorBanner}>{error}</div>}
+
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.field}>
-              <label className={styles.label}>Email</label>
+              <label htmlFor="email" className={styles.label}>Email</label>
               <input
                 id="email"
                 type="email"
@@ -59,7 +87,7 @@ export default function LoginPage() {
 
             <div className={styles.field}>
               <div className={styles.labelRow}>
-                <label className={styles.label}>Mật khẩu</label>
+                <label htmlFor="password" className={styles.label}>Mật khẩu</label>
                 <Link href="/forgot-password" className={styles.forgotLink}>Quên mật khẩu?</Link>
               </div>
               <input

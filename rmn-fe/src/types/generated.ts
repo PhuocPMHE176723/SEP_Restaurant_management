@@ -39,6 +39,21 @@ export interface components {
       status?: "pending" | "confirmed" | "cancelled";
       confirmedAt?: string;
     };
+    // ── Auth ──────────────────────────────────────────────────────
+    LoginRequest: {
+      email: string;
+      password: string;
+    };
+    LoginResponse: {
+      accessToken: string;
+      tokenType: string;
+      /** ISO datetime – giờ Việt Nam (UTC+7) khi token hết hạn */
+      expiresAt: string;
+      email: string;
+      fullName: string;
+      phoneNumber?: string | null;
+      roles: string[];
+    };
   };
 }
 
@@ -46,3 +61,6 @@ export type RmnItem = components["schemas"]["RmnItem"];
 export type MenuItem = components["schemas"]["MenuItem"];
 export type Category = components["schemas"]["Category"];
 export type Booking = components["schemas"]["Booking"];
+export type LoginRequest = components["schemas"]["LoginRequest"];
+export type LoginResponse = components["schemas"]["LoginResponse"];
+
