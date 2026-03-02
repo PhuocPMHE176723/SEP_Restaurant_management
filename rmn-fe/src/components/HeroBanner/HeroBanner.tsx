@@ -15,7 +15,7 @@ export default function HeroBanner() {
 
       <div className={`container ${styles.content}`}>
         <div className={styles.text}>
-          <span className={styles.eyebrow}>🍽️ Nhà Ăn G26 — Ngon mỗi ngày</span>
+          <span className={styles.eyebrow}>🍽️ Nhà Hàng Khói Quê — Ngon mỗi ngày</span>
           <h1 className={styles.headline}>
             Bữa ăn ngon,<br />
             <span className={styles.highlight}>tươi sạch</span> mỗi ngày
