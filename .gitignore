@@ -9,7 +9,7 @@ obj/
 
 # VS Code
 .vscode/
-
+.vs/
 # Logs
 *.log
 
