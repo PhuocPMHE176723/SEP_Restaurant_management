@@ -1,23 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SEP_Restaurant_management.Core.Models;
 
 public partial class Supplier
 {
+    [Key]
     public int SupplierId { get; set; }
 
-    public string SupplierName { get; set; } = null!;
+    [Required]
+    [MaxLength(150)]
+    public string SupplierName { get; set; } = default!;
 
-    public string? PhoneNumber { get; set; }
+    [MaxLength(20)]
+    public string? Phone { get; set; }
 
+    [MaxLength(150)]
     public string? Email { get; set; }
 
-    public bool? IsActive { get; set; }
-
+    [MaxLength(255)]
     public string? Address { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public bool IsActive { get; set; } = true;
 
-    public virtual ICollection<ImportBill> ImportBills { get; set; } = new List<ImportBill>();
+    public virtual ICollection<PurchaseReceipt> PurchaseReceipts { get; set; } = new List<PurchaseReceipt>();
 }

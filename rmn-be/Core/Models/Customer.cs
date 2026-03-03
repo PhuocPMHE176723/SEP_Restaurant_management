@@ -1,38 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SEP_Restaurant_management.Core.Models;
 
 public partial class Customer
 {
     [Key]
-    public int CustomerId { get; set; }
+    public long CustomerId { get; set; }
 
-    [Required]
-    public string UserId { get; set; } = default!;
+    [MaxLength(450)]
+    public string? UserId { get; set; }
 
-    [ForeignKey(nameof(UserId))]
-    public UserIdentity User { get; set; } = default!;
-
-    // ===== Profile fields =====
-    [MaxLength(100)]
-    public string? Fullname { get; set; }
+    [MaxLength(150)]
+    public string? FullName { get; set; }
 
     [MaxLength(20)]
-    public string? PhoneNumber { get; set; }
+    public string? Phone { get; set; }
 
-    [MaxLength(255)]
-    public string? Address { get; set; }
+    [MaxLength(150)]
+    public string? Email { get; set; }
 
-    public bool? Gender { get; set; }   // "Male", "Female", "Other"
+    public int TotalPoints { get; set; } = 0;
 
-    public DateTime? Dob { get; set; }  // DOB
+    public DateTime CreatedAt { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    [ForeignKey(nameof(UserId))]
+    public virtual UserIdentity? User { get; set; }
 
-    public bool IsActive { get; set; } = true;
-
+    public virtual ICollection<CustomerPointsLedger> PointsLedgers { get; set; } = new List<CustomerPointsLedger>();
+    public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 }
