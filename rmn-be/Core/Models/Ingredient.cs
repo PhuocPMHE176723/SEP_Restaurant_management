@@ -1,27 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SEP_Restaurant_management.Core.Models;
 
 public partial class Ingredient
 {
-    public int IngredientId { get; set; }
+    [Key]
+    public long IngredientId { get; set; }
 
-    public string IngredientName { get; set; } = null!;
+    [Required]
+    [MaxLength(150)]
+    public string IngredientName { get; set; } = default!;
 
-    public string? Unit { get; set; }
+    [Required]
+    [MaxLength(20)]
+    public string Unit { get; set; } = default!; // kg, g, l, ml, pcs
 
-    public decimal? CurrentStock { get; set; }
+    public bool IsActive { get; set; } = true;
 
-    public bool? IsActive { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-
-    public virtual ICollection<CustomDishIngredient> CustomDishIngredients { get; set; } = new List<CustomDishIngredient>();
-
-    public virtual ICollection<DishIngredient> DishIngredients { get; set; } = new List<DishIngredient>();
-
-    public virtual ICollection<ImportBillDetail> ImportBillDetails { get; set; } = new List<ImportBillDetail>();
+    public virtual ICollection<PurchaseReceiptItem> PurchaseReceiptItems { get; set; } = new List<PurchaseReceiptItem>();
+    public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 }

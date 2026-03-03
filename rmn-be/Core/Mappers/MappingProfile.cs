@@ -8,8 +8,9 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<Category, CategoryDTO>().ReverseMap();
-        CreateMap<CreateCategoryDTO, Category>();
-        CreateMap<UpdateCategoryDTO, Category>();
+        CreateMap<MenuCategory, CategoryDTO>().ReverseMap();
+        CreateMap<CreateCategoryDTO, MenuCategory>();
+        CreateMap<UpdateCategoryDTO, MenuCategory>();
     }
 }
+
