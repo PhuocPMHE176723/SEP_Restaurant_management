@@ -21,6 +21,9 @@ public class MenuItem
 
     public decimal BasePrice { get; set; }
 
+    [MaxLength(500)]
+    public string? Thumbnail { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; }

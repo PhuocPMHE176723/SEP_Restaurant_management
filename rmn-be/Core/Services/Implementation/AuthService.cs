@@ -13,11 +13,13 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<UserIdentity> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly SepDatabaseContext _context;
 
-    public AuthService(UserManager<UserIdentity> userManager, IConfiguration configuration)
+    public AuthService(UserManager<UserIdentity> userManager, IConfiguration configuration, SepDatabaseContext context)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _context = context;
     }
 
     // ─────────────────────────────────────────────
@@ -78,6 +80,7 @@ public class AuthService : IAuthService
             UserName = request.Email,
             Email = request.Email,
             FullName = request.FullName,
+            PhoneNumber = request.Phone,
             EmailConfirmed = true
         };
 
@@ -89,6 +92,24 @@ public class AuthService : IAuthService
         }
 
         await _userManager.AddToRoleAsync(user, request.Role);
+
+        // Nếu role là Customer, tạo record trong bảng Customer
+        if (request.Role.Equals("Customer", StringComparison.OrdinalIgnoreCase))
+        {
+            var customer = new Customer
+            {
+                UserId = user.Id,
+                FullName = request.FullName,
+                Phone = request.Phone,
+                Email = request.Email,
+                TotalPoints = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+        }
+
         return (true, new List<string>());
     }
 

@@ -13,6 +13,9 @@ public partial class DiningTable
     [MaxLength(30)]
     public string TableCode { get; set; } = default!;
 
+    [MaxLength(100)]
+    public string? TableName { get; set; }
+
     public int Capacity { get; set; }
 
     [Required]

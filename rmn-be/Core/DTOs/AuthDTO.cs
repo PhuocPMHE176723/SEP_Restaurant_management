@@ -21,11 +21,17 @@ public class RegisterRequestDTO
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$",
+        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character")]
     public string Password { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Full name is required")]
     public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required")]
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
+    public string Phone { get; set; } = string.Empty;
 
     /// <summary>
     /// Cho phép: Admin, Staff, Customer, Warehouse, Kitchen, Cashier

@@ -54,6 +54,13 @@ export interface components {
       phoneNumber?: string | null;
       roles: string[];
     };
+    RegisterRequest: {
+      email: string;
+      password: string;
+      fullName: string;
+      phone: string;
+      role?: string;
+    };
   };
 }
 
@@ -63,4 +70,5 @@ export type Category = components["schemas"]["Category"];
 export type Booking = components["schemas"]["Booking"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type LoginResponse = components["schemas"]["LoginResponse"];
+export type RegisterRequest = components["schemas"]["RegisterRequest"];
 

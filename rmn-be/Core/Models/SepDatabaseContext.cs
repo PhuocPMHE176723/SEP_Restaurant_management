@@ -74,11 +74,9 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime2");
 
-            entity.HasOne(s => s.User)
-                  .WithOne()
-                  .HasForeignKey<Staff>(s => s.UserId)
-                  .HasConstraintName("FK_Staff_AspNetUsers")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Order).WithMany(p => p.CustomDishes)
+                .HasForeignKey(d => d.OrderId)
+                .HasConstraintName("FK_CustomDishes_Order");
         });
 
         // ── DiningTables ───────────────────────────────────
@@ -89,6 +87,10 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
 
             entity.HasIndex(e => e.TableCode).IsUnique();
 
+            entity.HasOne(d => d.Ingredient).WithMany(p => p.CustomDishIngredients)
+                .HasForeignKey(d => d.IngredientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CustomDishIngredient_Ingredient");
             entity.Property(e => e.TableCode).HasMaxLength(30).IsRequired();
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("AVAILABLE");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -301,11 +303,27 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                   .HasConstraintName("FK_OrderItems_Orders")
                   .OnDelete(DeleteBehavior.Cascade);
 
+            entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.QuantityImport).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.StockQuantity).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Unit).HasMaxLength(10);
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(12, 2)");
+
+            entity.HasOne(d => d.ImportBill).WithMany(p => p.ImportBillDetails)
+                .HasForeignKey(d => d.ImportBillId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ImportBillDetail_ImportBill");
+
+            entity.HasOne(d => d.Ingredient).WithMany(p => p.ImportBillDetails)
+                .HasForeignKey(d => d.IngredientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ImportBillDetail_Ingredient");
             entity.HasOne(e => e.MenuItem)
                   .WithMany(m => m.OrderItems)
                   .HasForeignKey(e => e.ItemId)
                   .HasConstraintName("FK_OrderItems_MenuItems")
                   .OnDelete(DeleteBehavior.Restrict);
+
         });
 
         // ── OrderStatusHistory ─────────────────────────────

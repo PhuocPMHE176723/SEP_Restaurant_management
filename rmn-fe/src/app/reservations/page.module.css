@@ -1,0 +1,389 @@
+.main {
+    min-height: calc(100vh - 200px);
+    padding: var(--space-12) 0 var(--space-20);
+    background: var(--bg-page);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--space-10);
+}
+
+.title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.loading {
+    text-align: center;
+    padding: var(--space-20);
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+/* Empty State */
+.empty {
+    text-align: center;
+    padding: var(--space-20) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.empty h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.empty p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+/* Reservation List */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: box-shadow var(--t-normal);
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cardHeader {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(249, 115, 22, 0.01) 100%);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.cardDate {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    margin-left: auto;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.statusPending {
+    background: rgba(251, 191, 36, 0.15);
+    color: rgb(217, 119, 6);
+}
+
+.statusConfirmed {
+    background: rgba(34, 197, 94, 0.15);
+    color: rgb(22, 163, 74);
+}
+
+.statusCancelled {
+    background: rgba(239, 68, 68, 0.15);
+    color: rgb(220, 38, 38);
+}
+
+.statusCompleted {
+    background: rgba(59, 130, 246, 0.15);
+    color: rgb(37, 99, 235);
+}
+
+.cancelBtn {
+    color: rgb(239, 68, 68);
+    border-color: rgb(239, 68, 68);
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.85rem;
+    height: auto;
+}
+
+.cancelBtn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.cancelBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cardBody {
+    padding: var(--space-4);
+}
+
+.infoRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+}
+
+.infoGroup {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.infoLabel {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.infoValue {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.note {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
+}
+
+.noteLabel {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.noteText {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Order Items */
+.orderSection {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.orderTitle {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+}
+
+.orderItems {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.orderItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-page);
+    border-radius: var(--radius-md);
+}
+
+.orderItemName {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.orderItemQty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 var(--space-1-5);
+    background: var(--brand-primary);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+}
+
+.orderItemPrice {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--brand-primary);
+}
+
+.orderTotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2-5) var(--space-3);
+    margin-top: var(--space-2);
+    border-top: 2px solid var(--border);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.orderTotalPrice {
+    color: var(--brand-primary);
+    font-size: 1rem;
+}
+
+/* Card Footer */
+.cardFooter {
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border);
+    background: var(--bg-page);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cancelBtn {
+    color: rgb(239, 68, 68);
+    border-color: rgb(239, 68, 68);
+}
+
+.cancelBtn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Confirm Modal */
+.confirmOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.confirmModal {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.confirmTitle {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+}
+
+.confirmMessage {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+.confirmActions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+}
+
+.confirmBtn {
+    background: rgb(239, 68, 68);
+}
+
+.confirmBtn:hover {
+    background: rgb(220, 38, 38);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main {
+        padding: var(--space-8) 0 var(--space-12);
+    }
+
+    .cardHeader {
+        padding: var(--space-3);
+    }
+
+    .cardBody {
+        padding: var(--space-3);
+    }
+
+    .cardDate {
+        width: 100%;
+        margin-left: 0;
+        margin-top: var(--space-2);
+    }
+
+    .infoRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+
+    .infoGroup {
+        width: 100%;
+    }
+
+    .orderItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-1);
+    }
+}
