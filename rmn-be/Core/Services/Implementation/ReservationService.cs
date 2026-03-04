@@ -127,7 +127,7 @@ public class ReservationService : IReservationService
         var reservations = await _context.Reservations
             .Where(r => r.CustomerId == customerId)
             .Include(r => r.Order)
-                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(o => o!.OrderItems)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
 
