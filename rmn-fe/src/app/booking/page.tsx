@@ -1,15 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import BookingForm from "../../components/BookingForm/BookingForm";
-import BookingSuccess from "../../components/BookingSuccess/BookingSuccess";
-import type { Booking } from "../../types/generated";
 import styles from "./page.module.css";
 
 export default function BookingPage() {
-  const [confirmed, setConfirmed] = useState<Booking | null>(null);
 
   return (
     <>
@@ -21,12 +17,10 @@ export default function BookingPage() {
             <div className={styles.heroInner}>
               <span className={styles.eyebrow}>Đặt bàn trực tuyến</span>
               <h1 className={styles.heroTitle}>
-                {confirmed ? "Xác nhận đặt bàn" : "Đặt bàn tại Nhà Hàng Khói Quê"}
+                Đặt bàn tại Nhà Hàng Khói Quê
               </h1>
               <p className={styles.heroSub}>
-                {confirmed
-                  ? "Chúng tôi sẽ liên hệ xác nhận lịch của bạn trong thời gian sớm nhất."
-                  : "Chọn ngày, giờ và số lượng khách — chúng tôi sẽ chuẩn bị bàn tốt nhất cho bạn."}
+                Chọn ngày, giờ và số lượng khách — chúng tôi sẽ chuẩn bị bàn tốt nhất cho bạn.
               </p>
             </div>
           </div>
@@ -36,19 +30,14 @@ export default function BookingPage() {
         <section className={styles.content}>
           <div className="container">
             <div className={styles.layout}>
-              {/* Main: Form or Success */}
+              {/* Main: Form */}
               <div className={styles.main}>
-                {confirmed ? (
-                  <BookingSuccess booking={confirmed} />
-                ) : (
-                  <BookingForm onSuccess={setConfirmed} />
-                )}
+                <BookingForm />
               </div>
 
               {/* Sidebar info */}
-              {!confirmed && (
-                <aside className={styles.sidebar}>
-                  <div className={styles.infoCard}>
+              <aside className={styles.sidebar}>
+                <div className={styles.infoCard}>
                     <h3 className={styles.infoTitle}>Thông tin nhà hàng</h3>
                     <ul className={styles.infoList}>
                       <li className={styles.infoItem}>
@@ -94,8 +83,7 @@ export default function BookingPage() {
                       <li>Bãi giữ xe miễn phí cho khách đặt bàn</li>
                     </ul>
                   </div>
-                </aside>
-              )}
+              </aside>
             </div>
           </div>
         </section>

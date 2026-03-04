@@ -8,8 +8,40 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+<<<<<<< Updated upstream
         CreateMap<Category, CategoryDTO>().ReverseMap();
         CreateMap<CreateCategoryDTO, Category>();
         CreateMap<UpdateCategoryDTO, Category>();
+=======
+        // ── MenuCategory (replaces old Category) ──────────────
+        CreateMap<MenuCategory, CategoryDTO>().ReverseMap();
+        CreateMap<CreateCategoryDTO, MenuCategory>();
+        CreateMap<UpdateCategoryDTO, MenuCategory>();
+
+        CreateMap<MenuCategory, MenuCategoryDTO>().ReverseMap();
+        CreateMap<CreateMenuCategoryDTO, MenuCategory>();
+        CreateMap<UpdateMenuCategoryDTO, MenuCategory>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+        // ── DiningTable ────────────────────────────────────────
+        CreateMap<DiningTable, DiningTableDTO>().ReverseMap();
+        CreateMap<CreateDiningTableDTO, DiningTable>();
+        CreateMap<UpdateDiningTableDTO, DiningTable>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+        // ── MenuItem ───────────────────────────────────────────
+        CreateMap<MenuItem, MenuItemDTO>().ReverseMap();
+
+        // ── Reservation ────────────────────────────────────────
+        CreateMap<Reservation, ReservationDTO>()
+            .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Order));
+
+        // ── Order ──────────────────────────────────────────────
+        CreateMap<Order, OrderDTO>()
+            .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.OrderItems));
+
+        // ── OrderItem ──────────────────────────────────────────
+        CreateMap<OrderItem, OrderItemDTO>();
+>>>>>>> Stashed changes
     }
 }

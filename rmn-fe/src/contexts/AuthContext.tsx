@@ -25,13 +25,20 @@ const AuthContext = createContext<AuthContextValue>({
 //  Provider
 // ──────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<UserInfo | null>(null);
+    // Lazy initializer: đọc cookie ngay khi client load, không chờ useEffect
+    const [user, setUser] = useState<UserInfo | null>(() => {
+        if (typeof window === "undefined") return null; // SSR guard
+        if (isTokenValid()) return getUserInfo();
+        return null;
+    });
 
-    // Đọc cookie khi app khởi động
+    // Validate lại mỗi khi tab focus (phòng token hết hạn khi đang mở tab khác)
     useEffect(() => {
-        if (isTokenValid()) {
-            setUser(getUserInfo());
+        function check() {
+            if (!isTokenValid()) setUser(null);
         }
+        window.addEventListener("focus", check);
+        return () => window.removeEventListener("focus", check);
     }, []);
 
     const login = useCallback((data: LoginResponse) => {

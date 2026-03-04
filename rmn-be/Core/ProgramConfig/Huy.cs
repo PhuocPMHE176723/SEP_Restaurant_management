@@ -19,6 +19,10 @@ public static class Huy
 
         // Register Services
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IDiningTableService, DiningTableService>();
+        services.AddScoped<IMenuCategoryService, MenuCategoryService>();
+        services.AddScoped<IMenuItemService, MenuItemService>();
+        services.AddScoped<IReservationService, ReservationService>();
 
         // Register Auth Service (JWT login / register)
         services.AddScoped<IAuthService, AuthService>();
@@ -27,6 +31,9 @@ public static class Huy
         var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
         services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
         services.AddTransient<IEmailService, EmailService>();
+
+        // Register Cloudinary Service
+        services.AddScoped<ICloudinaryService, CloudinaryService>();
 
         return services;
     }

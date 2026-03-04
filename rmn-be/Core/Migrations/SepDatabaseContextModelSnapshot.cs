@@ -182,7 +182,25 @@ namespace rmn_be.Core.Migrations
 
                     b.HasIndex("OrderId");
 
+<<<<<<< Updated upstream
                     b.ToTable("OrderTable", (string)null);
+=======
+                    b.Property<string>("TableCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TableName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("TableId");
+
+                    b.HasIndex("TableCode")
+                        .IsUnique();
+
+                    b.ToTable("DiningTables", (string)null);
+>>>>>>> Stashed changes
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Category", b =>
@@ -385,9 +403,17 @@ namespace rmn_be.Core.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+<<<<<<< Updated upstream
                     b.Property<string>("Image")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+=======
+                    b.Property<string>("Thumbnail")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("ItemId");
+>>>>>>> Stashed changes
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
@@ -593,6 +619,54 @@ namespace rmn_be.Core.Migrations
                 {
                     b.Property<int>("OrderId")
                         .ValueGeneratedOnAdd()
+<<<<<<< Updated upstream
+=======
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("OrderId"));
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("CreatedByStaffId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("OrderType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("DINE_IN");
+
+                    b.Property<long?>("ReservationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("OPEN");
+
+                    b.Property<int?>("TableId")
+>>>>>>> Stashed changes
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
@@ -1130,11 +1204,19 @@ namespace rmn_be.Core.Migrations
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.DishSize", b =>
                 {
+<<<<<<< Updated upstream
                     b.HasOne("SEP_Restaurant_management.Core.Models.Dish", "Dish")
                         .WithMany("DishSizes")
                         .HasForeignKey("DishId")
                         .IsRequired()
                         .HasConstraintName("FK_DishSize_Dishes");
+=======
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Staff", "CreatedByStaff")
+                        .WithMany("Orders")
+                        .HasForeignKey("CreatedByStaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Orders_Staff");
+>>>>>>> Stashed changes
 
                     b.HasOne("SEP_Restaurant_management.Core.Models.Price", "Price")
                         .WithMany("DishSizes")

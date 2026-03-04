@@ -80,6 +80,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.DishName).HasMaxLength(100);
             entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
 
+<<<<<<< Updated upstream
             entity.HasOne(d => d.Order).WithMany(p => p.CustomDishes)
                 .HasForeignKey(d => d.OrderId)
                 .HasConstraintName("FK_CustomDishes_Order");
@@ -103,6 +104,12 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                 .HasForeignKey(d => d.IngredientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CustomDishIngredient_Ingredient");
+=======
+            entity.Property(e => e.TableCode).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.TableName).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("AVAILABLE");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+>>>>>>> Stashed changes
         });
 
         modelBuilder.Entity<Customer>(entity =>
@@ -239,6 +246,56 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
 
             entity.HasIndex(e => e.ImportBillId, "IX_ImportBillDetail_ImportBillId");
 
+<<<<<<< Updated upstream
+=======
+            entity.Property(e => e.ItemId).UseIdentityColumn();
+            entity.Property(e => e.ItemName).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.BasePrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Thumbnail).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(e => e.Category)
+                  .WithMany(c => c.MenuItems)
+                  .HasForeignKey(e => e.CategoryId)
+                  .HasConstraintName("FK_MenuItems_Categories")
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── MenuItemPrices ─────────────────────────────────
+        modelBuilder.Entity<MenuItemPrice>(entity =>
+        {
+            entity.ToTable("MenuItemPrices");
+            entity.HasKey(e => e.PriceId);
+
+            entity.Property(e => e.PriceId).UseIdentityColumn();
+            entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.EffectiveFrom).HasColumnType("datetime2");
+            entity.Property(e => e.EffectiveTo).HasColumnType("datetime2");
+
+            entity.HasOne(e => e.MenuItem)
+                  .WithMany(m => m.MenuItemPrices)
+                  .HasForeignKey(e => e.ItemId)
+                  .HasConstraintName("FK_MenuItemPrices_Items")
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Orders ─────────────────────────────────────────
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.ToTable("Orders");
+            entity.HasKey(e => e.OrderId);
+
+            entity.Property(e => e.OrderId).UseIdentityColumn();
+            entity.HasIndex(e => e.OrderCode).IsUnique();
+
+            entity.Property(e => e.OrderCode).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.OrderType).HasMaxLength(20).HasDefaultValue("DINE_IN");
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("OPEN");
+            entity.Property(e => e.OpenedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(e => e.ClosedAt).HasColumnType("datetime2");
+>>>>>>> Stashed changes
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.QuantityImport).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.StockQuantity).HasColumnType("decimal(10, 2)");

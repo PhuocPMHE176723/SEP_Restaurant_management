@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loginApi } from "../../lib/api/auth";
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "./page.module.css";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
@@ -29,9 +29,13 @@ export default function LoginPage() {
       // Cập nhật AuthContext (ghi cookie + set state ngay lập tức)
       auth.login(data);
 
-      // Chuyển về trang được redirect hoặc home
-      const redirect = searchParams.get("redirect") ?? "/";
-      router.push(redirect);
+      // Admin → trang quản trị, role khác → redirect param hoặc trang chủ
+      if (data.roles.includes("Admin")) {
+        router.push("/admin");
+      } else {
+        const redirect = searchParams.get("redirect") ?? "/";
+        router.push(redirect);
+      }
 
     } catch (err: unknown) {
       const apiErr = err as { message?: string; errors?: string[] };
@@ -120,5 +124,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

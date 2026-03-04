@@ -1,21 +1,77 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { registerApi } from "../../lib/api/auth";
 import styles from "../login/page.module.css";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return "Email không được để trống";
+    if (!emailRegex.test(email)) return "Email không đúng định dạng";
+    return null;
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    const phoneRegex = /^\d{10}$/;
+    if (!phone) return "Số điện thoại không được để trống";
+    if (!phoneRegex.test(phone)) return "Số điện thoại phải là 10 chữ số";
+    return null;
+  };
+
+  const validatePassword = (password: string): string | null => {
+    if (!password) return "Mật khẩu không được để trống";
+    if (password.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự";
+    if (!/[a-z]/.test(password)) return "Mật khẩu phải có ít nhất 1 chữ thường";
+    if (!/[A-Z]/.test(password)) return "Mật khẩu phải có ít nhất 1 chữ hoa";
+    if (!/\d/.test(password)) return "Mật khẩu phải có ít nhất 1 chữ số";
+    if (!/[@$!%*?&#]/.test(password)) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (@$!%*?&#)";
+    return null;
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+
+    // Validate all fields
+    const nameError = !name.trim() ? "Họ và tên không được để trống" : null;
+    const emailError = validateEmail(email);
+    const phoneError = validatePhone(phone);
+    const passwordError = validatePassword(password);
+
+    if (nameError || emailError || phoneError || passwordError) {
+      setError(nameError || emailError || phoneError || passwordError);
+      return;
+    }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    alert("Chức năng đăng ký đang phát triển!");
+    try {
+      await registerApi({
+        email,
+        password,
+        fullName: name,
+        phone,
+      });
+
+      // Chuyển hướng trực tiếp đến trang login
+      router.push("/login");
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string; errors?: string[] };
+      setError(apiErr.errors?.[0] ?? apiErr.message ?? "Đăng ký thất bại");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -42,9 +98,11 @@ export default function RegisterPage() {
             <p className={styles.cardSub}>Tạo tài khoản miễn phí, đặt món ngon ngay hôm nay.</p>
           </div>
 
+          {error && <div className={styles.errorBanner}>{error}</div>}
+
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.field}>
-              <label className={styles.label}>Họ và tên</label>
+              <label htmlFor="name" className={styles.label}>Họ và tên *</label>
               <input
                 id="name"
                 type="text"
@@ -57,7 +115,7 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Email</label>
+              <label htmlFor="reg-email" className={styles.label}>Email *</label>
               <input
                 id="reg-email"
                 type="email"
@@ -71,7 +129,25 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Mật khẩu</label>
+              <label htmlFor="reg-phone" className={styles.label}>Số điện thoại *</label>
+              <input
+                id="reg-phone"
+                type="tel"
+                className={styles.input}
+                placeholder="0912345678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                pattern="\d{10}"
+                maxLength={10}
+              />
+              <small style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.25rem" }}>
+                Số điện thoại phải là 10 chữ số
+              </small>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="reg-password" className={styles.label}>Mật khẩu *</label>
               <input
                 id="reg-password"
                 type="password"
@@ -80,9 +156,12 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 autoComplete="new-password"
               />
+              <small style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.25rem" }}>
+                Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt
+              </small>
             </div>
 
             <button

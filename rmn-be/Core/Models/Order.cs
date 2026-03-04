@@ -17,6 +17,20 @@ public partial class Order
 
     public int? ShiftId { get; set; }
 
+<<<<<<< Updated upstream
+=======
+    [Required]
+    [MaxLength(20)]
+    public string Status { get; set; } = "OPEN"; // OPEN/SENT_TO_KITCHEN/SERVED/CANCELLED/CLOSED
+
+    public DateTime OpenedAt { get; set; }
+
+    public DateTime? ClosedAt { get; set; }
+
+    public long? CreatedByStaffId { get; set; }
+
+    [MaxLength(255)]
+>>>>>>> Stashed changes
     public string? Note { get; set; }
 
     public string? OrderCode { get; set; }
@@ -25,7 +39,12 @@ public partial class Order
 
     public DateTime? CreatedAt { get; set; }
 
+<<<<<<< Updated upstream
     public decimal? DiscountPrice { get; set; }
+=======
+    [ForeignKey(nameof(CreatedByStaffId))]
+    public virtual Staff? CreatedByStaff { get; set; }
+>>>>>>> Stashed changes
 
     public string? PaymentMethod { get; set; }
 
