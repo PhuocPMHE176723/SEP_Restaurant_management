@@ -8,11 +8,6 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-<<<<<<< Updated upstream
-        CreateMap<Category, CategoryDTO>().ReverseMap();
-        CreateMap<CreateCategoryDTO, Category>();
-        CreateMap<UpdateCategoryDTO, Category>();
-=======
         // ── MenuCategory (replaces old Category) ──────────────
         CreateMap<MenuCategory, CategoryDTO>().ReverseMap();
         CreateMap<CreateCategoryDTO, MenuCategory>();
@@ -42,6 +37,6 @@ public class MappingProfile : Profile
 
         // ── OrderItem ──────────────────────────────────────────
         CreateMap<OrderItem, OrderItemDTO>();
->>>>>>> Stashed changes
     }
 }
+
