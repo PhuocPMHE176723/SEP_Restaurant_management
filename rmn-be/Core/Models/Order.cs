@@ -24,25 +24,19 @@ public class Order
     [MaxLength(20)]
     public string OrderType { get; set; } = "DINE_IN"; // DINE_IN/TAKEAWAY
 
-    public string? Note { get; set; }
-
-    public string? OrderCode { get; set; }
-
-    public string? Status { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
-    public decimal? DiscountPrice { get; set; }
-
     [Required]
     [MaxLength(20)]
     public string Status { get; set; } = "OPEN"; // OPEN/SENT_TO_KITCHEN/SERVED/CANCELLED/CLOSED
+
+    // public DateTime? CreatedAt { get; set; }
+
+    // public decimal? DiscountPrice { get; set; }
 
     public DateTime OpenedAt { get; set; }
 
     public DateTime? ClosedAt { get; set; }
 
-    public long CreatedByStaffId { get; set; }
+    public long? CreatedByStaffId { get; set; }
 
     [MaxLength(255)]
     public string? Note { get; set; }
