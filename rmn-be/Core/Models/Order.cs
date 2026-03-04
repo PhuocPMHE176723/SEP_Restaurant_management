@@ -1,36 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SEP_Restaurant_management.Core.Models;
 
-public partial class Order
+public class Order
 {
-    public int OrderId { get; set; }
+    [Key]
+    public long OrderId { get; set; }
 
-    public int CustomerId { get; set; }
+    [Required]
+    [MaxLength(30)]
+    public string OrderCode { get; set; } = default!;
 
-    public decimal? TotalPrice { get; set; }
+    public int? TableId { get; set; }
 
-    public string? OrderStatus { get; set; }
+    public long? ReservationId { get; set; }
 
-    public DateTime? OrderDate { get; set; }
+    public long? CustomerId { get; set; }
 
-    public int? ShiftId { get; set; }
-
-<<<<<<< Updated upstream
-=======
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = "OPEN"; // OPEN/SENT_TO_KITCHEN/SERVED/CANCELLED/CLOSED
+    public string OrderType { get; set; } = "DINE_IN"; // DINE_IN/TAKEAWAY
 
-    public DateTime OpenedAt { get; set; }
-
-    public DateTime? ClosedAt { get; set; }
-
-    public long? CreatedByStaffId { get; set; }
-
-    [MaxLength(255)]
->>>>>>> Stashed changes
     public string? Note { get; set; }
 
     public string? OrderCode { get; set; }
@@ -39,30 +32,34 @@ public partial class Order
 
     public DateTime? CreatedAt { get; set; }
 
-<<<<<<< Updated upstream
     public decimal? DiscountPrice { get; set; }
-=======
+
+    [Required]
+    [MaxLength(20)]
+    public string Status { get; set; } = "OPEN"; // OPEN/SENT_TO_KITCHEN/SERVED/CANCELLED/CLOSED
+
+    public DateTime OpenedAt { get; set; }
+
+    public DateTime? ClosedAt { get; set; }
+
+    public long CreatedByStaffId { get; set; }
+
+    [MaxLength(255)]
+    public string? Note { get; set; }
+
+    [ForeignKey(nameof(TableId))]
+    public virtual DiningTable? Table { get; set; }
+
+    [ForeignKey(nameof(ReservationId))]
+    public virtual Reservation? Reservation { get; set; }
+
+    [ForeignKey(nameof(CustomerId))]
+    public virtual Customer? Customer { get; set; }
+
     [ForeignKey(nameof(CreatedByStaffId))]
-    public virtual Staff? CreatedByStaff { get; set; }
->>>>>>> Stashed changes
+    public virtual Staff CreatedByStaff { get; set; } = default!;
 
-    public string? PaymentMethod { get; set; }
-
-    public string? PaymentStatus { get; set; }
-
-    public DateTime? PaidAt { get; set; }
-
-    public virtual ICollection<CustomDish> CustomDishes { get; set; } = new List<CustomDish>();
-
-    public virtual Customer Customer { get; set; } = null!;
-
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
-    public virtual ICollection<OrderStaff> OrderStaffs { get; set; } = new List<OrderStaff>();
-
-    public virtual Shift? Shift { get; set; }
-
-    public virtual ICollection<Discount> Discounts { get; set; } = new List<Discount>();
-
-    public virtual ICollection<Table> Tables { get; set; } = new List<Table>();
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+    public virtual ICollection<OrderStatusHistory> StatusHistories { get; set; } = new List<OrderStatusHistory>();
+    public virtual Invoice? Invoice { get; set; }
 }
