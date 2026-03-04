@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
@@ -7,12 +8,34 @@ import styles from "./Header.module.css";
 
 export default function Header() {
   const router = useRouter();
-  const { user, isLoggedIn, logout } = useAuth();   // ← đọc từ Context
+  const { user, isLoggedIn, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Chỉ render auth UI sau khi component mounted để tránh hydration error
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function handleLogout() {
     logout();
+    setMenuOpen(false);
     router.push("/login");
   }
+
+  const isAdmin = user?.roles.includes("Admin");
 
   return (
     <header className={styles.header}>
@@ -33,23 +56,101 @@ export default function Header() {
 
         {/* Actions */}
         <div className={styles.actions}>
-          {isLoggedIn && user ? (
+          {!mounted ? (
+            /* Placeholder khi chưa mount */
+            <div style={{ width: '200px', height: '40px' }} />
+          ) : isLoggedIn && user ? (
             /* ── Đã đăng nhập ── */
-            <div className={styles.userArea}>
-              <div className={styles.avatar}>
-                {user.fullName.charAt(0).toUpperCase()}
-              </div>
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{user.fullName}</span>
-                <span className={styles.userRole}>{user.roles[0]}</span>
-              </div>
+            <div className={styles.userWrap} ref={menuRef}>
+              {/* Admin panel shortcut */}
+              {isAdmin && (
+                <Link href="/admin" className={`btn btn-ghost ${styles.adminBtn}`}>
+                  Admin Panel
+                </Link>
+              )}
+
+              {/* Avatar trigger */}
               <button
-                id="logout-btn"
-                onClick={handleLogout}
-                className={`btn btn-ghost ${styles.authBtn} ${styles.logoutBtn}`}
+                id="user-menu-trigger"
+                className={styles.userTrigger}
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-expanded={menuOpen}
               >
-                Đăng xuất
+                <div className={styles.avatar}>
+                  {user.fullName.charAt(0).toUpperCase()}
+                </div>
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{user.fullName}</span>
+                  <span className={styles.userRole}>{user.roles[0]}</span>
+                </div>
+                <svg
+                  className={`${styles.chevron} ${menuOpen ? styles.chevronOpen : ""}`}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2.5"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
+
+              {/* Dropdown menu */}
+              {menuOpen && (
+                <div className={styles.dropdown}>
+                  <div className={styles.dropdownHeader}>
+                    <p className={styles.dropdownName}>{user.fullName}</p>
+                    <p className={styles.dropdownEmail}>{user.email}</p>
+                  </div>
+                  <div className={styles.dropdownDivider} />
+                  <Link
+                    href="/profile"
+                    className={styles.dropdownItem}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                    </svg>
+                    Hồ sơ cá nhân
+                  </Link>
+                  <Link
+                    href="/reservations"
+                    className={styles.dropdownItem}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Lịch sử đặt bàn
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={styles.dropdownItem}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                      </svg>
+                      Admin Panel
+                    </Link>
+                  )}
+                  <div className={styles.dropdownDivider} />
+                  <button
+                    id="logout-btn"
+                    className={`${styles.dropdownItem} ${styles.dropdownLogout}`}
+                    onClick={handleLogout}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             /* ── Chưa đăng nhập ── */
