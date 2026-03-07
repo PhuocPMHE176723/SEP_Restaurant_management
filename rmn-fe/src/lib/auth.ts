@@ -1,4 +1,4 @@
-import type { LoginResponse } from "../types/generated";
+import type { LoginResponseDTO as LoginResponse } from "../types/models";
 
 // ──────────────────────────────────────────────────────────────
 //  COOKIE KEYS

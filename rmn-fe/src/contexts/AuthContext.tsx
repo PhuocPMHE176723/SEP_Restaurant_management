@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { LoginResponse } from "../types/generated";
+import type { LoginResponseDTO as LoginResponse } from "../types/models";
 import { saveAuth, getUserInfo, clearAuth, isTokenValid, type UserInfo } from "../lib/auth";
 
 // ──────────────────────────────────────────────────────────────
