@@ -35,17 +35,31 @@ public class CategoryController : BaseController
     [HttpPost]
     public async Task<IActionResult> CreateCategory(CreateCategoryDTO createDto)
     {
-        var category = await _categoryService.CreateCategoryAsync(createDto);
-        return Success(category, "Category created successfully");
+        try 
+        {
+            var category = await _categoryService.CreateCategoryAsync(createDto);
+            return Success(category, "Category created successfully");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Failure(ex.Message);
+        }
     }
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCategory(int id, UpdateCategoryDTO updateDto)
     {
-        var updated = await _categoryService.UpdateCategoryAsync(id, updateDto);
-        if (!updated) return NotFoundResponse($"Category with ID {id} not found");
-        return Success("Category updated successfully");
+        try
+        {
+            var updated = await _categoryService.UpdateCategoryAsync(id, updateDto);
+            if (!updated) return NotFoundResponse($"Category with ID {id} not found");
+            return Success("Category updated successfully");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Failure(ex.Message);
+        }
     }
 
     [Authorize(Roles = "Admin")]

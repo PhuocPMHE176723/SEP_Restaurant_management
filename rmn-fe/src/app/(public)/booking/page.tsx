@@ -1,8 +1,8 @@
 "use client";
 
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
-import BookingForm from "../../components/BookingForm/BookingForm";
+import Header from "../../../components/Header/Header";
+import Footer from "../../../components/Footer/Footer";
+import BookingForm from "../../../components/BookingForm/BookingForm";
 import styles from "./page.module.css";
 
 export default function BookingPage() {

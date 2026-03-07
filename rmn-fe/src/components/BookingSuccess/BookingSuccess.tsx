@@ -1,6 +1,6 @@
 "use client";
 
-import type { Booking } from "../../types/generated";
+import type { Booking } from "../../types/models";
 import styles from "./BookingSuccess.module.css";
 import Link from "next/link";
 

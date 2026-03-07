@@ -172,6 +172,12 @@ export default function DiningTablesPage() {
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState<{ type: "create" | "edit" | "delete"; table?: DiningTable } | null>(null);
 
+    // Filter & Pagination state
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState("ALL"); // ALL, AVAILABLE, OCCUPIED, RESERVED
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const load = useCallback(async () => {
         setLoading(true);
         try { setTables(await getTables()); }
@@ -180,6 +186,17 @@ export default function DiningTablesPage() {
     }, []);
 
     useEffect(() => { void load(); }, [load]);
+
+    // Derived state
+    const filteredItems = tables.filter(t => {
+        const matchSearch = t.tableCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (t.tableName || "").toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = filterStatus === "ALL" || t.status === filterStatus;
+        return matchSearch && matchStatus;
+    });
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <>
@@ -197,6 +214,27 @@ export default function DiningTablesPage() {
                 </div>
 
                 <div className={styles.cardBody}>
+                    <div className={styles.filterBar}>
+                        <input 
+                            type="text" 
+                            className={styles.searchInput}
+                            placeholder="Tìm theo mã bàn, tên bàn..." 
+                            value={searchTerm} 
+                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                        />
+                        <select 
+                            className={styles.input} 
+                            style={{ width: "auto" }}
+                            value={filterStatus} 
+                            onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                        >
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="AVAILABLE">Trống</option>
+                            <option value="OCCUPIED">Đang dùng</option>
+                            <option value="RESERVED">Đã đặt</option>
+                        </select>
+                    </div>
+
                     <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
@@ -213,11 +251,11 @@ export default function DiningTablesPage() {
                     <tbody>
                         {loading ? (
                             <tr><td colSpan={7} className={styles.loading}>Đang tải...</td></tr>
-                        ) : tables.length === 0 ? (
-                            <tr><td colSpan={7} className={styles.empty}>Chưa có bàn nào</td></tr>
-                        ) : tables.map((t, i) => (
+                        ) : paginatedItems.length === 0 ? (
+                            <tr><td colSpan={7} className={styles.empty}>Chưa có bàn nào phù hợp</td></tr>
+                        ) : paginatedItems.map((t, i) => (
                             <tr key={t.tableId}>
-                                <td>{i + 1}</td>
+                                <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
                                 <td><strong>{t.tableCode}</strong></td>
                                 <td>{t.tableName ?? "—"}</td>
                                 <td>{t.capacity} người</td>
@@ -238,6 +276,21 @@ export default function DiningTablesPage() {
                     </tbody>
                 </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div className={styles.pagination}>
+                            <div className={styles.pageInfo}>
+                                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} bàn ăn
+                            </div>
+                            <div className={styles.paginationControls}>
+                                <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                    Trước
+                                </button>
+                                <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                    Sau
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

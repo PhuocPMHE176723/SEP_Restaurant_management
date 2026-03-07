@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
-import MenuCard from "../../components/MenuCard/MenuCard";
-import CategoryFilter from "../../components/CategoryFilter/CategoryFilter";
-import { getMenuItems, getCategories } from "../../lib/api/client";
-import type { MenuItem, Category } from "../../types/generated";
+import Header from "../../../components/Header/Header";
+import Footer from "../../../components/Footer/Footer";
+import MenuCard from "../../../components/MenuCard/MenuCard";
+import CategoryFilter from "../../../components/CategoryFilter/CategoryFilter";
+import { getMenuItems, getCategories } from "../../../lib/api/client";
+import type { MenuItem, Category } from "../../../types/models";
 import styles from "./page.module.css";
 
 function MenuContent() {

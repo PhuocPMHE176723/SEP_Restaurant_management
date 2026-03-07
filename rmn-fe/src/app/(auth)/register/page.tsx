@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { registerApi } from "../../lib/api/auth";
+import { registerApi } from "../../../lib/api/auth";
 import styles from "../login/page.module.css";
 
 export default function RegisterPage() {

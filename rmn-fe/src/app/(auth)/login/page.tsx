@@ -3,8 +3,8 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { loginApi } from "../../lib/api/auth";
-import { useAuth } from "../../contexts/AuthContext";
+import { loginApi } from "../../../lib/api/auth";
+import { useAuth } from "../../../contexts/AuthContext";
 import styles from "./page.module.css";
 
 function LoginForm() {

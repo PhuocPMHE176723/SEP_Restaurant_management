@@ -343,6 +343,12 @@ export default function MenuItemsPage() {
     const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
     const [modal, setModal] = useState<{ type: "create" | "edit" | "delete"; item?: MenuItem } | null>(null);
 
+    // Filter & Pagination state
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState("ALL");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -362,6 +368,19 @@ export default function MenuItemsPage() {
 
     useEffect(() => { void load(); }, [load]);
 
+    // Derived state
+    const filteredItems = items.filter(c => {
+        const matchSearch = c.itemName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (c.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = filterStatus === "ALL" 
+            || (filterStatus === "ACTIVE" && c.isActive) 
+            || (filterStatus === "INACTIVE" && !c.isActive);
+        return matchSearch && matchStatus;
+    });
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     function formatPrice(price: number) {
         return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
     }
@@ -377,7 +396,7 @@ export default function MenuItemsPage() {
                     <select
                         className={styles.filterSelect}
                         value={filterCategoryId ?? ""}
-                        onChange={(e) => setFilterCategoryId(e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) => { setFilterCategoryId(e.target.value ? Number(e.target.value) : undefined); setCurrentPage(1); }}
                     >
                         <option value="">Tất cả danh mục</option>
                         {categories.map((cat) => (
@@ -392,8 +411,29 @@ export default function MenuItemsPage() {
                 </div>
             </div>
 
-            <div className={styles.tableWrap}>
-                <table className={styles.table}>
+            <div className={styles.cardBody}>
+                <div className={styles.filterBar}>
+                    <input 
+                        type="text" 
+                        className={styles.searchInput}
+                        placeholder="Tìm theo tên món, mô tả..." 
+                        value={searchTerm} 
+                        onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                    />
+                    <select 
+                        className={styles.input} 
+                        style={{ width: "auto" }}
+                        value={filterStatus} 
+                        onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                    >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="INACTIVE">Ngừng hoạt động</option>
+                    </select>
+                </div>
+
+                <div className={styles.tableWrap}>
+                    <table className={styles.table}>
                     <thead>
                         <tr>
                             <th>#</th>
@@ -409,11 +449,11 @@ export default function MenuItemsPage() {
                     <tbody>
                         {loading ? (
                             <tr><td colSpan={8} className={styles.loading}>Đang tải...</td></tr>
-                        ) : items.length === 0 ? (
-                            <tr><td colSpan={8} className={styles.empty}>Chưa có món nào</td></tr>
-                        ) : items.map((item, i) => (
+                        ) : paginatedItems.length === 0 ? (
+                            <tr><td colSpan={8} className={styles.empty}>Chưa có món nào phù hợp</td></tr>
+                        ) : paginatedItems.map((item, i) => (
                             <tr key={item.itemId}>
-                                <td>{i + 1}</td>
+                                <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
                                 <td>
                                     {item.thumbnail ? (
                                         <img src={item.thumbnail} alt={item.itemName} className={styles.thumbnail} />
@@ -440,6 +480,22 @@ export default function MenuItemsPage() {
                         ))}
                     </tbody>
                 </table>
+               </div>
+               {totalPages > 1 && (
+                    <div className={styles.pagination}>
+                        <div className={styles.pageInfo}>
+                            Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} món ăn
+                        </div>
+                        <div className={styles.paginationControls}>
+                            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                Trước
+                            </button>
+                            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                Sau
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {modal?.type === "create" && <CreateModal categories={categories} onClose={() => setModal(null)} onSaved={load} />}

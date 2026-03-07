@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category } from "../../types/generated";
+import type { Category } from "../../types/models";
 import styles from "./CategoryFilter.module.css";
 
 interface Props {

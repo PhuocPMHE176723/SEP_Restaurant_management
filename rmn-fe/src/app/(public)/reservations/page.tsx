@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
-import { useAuth } from "../../contexts/AuthContext";
-import { getMyReservations, cancelReservation, type ReservationDTO } from "../../lib/api/reservation";
-import Modal from "../../components/Modal/Modal";
+import Header from "../../../components/Header/Header";
+import Footer from "../../../components/Footer/Footer";
+import { useAuth } from "../../../contexts/AuthContext";
+import { getMyReservations, cancelReservation, type ReservationDTO } from "../../../lib/api/reservation";
+import Modal from "../../../components/Modal/Modal";
 import styles from "./page.module.css";
 
 export default function ReservationsPage() {

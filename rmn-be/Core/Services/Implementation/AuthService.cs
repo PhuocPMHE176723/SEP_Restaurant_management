@@ -136,6 +136,11 @@ public class AuthService : IAuthService
             new Claim("fullName",                    user.FullName ?? string.Empty),
         };
 
+        // Add staffId if user is linked to a Staff record
+        var staff = _context.Staffs.FirstOrDefault(s => s.UserId == user.Id);
+        if (staff != null)
+            claims.Add(new Claim("staffId", staff.StaffId.ToString()));
+
         // Thêm từng role vào claims
         foreach (var role in roles)
         {

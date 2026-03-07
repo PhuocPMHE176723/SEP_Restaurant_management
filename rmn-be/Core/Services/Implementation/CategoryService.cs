@@ -31,6 +31,9 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDTO> CreateCategoryAsync(CreateCategoryDTO createDto)
     {
+        if (await _unitOfWork.MenuCategories.IsNameExistsAsync(createDto.CategoryName))
+            throw new InvalidOperationException($"Danh mục '{createDto.CategoryName}' đã tồn tại.");
+
         var category = _mapper.Map<MenuCategory>(createDto);
 
         await _unitOfWork.GetRepository<MenuCategory>().AddAsync(category);
@@ -43,6 +46,12 @@ public class CategoryService : ICategoryService
     {
         var existingCategory = await _unitOfWork.GetRepository<MenuCategory>().GetByIdAsync(id);
         if (existingCategory == null) return false;
+
+        if (updateDto.CategoryName != existingCategory.CategoryName && 
+            await _unitOfWork.MenuCategories.IsNameExistsAsync(updateDto.CategoryName, excludeId: id))
+        {
+            throw new InvalidOperationException($"Danh mục '{updateDto.CategoryName}' đã tồn tại.");
+        }
 
         _mapper.Map(updateDto, existingCategory);
 

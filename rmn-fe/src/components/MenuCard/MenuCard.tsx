@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatVND } from "../../lib/api/client";
-import type { MenuItem } from "../../types/generated";
+import type { MenuItem } from "../../types/models";
 import styles from "./MenuCard.module.css";
 
 interface Props {
@@ -13,8 +13,8 @@ export default function MenuCard({ item }: Props) {
     <article className={`card ${styles.card}`}>
       <div className={styles.imageWrap}>
         <Image
-          src={item.image}
-          alt={item.name}
+          src={item.image || item.thumbnail || "/placeholder-food.jpg"}
+          alt={item.name || item.itemName || "Món ăn"}
           fill
           className={styles.image}
           sizes="(max-width: 768px) 50vw, 280px"
@@ -49,7 +49,7 @@ export default function MenuCard({ item }: Props) {
         </div>
 
         <div className={styles.footer}>
-          <span className={styles.price}>{formatVND(item.price)}</span>
+          <span className={styles.price}>{formatVND(item.price ?? item.basePrice ?? 0)}</span>
           <Link href="/booking" className={`btn btn-primary ${styles.bookBtn}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>

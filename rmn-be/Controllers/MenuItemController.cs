@@ -45,8 +45,15 @@ public class MenuItemController : BaseController
         if (!ModelState.IsValid)
             return Failure("Invalid data");
 
-        var item = await _menuItemService.CreateAsync(dto);
-        return Success(item, "Menu item created successfully");
+        try
+        {
+            var item = await _menuItemService.CreateAsync(dto);
+            return Success(item, "Menu item created successfully");
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return Failure(ex.Message);
+        }
     }
 
     /// <summary>Update an existing menu item (Admin only)</summary>
@@ -57,11 +64,18 @@ public class MenuItemController : BaseController
         if (!ModelState.IsValid)
             return Failure("Invalid data");
 
-        var success = await _menuItemService.UpdateAsync(id, dto);
-        if (!success)
-            return NotFoundResponse("Menu item not found");
+        try
+        {
+            var success = await _menuItemService.UpdateAsync(id, dto);
+            if (!success)
+                return NotFoundResponse("Menu item not found");
 
-        return Success("Menu item updated successfully");
+            return Success("Menu item updated successfully");
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return Failure(ex.Message);
+        }
     }
 
     /// <summary>Soft-delete a menu item (set IsActive = false) (Admin only)</summary>
