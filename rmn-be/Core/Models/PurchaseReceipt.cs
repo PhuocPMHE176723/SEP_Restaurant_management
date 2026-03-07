@@ -24,7 +24,7 @@ public class PurchaseReceipt
     [MaxLength(20)]
     public string Status { get; set; } = "RECEIVED"; // DRAFT/RECEIVED/CANCELLED
 
-    public long CreatedByStaffId { get; set; }
+    public long? CreatedByStaffId { get; set; }
 
     [MaxLength(255)]
     public string? Note { get; set; }
@@ -33,7 +33,7 @@ public class PurchaseReceipt
     public virtual Supplier? Supplier { get; set; }
 
     [ForeignKey(nameof(CreatedByStaffId))]
-    public virtual Staff CreatedByStaff { get; set; } = default!;
+    public virtual Staff? CreatedByStaff { get; set; }
 
     public virtual ICollection<PurchaseReceiptItem> Items { get; set; } = new List<PurchaseReceiptItem>();
 }

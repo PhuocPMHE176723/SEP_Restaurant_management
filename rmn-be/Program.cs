@@ -71,15 +71,21 @@ builder.Services.AddHuyServices();
 builder.Services.AddMyServices1();
 builder.Services.AddMyServices2();
 
+// Warehouse Services
+builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IIngredientService, SEP_Restaurant_management.Core.Services.Implementation.IngredientService>();
+builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IPurchaseReceiptService, SEP_Restaurant_management.Core.Services.Implementation.PurchaseReceiptService>();
+builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IStockService, SEP_Restaurant_management.Core.Services.Implementation.StockService>();
+
 // ─────────────────────────────────────────────────────────────
 //  CORS
 // ─────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:3000", "https://localhost:5000")
+        policy.SetIsOriginAllowed(origin => true) // Allow any origin
               .AllowAnyHeader()
               .AllowAnyMethod()
+              .AllowCredentials() // Allow credentials for cookies if needed
     );
 });
 
@@ -144,6 +150,19 @@ using (var scope = app.Services.CreateScope())
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database.");
     }
+
+    // One-time schema patch: make CreatedByStaffId nullable (in case EF migration not applied)
+    try
+    {
+        var ctx = services.GetRequiredService<SepDatabaseContext>();
+        ctx.Database.ExecuteSqlRaw(@"
+            IF EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('PurchaseReceipts')
+                  AND name = 'CreatedByStaffId' AND is_nullable = 0
+            ) ALTER TABLE [PurchaseReceipts] ALTER COLUMN [CreatedByStaffId] BIGINT NULL");
+    }
+    catch { /* ignore if already nullable or table doesn't exist */ }
 }
 
 // ─────────────────────────────────────────────────────────────

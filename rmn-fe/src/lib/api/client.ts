@@ -1,5 +1,5 @@
 import { apiBaseUrl } from "../config";
-import type { MenuItem, Category, Booking, RmnItem } from "../../types/generated";
+import type { MenuItem, Category, Booking, RmnItem } from "../../types/models";
 
 const defaultHeaders = { "Content-Type": "application/json" };
 
@@ -217,7 +217,7 @@ export async function getFeaturedItems(): Promise<MenuItem[]> {
   return all.filter((i) => i.isFeatured);
 }
 
-export async function createBooking(data: Omit<import("../../types/generated").Booking, "id" | "status" | "confirmedAt">): Promise<import("../../types/generated").Booking> {
+export async function createBooking(data: Omit<import("../../types/models").Booking, "id" | "status" | "confirmedAt">): Promise<import("../../types/models").Booking> {
   try {
     const res = await fetch(`${apiBaseUrl}/api/bookings`, {
       method: "POST",
@@ -225,7 +225,7 @@ export async function createBooking(data: Omit<import("../../types/generated").B
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("not found");
-    return (await res.json()) as import("../../types/generated").Booking;
+    return (await res.json()) as import("../../types/models").Booking;
   } catch {
     // Mock confirmation
     await new Promise((r) => setTimeout(r, 1200));

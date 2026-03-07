@@ -6,7 +6,7 @@ import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
 import MenuCard from "../components/MenuCard/MenuCard";
 import { getFeaturedItems, getCategories } from "../lib/api/client";
-import type { MenuItem, Category } from "../types/generated";
+import type { MenuItem, Category } from "../types/models";
 import styles from "./page.module.css";
 
 export default function Home() {

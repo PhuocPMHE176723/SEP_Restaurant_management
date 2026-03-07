@@ -43,6 +43,9 @@ public class MenuItemService : IMenuItemService
 
     public async Task<MenuItemDTO> CreateAsync(CreateMenuItemDTO dto)
     {
+        if (await _db.MenuItems.AnyAsync(m => m.ItemName.ToLower() == dto.ItemName.ToLower()))
+            throw new InvalidOperationException($"Tên món '{dto.ItemName}' đã tồn tại.");
+
         var item = new MenuItem
         {
             CategoryId  = dto.CategoryId,
@@ -67,7 +70,12 @@ public class MenuItemService : IMenuItemService
         if (item == null) return false;
 
         if (dto.CategoryId.HasValue)  item.CategoryId  = dto.CategoryId.Value;
-        if (dto.ItemName  != null)    item.ItemName    = dto.ItemName;
+        if (dto.ItemName  != null)    
+        {
+            if (dto.ItemName != item.ItemName && await _db.MenuItems.AnyAsync(m => m.ItemId != id && m.ItemName.ToLower() == dto.ItemName.ToLower()))
+                throw new InvalidOperationException($"Tên món '{dto.ItemName}' đã tồn tại.");
+            item.ItemName    = dto.ItemName;
+        }
         if (dto.Description != null)  item.Description = dto.Description;
         if (dto.BasePrice.HasValue)   item.BasePrice   = dto.BasePrice.Value;
         if (dto.Thumbnail  != null)   item.Thumbnail   = dto.Thumbnail;

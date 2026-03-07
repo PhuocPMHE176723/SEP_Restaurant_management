@@ -149,6 +149,12 @@ export default function MenuCategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState<{ type: "create" | "edit" | "delete"; cat?: MenuCategory } | null>(null);
 
+    // Filter & Pagination state
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState("ALL");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const load = useCallback(async () => {
         setLoading(true);
         try { setCats(await getMenuCategories()); }
@@ -157,6 +163,19 @@ export default function MenuCategoriesPage() {
     }, []);
 
     useEffect(() => { void load(); }, [load]);
+
+    // Derived state
+    const filteredItems = cats.filter(c => {
+        const matchSearch = c.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (c.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = filterStatus === "ALL" 
+            || (filterStatus === "ACTIVE" && c.isActive) 
+            || (filterStatus === "INACTIVE" && !c.isActive);
+        return matchSearch && matchStatus;
+    });
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <>
@@ -174,6 +193,26 @@ export default function MenuCategoriesPage() {
                 </div>
 
                 <div className={styles.cardBody}>
+                    <div className={styles.filterBar}>
+                        <input 
+                            type="text" 
+                            className={styles.searchInput}
+                            placeholder="Tìm tên, mô tả..." 
+                            value={searchTerm} 
+                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                        />
+                        <select 
+                            className={styles.input} 
+                            style={{ width: "auto" }}
+                            value={filterStatus} 
+                            onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                        >
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="INACTIVE">Ngừng hoạt động</option>
+                        </select>
+                    </div>
+
                     <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
@@ -189,11 +228,11 @@ export default function MenuCategoriesPage() {
                     <tbody>
                         {loading ? (
                             <tr><td colSpan={6} className={styles.loading}>Đang tải...</td></tr>
-                        ) : cats.length === 0 ? (
-                            <tr><td colSpan={6} className={styles.empty}>Chưa có danh mục nào</td></tr>
-                        ) : cats.map((c, i) => (
+                        ) : paginatedItems.length === 0 ? (
+                            <tr><td colSpan={6} className={styles.empty}>Chưa có danh mục nào phù hợp</td></tr>
+                        ) : paginatedItems.map((c, i) => (
                             <tr key={c.categoryId}>
-                                <td>{i + 1}</td>
+                                <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
                                 <td><strong>{c.categoryName}</strong></td>
                                 <td>{c.description ?? "—"}</td>
                                 <td>{c.displayOrder}</td>
@@ -213,6 +252,21 @@ export default function MenuCategoriesPage() {
                     </tbody>
                 </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div className={styles.pagination}>
+                            <div className={styles.pageInfo}>
+                                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} danh mục
+                            </div>
+                            <div className={styles.paginationControls}>
+                                <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                    Trước
+                                </button>
+                                <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                    Sau
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { apiBaseUrl } from "../config";
-import type { LoginRequest, LoginResponse, RegisterRequest } from "../../types/generated";
+import type { LoginRequestDTO as LoginRequest, LoginResponseDTO as LoginResponse, RegisterRequestDTO as RegisterRequest } from "../../types/models";
 
 export interface ApiError {
     message: string;
