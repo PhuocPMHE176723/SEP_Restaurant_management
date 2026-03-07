@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getInventoryOnHand } from "../../../lib/api/warehouse";
 import { exportInventoryPDF } from "../../../lib/exportPDF";
-import styles from "../../admin/admin.module.css";
+import styles from "../../manager/manager.module.css";
 
 import { InventoryOnHandResponse as Inventory } from "../../../types/models";
 

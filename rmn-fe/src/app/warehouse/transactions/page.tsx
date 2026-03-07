@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getStockMovements, createManualAdjustment, getIngredients } from "../../../lib/api/warehouse";
 import { exportTransactionsPDF } from "../../../lib/exportPDF";
-import styles from "../../admin/admin.module.css";
+import styles from "../../manager/manager.module.css";
 import Swal from 'sweetalert2';
 
 import { StockMovementResponse as Movement } from "../../../types/models";

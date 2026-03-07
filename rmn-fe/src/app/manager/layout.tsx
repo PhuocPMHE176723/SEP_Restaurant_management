@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
-import styles from "./admin.module.css";
+import styles from "./manager.module.css";
 
 const NAV_ITEMS = [
-    { href: "/admin/dining-tables", label: "Quản lý bàn ăn" },
-    { href: "/admin/menu-categories", label: "Danh mục món" },
-    { href: "/admin/menu-items", label: "Quản lý món ăn" },
+    { href: "/manager/dining-tables", label: "Quản lý bàn ăn" },
+    { href: "/manager/menu-categories", label: "Danh mục món" },
+    { href: "/manager/menu-items", label: "Quản lý món ăn" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,12 +23,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Chỉ redirect sau khi đã mount (tránh SSR null → redirect sai)
     useEffect(() => {
         if (!mounted) return;
-        if (!isLoggedIn) { router.replace("/login?redirect=/admin"); return; }
-        if (!user?.roles.includes("Admin")) { router.replace("/"); }
+        if (!isLoggedIn) { router.replace("/login?redirect=/manager"); return; }
+        if (!user?.roles.includes("Manager")) { router.replace("/"); }
     }, [mounted, isLoggedIn, user, router]);
 
     // Chờ hydration hoặc đang chờ auth state
-    if (!mounted || !isLoggedIn || !user?.roles.includes("Admin")) {
+    if (!mounted || !isLoggedIn || !user?.roles.includes("Manager")) {
         return (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100svh", color: "#94a3b8", fontSize: "0.9rem" }}>
                 Đang kiểm tra quyền truy cập...
@@ -41,8 +41,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* ── SIDEBAR ──────────────────────────────── */}
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarTop}>
-                    <Link href="/admin" className={styles.brand}>
-                        <span className={styles.brandLabel}>Admin Panel</span>
+                    <Link href="/manager" className={styles.brand}>
+                        <span className={styles.brandLabel}>Manager Panel</span>
                     </Link>
                 </div>
 
@@ -53,6 +53,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             {item.label}
                         </Link>
                     ))}
+
+                    <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Khuyến mãi & Cấu hình</p>
+                    <Link href="/manager/system-config" className={styles.navItem}>Cấu hình Thuế (VAT)</Link>
+                    <Link href="/manager/discount-codes" className={styles.navItem}>Quản lý Mã giảm giá</Link>
+                    <Link href="/manager/loyalty-config" className={styles.navItem}>Cấu hình Tích điểm</Link>
+                    <Link href="/manager/loyalty-history" className={styles.navItem}>Lịch sử Điểm</Link>
                 </nav>
 
                 <div className={styles.sidebarFoot}>
@@ -60,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className={styles.userAvatar}>{user.fullName.charAt(0).toUpperCase()}</div>
                         <div className={styles.userMeta}>
                             <span className={styles.userName}>{user.fullName}</span>
-                            <span className={styles.userRole}>Administrator</span>
+                            <span className={styles.userRole}>Manager</span>
                         </div>
                     </div>
                     <button className={styles.logoutBtn} onClick={() => { logout(); router.push("/login"); }}>

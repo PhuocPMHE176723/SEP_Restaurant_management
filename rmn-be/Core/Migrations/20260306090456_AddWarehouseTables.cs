@@ -15,38 +15,38 @@ namespace rmn_be.Core.Migrations
                 name: "FK_Staff_AspNetUsers",
                 table: "Staff");
 
-            migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                table: "Orders");
+            // migrationBuilder.DropColumn(
+            //     name: "CreatedAt",
+            //     table: "Orders");
 
-            migrationBuilder.DropColumn(
-                name: "DiscountPrice",
-                table: "Orders");
+            // migrationBuilder.DropColumn(
+            //     name: "DiscountPrice",
+            //     table: "Orders");
 
-            migrationBuilder.DropColumn(
-                name: "CreatedByStaffId",
-                table: "OrderItems");
+            // migrationBuilder.DropColumn(
+            //     name: "CreatedByStaffId",
+            //     table: "OrderItems");
 
-            migrationBuilder.AddColumn<string>(
-                name: "Thumbnail",
-                table: "MenuItems",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: true);
+            // migrationBuilder.AddColumn<string>(
+            //     name: "Thumbnail",
+            //     table: "MenuItems",
+            //     type: "nvarchar(500)",
+            //     maxLength: 500,
+            //     nullable: true);
 
-            migrationBuilder.AddColumn<string>(
-                name: "TableName",
-                table: "DiningTables",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: true);
+            // migrationBuilder.AddColumn<string>(
+            //     name: "TableName",
+            //     table: "DiningTables",
+            //     type: "nvarchar(100)",
+            //     maxLength: 100,
+            //     nullable: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Customers_Phone",
-                table: "Customers",
-                column: "Phone",
-                unique: true,
-                filter: "[Phone] IS NOT NULL");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_Customers_Phone",
+            //     table: "Customers",
+            //     column: "Phone",
+            //     unique: true,
+            //     filter: "[Phone] IS NOT NULL");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Staff_AspNetUsers_UserId",

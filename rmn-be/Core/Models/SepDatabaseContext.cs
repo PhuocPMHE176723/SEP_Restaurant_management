@@ -25,6 +25,8 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<Customer> Customers { get; set; }
     public virtual DbSet<LoyaltyTier> LoyaltyTiers { get; set; }
     public virtual DbSet<CustomerPointsLedger> CustomerPointsLedgers { get; set; }
+    public virtual DbSet<DiscountCode> DiscountCodes { get; set; }
+    public virtual DbSet<SystemConfig> SystemConfigs { get; set; }
 
     // ── Reservation ────────────────────────────────────────
     public virtual DbSet<Reservation> Reservations { get; set; }
@@ -145,6 +147,22 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                   .HasForeignKey(e => e.CreatedByStaffId)
                   .HasConstraintName("FK_CPL_Staff")
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── DiscountCodes ──────────────────────────────────
+        modelBuilder.Entity<DiscountCode>(entity =>
+        {
+            entity.ToTable("DiscountCodes");
+            entity.HasKey(e => e.DiscountId);
+            entity.Property(e => e.DiscountId).UseIdentityColumn();
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ── SystemConfigs ──────────────────────────────────
+        modelBuilder.Entity<SystemConfig>(entity =>
+        {
+            entity.ToTable("SystemConfigs");
+            entity.HasKey(e => e.ConfigKey);
         });
 
         // ── Reservations ───────────────────────────────────

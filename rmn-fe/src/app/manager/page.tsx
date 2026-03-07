@@ -4,6 +4,6 @@ import { useRouter } from "next/navigation";
 
 export default function AdminIndex() {
     const router = useRouter();
-    useEffect(() => { router.replace("/admin/dining-tables"); }, [router]);
+  useEffect(() => { router.replace("/manager/dining-tables"); }, [router]);
     return null;
 }

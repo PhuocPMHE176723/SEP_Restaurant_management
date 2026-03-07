@@ -5,7 +5,7 @@ import {
     getMenuItems, getMenuCategories, createMenuItem, updateMenuItem, deleteMenuItem, uploadMenuImage,
     type MenuItem, type MenuCategory, type CreateMenuItemRequest, type UpdateMenuItemRequest,
 } from "../../../lib/api/admin";
-import styles from "../admin.module.css";
+import styles from "../manager.module.css";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getPurchaseReceipts, getIngredients, createPurchaseReceipt, updatePurchaseReceiptStatus } from "../../../lib/api/warehouse";
 import { exportReceiptsPDF } from "../../../lib/exportPDF";
-import styles from "../../admin/admin.module.css";
+import styles from "../../manager/manager.module.css";
 import Swal from 'sweetalert2';
 import { PurchaseReceiptResponse as Receipt } from "../../../types/models";
 

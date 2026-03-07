@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
-import styles from "../admin/admin.module.css"; // Reusing admin styles
+import styles from "../manager/manager.module.css"; // Reusing admin styles
 
 const NAV_ITEMS = [
     { href: "/warehouse/ingredients", label: "Danh sách nguyên liệu" },
