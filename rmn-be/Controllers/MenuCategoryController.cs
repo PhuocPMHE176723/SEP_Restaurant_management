@@ -34,7 +34,7 @@ public class MenuCategoryController : BaseController
     }
 
     /// <summary>Tạo danh mục mới (Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateMenuCategoryDTO dto)
     {
@@ -50,7 +50,7 @@ public class MenuCategoryController : BaseController
     }
 
     /// <summary>Cập nhật danh mục (Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateMenuCategoryDTO dto)
     {
@@ -67,7 +67,7 @@ public class MenuCategoryController : BaseController
     }
 
     /// <summary>Xóa danh mục (soft delete, Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

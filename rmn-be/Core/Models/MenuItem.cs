@@ -16,6 +16,9 @@ public class MenuItem
     [MaxLength(150)]
     public string ItemName { get; set; } = default!;
 
+    [MaxLength(50)]
+    public string? Unit { get; set; }
+
     [MaxLength(500)]
     public string? Description { get; set; }
 

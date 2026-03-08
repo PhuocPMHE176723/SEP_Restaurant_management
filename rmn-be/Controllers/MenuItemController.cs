@@ -39,7 +39,7 @@ public class MenuItemController : BaseController
 
     /// <summary>Create a new menu item (Admin only)</summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Create([FromBody] CreateMenuItemDTO dto)
     {
         if (!ModelState.IsValid)
@@ -58,7 +58,7 @@ public class MenuItemController : BaseController
 
     /// <summary>Update an existing menu item (Admin only)</summary>
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateMenuItemDTO dto)
     {
         if (!ModelState.IsValid)
@@ -80,7 +80,7 @@ public class MenuItemController : BaseController
 
     /// <summary>Soft-delete a menu item (set IsActive = false) (Admin only)</summary>
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Delete(long id)
     {
         var success = await _menuItemService.DeleteAsync(id);
@@ -92,7 +92,7 @@ public class MenuItemController : BaseController
 
     /// <summary>Upload an image to Cloudinary and return the URL (Admin only)</summary>
     [HttpPost("upload-image")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> UploadImage(IFormFile file)
     {
         // Validate input
