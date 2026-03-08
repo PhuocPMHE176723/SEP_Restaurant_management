@@ -76,6 +76,9 @@ builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IIn
 builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IPurchaseReceiptService, SEP_Restaurant_management.Core.Services.Implementation.PurchaseReceiptService>();
 builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IStockService, SEP_Restaurant_management.Core.Services.Implementation.StockService>();
 
+// Promotion & Loyalty Services
+builder.Services.AddScoped<SEP_Restaurant_management.Core.Services.Interface.IPromotionService, SEP_Restaurant_management.Core.Services.Implementation.PromotionService>();
+
 // ─────────────────────────────────────────────────────────────
 //  CORS
 // ─────────────────────────────────────────────────────────────

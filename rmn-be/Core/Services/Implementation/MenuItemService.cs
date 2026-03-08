@@ -26,10 +26,11 @@ public class MenuItemService : IMenuItemService
         if (categoryId.HasValue)
             query = query.Where(m => m.CategoryId == categoryId.Value);
 
-        return await query
+        var items = await query
             .OrderByDescending(m => m.CreatedAt)
-            .Select(m => ToDTO(m))
             .ToListAsync();
+
+        return items.Select(m => ToDTO(m));
     }
 
     public async Task<MenuItemDTO?> GetByIdAsync(long id)
@@ -50,6 +51,7 @@ public class MenuItemService : IMenuItemService
         {
             CategoryId  = dto.CategoryId,
             ItemName    = dto.ItemName,
+            Unit        = dto.Unit,
             Description = dto.Description,
             BasePrice   = dto.BasePrice,
             Thumbnail   = dto.Thumbnail,
@@ -77,6 +79,7 @@ public class MenuItemService : IMenuItemService
             item.ItemName    = dto.ItemName;
         }
         if (dto.Description != null)  item.Description = dto.Description;
+        if (dto.Unit != null)         item.Unit        = dto.Unit;
         if (dto.BasePrice.HasValue)   item.BasePrice   = dto.BasePrice.Value;
         if (dto.Thumbnail  != null)   item.Thumbnail   = dto.Thumbnail;
         if (dto.IsActive.HasValue)    item.IsActive    = dto.IsActive.Value;
@@ -99,6 +102,7 @@ public class MenuItemService : IMenuItemService
         CategoryId   = m.CategoryId,
         CategoryName = m.Category?.CategoryName ?? "",
         ItemName     = m.ItemName,
+        Unit         = m.Unit,
         Description  = m.Description,
         BasePrice    = m.BasePrice,
         Thumbnail    = m.Thumbnail,

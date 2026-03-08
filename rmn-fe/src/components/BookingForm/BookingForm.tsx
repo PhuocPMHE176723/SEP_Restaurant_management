@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { createReservation, getPublicMenuItems, type MenuItem, type OrderItemRequest } from "../../lib/api/reservation";
+import {
+  createReservation,
+  getPublicMenuItems,
+  type MenuItem,
+  type OrderItemRequest,
+} from "../../lib/api/reservation";
 import Modal from "../Modal/Modal";
 import styles from "./BookingForm.module.css";
 
@@ -11,7 +16,7 @@ function generateTimeSlots(): string[] {
   const slots: string[] = [];
   for (let h = 10; h <= 22; h++) {
     for (let m = 0; m < 60; m += 15) {
-      if (h === 22 && m > 0) break; // Stop at 22:00
+      if (h === 22 && m > 0) break;
       const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
       slots.push(time);
     }
@@ -20,46 +25,49 @@ function generateTimeSlots(): string[] {
 }
 
 const TIME_SLOTS = generateTimeSlots();
+const SEATS_PER_TABLE = 8;
+const MAX_PARTY_SIZE = 50;
 
 export default function BookingForm() {
   const { user, isLoggedIn } = useAuth();
   const [mounted, setMounted] = useState(false);
-  
-  // Calculate min and max dates
+
   const today = new Date();
   const minDate = today.toISOString().split("T")[0];
-  const maxDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const maxDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   const [form, setForm] = useState({
     date: "",
     timeSlot: "",
-    partySize: 2,
+    partySize: 8,
     note: "",
   });
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [selectedItems, setSelectedItems] = useState<Map<number, number>>(new Map()); // itemId -> quantity
+  const [selectedItems, setSelectedItems] = useState<Map<number, number>>(
+    new Map(),
+  );
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"success" | "error">("success");
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
 
-  // Check mounted state to avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load menu items on mount
   useEffect(() => {
     async function loadMenu() {
       try {
         const items = await getPublicMenuItems();
-        setMenuItems(items.filter(item => item.isActive));
+        setMenuItems(items.filter((item) => item.isActive));
       } catch (error) {
         console.error("Failed to load menu:", error);
       } finally {
@@ -74,11 +82,39 @@ export default function BookingForm() {
     setErrors((e) => ({ ...e, [field]: "" }));
   }
 
+  // Auto-calculate number of tables (ceiling division by SEATS_PER_TABLE)
+  const numberOfTables = Math.max(
+    1,
+    Math.ceil((form.partySize || 1) / SEATS_PER_TABLE),
+  );
+
+  // Build list of unique categories from menu items
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const cats: { id: string; name: string }[] = [
+      { id: "all", name: "Tất cả" },
+    ];
+    menuItems.forEach((item) => {
+      if (item.categoryName && !seen.has(item.categoryName)) {
+        seen.add(item.categoryName);
+        cats.push({ id: item.categoryName, name: item.categoryName });
+      }
+    });
+    return cats;
+  }, [menuItems]);
+
+  // Filter menu items by active category
+  const filteredMenu = useMemo(() => {
+    if (activeCategory === "all") return menuItems;
+    return menuItems.filter((item) => item.categoryName === activeCategory);
+  }, [menuItems, activeCategory]);
+
   function addMenuItem(itemId: number) {
     setSelectedItems((prev) => {
       const newMap = new Map(prev);
-      const currentQty = newMap.get(itemId) || 0;
-      newMap.set(itemId, Math.min(currentQty + 1, 50));
+      if (!newMap.has(itemId)) {
+        newMap.set(itemId, numberOfTables); // Default: 1 per table
+      }
       return newMap;
     });
   }
@@ -91,39 +127,39 @@ export default function BookingForm() {
         return newMap;
       });
     } else {
-      setSelectedItems((prev) => new Map(prev).set(itemId, Math.min(quantity, 50)));
+      setSelectedItems((prev) => new Map(prev).set(itemId, quantity));
     }
   }
 
   function validate() {
     const e: { [key: string]: string } = {};
-    
     if (!isLoggedIn) {
       e.auth = "Vui lòng đăng nhập để đặt bàn";
     }
-    
     if (!form.date) {
       e.date = "Vui lòng chọn ngày";
     } else {
       const selectedDate = new Date(form.date);
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayStart = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      );
       const maxDateEnd = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
       if (selectedDate < todayStart) {
         e.date = "Không thể đặt bàn trong quá khứ";
       } else if (selectedDate > maxDateEnd) {
         e.date = "Chỉ có thể đặt bàn trong vòng 7 ngày tới";
       }
     }
-    
     if (!form.timeSlot) {
       e.timeSlot = "Vui lòng chọn giờ";
     }
-    
-    if (form.partySize < 1 || form.partySize > 50) {
-      e.partySize = "Số khách phải từ 1 đến 50 người";
+    if (form.partySize < 1) {
+      e.partySize = "Số khách phải từ 1 trở lên";
+    } else if (form.partySize > MAX_PARTY_SIZE) {
+      e.partySize = `Tối đa ${MAX_PARTY_SIZE} khách mỗi lần đặt`;
     }
-    
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -131,20 +167,16 @@ export default function BookingForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-
     setLoading(true);
-    setErrors({}); // Clear previous errors
-    
+    setErrors({});
     try {
-      // Combine date and time to create reservedAt ISO string
       const reservedAt = `${form.date}T${form.timeSlot}:00`;
-
-      // Build order items
-      const orderItems: OrderItemRequest[] = Array.from(selectedItems.entries()).map(([itemId, quantity]) => ({
+      const orderItems: OrderItemRequest[] = Array.from(
+        selectedItems.entries(),
+      ).map(([itemId, quantity]) => ({
         itemId,
         quantity,
       }));
-
       const result = await createReservation({
         reservedAt,
         partySize: form.partySize,
@@ -152,30 +184,19 @@ export default function BookingForm() {
         note: form.note || undefined,
         menuItems: orderItems,
       });
-
-      // Show success modal
       setModalType("success");
       setModalTitle("Đặt bàn thành công!");
       setModalMessage(
         `Mã đặt bàn: #${result.reservationId}\n` +
-        `Chúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`
+          `Chúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`,
       );
       setModalOpen(true);
-
-      // Reset form after successful booking
-      setForm({
-        date: "",
-        timeSlot: "",
-        partySize: 2,
-        note: "",
-      });
+      setForm({ date: "", timeSlot: "", partySize: 8, note: "" });
       setSelectedItems(new Map());
     } catch (error: any) {
-      console.error("Booking error:", error);
-      const errorMessage = error.message || "Đặt bàn thất bại. Vui lòng thử lại.";
+      const errorMessage =
+        error.message || "Đặt bàn thất bại. Vui lòng thử lại.";
       setErrors({ submit: errorMessage });
-      
-      // Show error modal
       setModalType("error");
       setModalTitle("Lỗi đặt bàn");
       setModalMessage(errorMessage);
@@ -185,11 +206,21 @@ export default function BookingForm() {
     }
   }
 
-  // Show loading placeholder during SSR and initial mount
+  // Calculate totals
+  const totalAmount = useMemo(() => {
+    return Array.from(selectedItems.entries()).reduce((sum, [id, qty]) => {
+      const item = menuItems.find((m) => m.itemId === id);
+      return sum + (item ? item.basePrice * qty : 0);
+    }, 0);
+  }, [selectedItems, menuItems]);
+
+  const amountPerTable =
+    numberOfTables > 0 ? Math.round(totalAmount / numberOfTables) : 0;
+
   if (!mounted) {
     return (
       <div className={styles.form}>
-        <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <div style={{ padding: "2rem", textAlign: "center" }}>
           <div className={styles.spinner} />
         </div>
       </div>
@@ -216,7 +247,7 @@ export default function BookingForm() {
         <div className={styles.errorBanner}>{errors.submit}</div>
       )}
 
-      {/* Guest info - Auto-filled from token */}
+      {/* Step 1 – Guest info */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
           <span className={styles.step}>1</span>Thông tin khách
@@ -236,7 +267,7 @@ export default function BookingForm() {
         </div>
       </div>
 
-      {/* Reservation details */}
+      {/* Step 2 – Reservation details */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
           <span className={styles.step}>2</span>Chi tiết đặt bàn
@@ -268,117 +299,263 @@ export default function BookingForm() {
             >
               <option value="">-- Chọn giờ --</option>
               <optgroup label="Buổi sáng/trưa (10:00 – 14:00)">
-                {TIME_SLOTS.filter(t => t >= "10:00" && t < "14:00").map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                {TIME_SLOTS.filter((t) => t >= "10:00" && t < "14:00").map(
+                  (t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ),
+                )}
               </optgroup>
               <optgroup label="Buổi chiều (14:00 – 17:00)">
-                {TIME_SLOTS.filter(t => t >= "14:00" && t < "17:00").map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                {TIME_SLOTS.filter((t) => t >= "14:00" && t < "17:00").map(
+                  (t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ),
+                )}
               </optgroup>
               <optgroup label="Buổi tối (17:00 – 22:00)">
-                {TIME_SLOTS.filter(t => t >= "17:00").map(t => (
-                  <option key={t} value={t}>{t}</option>
+                {TIME_SLOTS.filter((t) => t >= "17:00").map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </optgroup>
             </select>
-            {errors.timeSlot && <p className={styles.error}>{errors.timeSlot}</p>}
-            <p className={styles.hint}>Khung giờ cách nhau 15 phút, bắt đầu 10:00 sáng</p>
+            {errors.timeSlot && (
+              <p className={styles.error}>{errors.timeSlot}</p>
+            )}
+            <p className={styles.hint}>
+              Khung giờ cách nhau 15 phút, bắt đầu 10:00 sáng
+            </p>
           </div>
         </div>
 
         {/* Party size */}
         <div className={styles.field}>
-          <label className={styles.label}>
-            Số khách: <strong>{form.partySize} người</strong> (Tối đa 50)
-          </label>
+          <label className={styles.label}>Số khách *</label>
           <input
             type="number"
             min="1"
-            max="50"
-            value={form.partySize}
-            onChange={(e) => set("partySize", parseInt(e.target.value) || 1)}
+            max={MAX_PARTY_SIZE}
+            value={form.partySize === 0 ? "" : form.partySize}
+            onChange={(e) => {
+              const rawValue = e.target.value;
+              if (rawValue === "") {
+                set("partySize", 0); // allow clearing the field before retyping
+                return;
+              }
+              const raw = parseInt(rawValue, 10);
+              const safe = Number.isFinite(raw) ? raw : 0;
+              const clamped = Math.min(Math.max(safe, 1), MAX_PARTY_SIZE);
+              set("partySize", clamped);
+            }}
             className={styles.input}
+            style={{ maxWidth: 160 }}
           />
-          {errors.partySize && <p className={styles.error}>{errors.partySize}</p>}
+          {errors.partySize && (
+            <p className={styles.error}>{errors.partySize}</p>
+          )}
+          {/* Table auto-calculation badge */}
+          <div className={styles.tableBadge}>
+            <span className={styles.tableBadgeIcon}></span>
+            <span>
+              <strong>{form.partySize}</strong> người →{" "}
+              <strong className={styles.tableBadgeNum}>
+                {numberOfTables} bàn
+              </strong>
+              <span className={styles.tableBadgeSub}>
+                {" "}
+                ({SEATS_PER_TABLE} chỗ/bàn)
+              </span>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Menu Selection */}
+      {/* Step 3 – Menu */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
-          <span className={styles.step}>3</span>Chọn món ăn trước (tuỳ chọn)
+          <span className={styles.step}>3</span>Chọn món ăn trước{" "}
+          <span className={styles.optionalTag}>(tuỳ chọn)</span>
         </h3>
         <p className={styles.sectionDesc}>
-          Bạn có thể chọn trước các món ăn yêu thích. Đơn hàng sẽ được chuẩn bị sẵn khi bạn đến.
+          Chọn trước các món yêu thích — đơn hàng sẽ được chuẩn bị khi bạn đến.
+          Mỗi món được tự động nhân x{numberOfTables} bàn, bạn có thể điều chỉnh
+          lại.
         </p>
 
         {loadingMenu ? (
           <p className={styles.loadingText}>Đang tải thực đơn...</p>
         ) : (
           <>
-            <div className={styles.menuList}>
-              {menuItems.map((item) => (
-                <div key={item.itemId} className={styles.menuRow}>
-                  {item.thumbnail && (
-                    <img src={item.thumbnail} alt={item.itemName} className={styles.menuThumb} />
-                  )}
-                  <div className={styles.menuDetails}>
-                    <h4 className={styles.menuItemName}>{item.itemName}</h4>
-                    <p className={styles.menuItemPrice}>
-                      {item.basePrice.toLocaleString("vi-VN")} đ
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => addMenuItem(item.itemId)}
-                    className={styles.addMenuBtn}
-                  >
-                    + Thêm
-                  </button>
-                </div>
+            {/* Category tabs */}
+            <div className={styles.categoryTabs}>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`${styles.categoryTab} ${activeCategory === cat.id ? styles.categoryTabActive : ""}`}
+                  onClick={() => setActiveCategory(cat.id)}
+                >
+                  {cat.name}
+                </button>
               ))}
             </div>
 
+            {/* Menu list */}
+            <div className={styles.menuList}>
+              {filteredMenu.length === 0 ? (
+                <p className={styles.loadingText}>
+                  Không có món nào trong danh mục này.
+                </p>
+              ) : (
+                filteredMenu.map((item) => {
+                  const isSelected = selectedItems.has(item.itemId);
+                  return (
+                    <div
+                      key={item.itemId}
+                      className={`${styles.menuRow} ${isSelected ? styles.menuRowSelected : ""}`}
+                    >
+                      {item.thumbnail ? (
+                        <img
+                          src={item.thumbnail}
+                          alt={item.itemName}
+                          className={styles.menuThumb}
+                        />
+                      ) : (
+                        <div className={styles.menuThumbPlaceholder}>🍽️</div>
+                      )}
+                      <div className={styles.menuDetails}>
+                        <h4 className={styles.menuItemName}>
+                          {item.itemName}
+                          {item.unit && (
+                            <span className={styles.menuItemUnit}>
+                              {" "}
+                              ({item.unit})
+                            </span>
+                          )}
+                        </h4>
+                        <p className={styles.menuItemPrice}>
+                          {item.basePrice.toLocaleString("vi-VN")} đ
+                        </p>
+                        {item.categoryName && (
+                          <p className={styles.menuItemCategory}>
+                            {item.categoryName}
+                          </p>
+                        )}
+                      </div>
+                      {isSelected ? (
+                        <span className={styles.selectedBadge}>✓ Đã chọn</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => addMenuItem(item.itemId)}
+                          className={styles.addMenuBtn}
+                        >
+                          + Thêm
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Selected items summary */}
             {selectedItems.size > 0 && (
               <div className={styles.selectedList}>
-                <h4 className={styles.selectedTitle}>Món đã chọn ({selectedItems.size})</h4>
+                <h4 className={styles.selectedTitle}>
+                  Món đã chọn ({selectedItems.size})
+                </h4>
                 <div className={styles.selectedItems}>
-                  {Array.from(selectedItems.entries()).map(([itemId, quantity]) => {
-                    const item = menuItems.find(m => m.itemId === itemId);
-                    if (!item) return null;
-                    return (
-                      <div key={itemId} className={styles.selectedRow}>
-                        {item.thumbnail && (
-                          <img src={item.thumbnail} alt={item.itemName} className={styles.selectedThumb} />
-                        )}
-                        <div className={styles.selectedInfo}>
-                          <p className={styles.selectedName}>{item.itemName}</p>
-                          <p className={styles.selectedPrice}>
-                            {item.basePrice.toLocaleString("vi-VN")} đ
-                          </p>
+                  {Array.from(selectedItems.entries()).map(
+                    ([itemId, quantity]) => {
+                      const item = menuItems.find((m) => m.itemId === itemId);
+                      if (!item) return null;
+                      const lineTotal = item.basePrice * quantity;
+                      return (
+                        <div key={itemId} className={styles.selectedRow}>
+                          {item.thumbnail ? (
+                            <img
+                              src={item.thumbnail}
+                              alt={item.itemName}
+                              className={styles.selectedThumb}
+                            />
+                          ) : (
+                            <div className={styles.selectedThumbPlaceholder}>
+                              🍽️
+                            </div>
+                          )}
+                          <div className={styles.selectedInfo}>
+                            <p className={styles.selectedName}>
+                              {item.itemName}
+                              {item.unit && (
+                                <span
+                                  style={{ fontSize: "0.8em", color: "#888" }}
+                                >
+                                  {" "}
+                                  ({item.unit})
+                                </span>
+                              )}
+                            </p>
+                            <p className={styles.selectedPrice}>
+                              {item.basePrice.toLocaleString("vi-VN")} đ ×{" "}
+                              {quantity} ={" "}
+                              <strong>
+                                {lineTotal.toLocaleString("vi-VN")} đ
+                              </strong>
+                            </p>
+                          </div>
+                          <div className={styles.selectedQty}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(itemId, quantity - 1)
+                              }
+                              className={styles.qtyBtn}
+                            >
+                              −
+                            </button>
+                            <span className={styles.qtyValue}>{quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(itemId, quantity + 1)
+                              }
+                              className={styles.qtyBtn}
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
-                        <div className={styles.selectedQty}>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(itemId, quantity - 1)}
-                            className={styles.qtyBtn}
-                          >
-                            −
-                          </button>
-                          <span className={styles.qtyValue}>{quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(itemId, quantity + 1)}
-                            className={styles.qtyBtn}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    },
+                  )}
+                </div>
+
+                {/* Pricing summary */}
+                <div className={styles.pricingSummary}>
+                  <div className={styles.pricingRow}>
+                    <span>Tổng tạm tính:</span>
+                    <span className={styles.pricingTotal}>
+                      {totalAmount.toLocaleString("vi-VN")} đ
+                    </span>
+                  </div>
+                  <div
+                    className={styles.pricingRow}
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <span>Chia đều {numberOfTables} bàn:</span>
+                    <span>
+                      ≈ {amountPerTable.toLocaleString("vi-VN")} đ / bàn
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -386,7 +563,7 @@ export default function BookingForm() {
         )}
       </div>
 
-      {/* Special requests */}
+      {/* Step 4 – Special requests */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
           <span className={styles.step}>4</span>Yêu cầu đặc biệt
@@ -418,18 +595,24 @@ export default function BookingForm() {
           </>
         ) : (
           <>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
             Xác nhận đặt bàn
           </>
         )}
       </button>
 
-      {/* Success/Error Modal */}
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/dashboard", "/profile", "/orders", "/admin"];
+const PROTECTED_PATHS = ["/dashboard", "/profile", "/orders", "/manager"];
 const AUTH_PATHS = ["/login", "/register"];
 
 /** Parse datetime không có timezone từ backend (giờ VN) → thêm +07:00 */

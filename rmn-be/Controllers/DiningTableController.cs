@@ -34,7 +34,7 @@ public class DiningTableController : BaseController
     }
 
     /// <summary>Tạo bàn mới (Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDiningTableDTO dto)
     {
@@ -50,7 +50,7 @@ public class DiningTableController : BaseController
     }
 
     /// <summary>Cập nhật thông tin bàn (Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDiningTableDTO dto)
     {
@@ -67,7 +67,7 @@ public class DiningTableController : BaseController
     }
 
     /// <summary>Xóa bàn (soft delete, Admin)</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

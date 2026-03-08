@@ -35,7 +35,7 @@ export default function Header() {
     router.push("/login");
   }
 
-  const isAdmin = user?.roles.includes("Admin");
+  const isManager = user?.roles.includes("Manager");
   const isWarehouse = user?.roles.includes("Warehouse");
   const isCustomer = user?.roles.includes("Customer");
 
@@ -71,10 +71,10 @@ export default function Header() {
                 </Link>
               )}
 
-              {/* Admin panel shortcut */}
-              {isAdmin && (
-                <Link href="/admin" className={`btn btn-ghost ${styles.adminBtn}`}>
-                  Admin Panel
+              {/* Manager panel shortcut */}
+              {isManager && (
+                <Link href="/manager" className={`btn btn-ghost ${styles.adminBtn}`}>
+                  Manager Panel
                 </Link>
               )}
 
@@ -134,9 +134,9 @@ export default function Header() {
                       Lịch sử đặt bàn
                     </Link>
                   )}
-                  {isAdmin && (
+                  {isManager && (
                     <Link
-                      href="/admin"
+                      href="/manager"
                       className={styles.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
@@ -144,7 +144,7 @@ export default function Header() {
                         <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
                         <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
                       </svg>
-                      Admin Panel
+                      Manager Panel
                     </Link>
                   )}
                   {isWarehouse && (

@@ -29,9 +29,9 @@ function LoginForm() {
       // Cập nhật AuthContext (ghi cookie + set state ngay lập tức)
       auth.login(data);
 
-      // Admin → trang quản trị, role khác → redirect param hoặc trang chủ
-      if (data.roles.includes("Admin")) {
-        router.push("/admin");
+      // Manager → trang quản trị, role khác → redirect param hoặc trang chủ
+      if (data.roles.includes("Manager")) {
+        router.push("/manager");
       } else {
         const redirect = searchParams.get("redirect") ?? "/";
         router.push(redirect);

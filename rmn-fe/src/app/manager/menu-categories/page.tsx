@@ -2,32 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-    getTables, createTable, updateTable, deleteTable,
-    type DiningTable, type CreateDiningTableRequest, type UpdateDiningTableRequest,
+    getMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
+    type MenuCategory, type CreateMenuCategoryRequest, type UpdateMenuCategoryRequest,
 } from "../../../lib/api/admin";
-import styles from "../admin.module.css";
-
-const STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED"];
-
-function statusBadge(status: string, isActive: boolean) {
-    if (!isActive) return <span className={`${styles.badge} ${styles.badgeInactive}`}>Ngừng hoạt động</span>;
-    const cls = status === "AVAILABLE" ? styles.badgeAvailable
-        : status === "OCCUPIED" ? styles.badgeOccupied
-            : styles.badgeReserved;
-    const label = status === "AVAILABLE" ? "Trống" : status === "OCCUPIED" ? "Đang dùng" : "Đã đặt";
-    return <span className={`${styles.badge} ${cls}`}>{label}</span>;
-}
+import styles from "../manager.module.css";
 
 // ── Create Modal ─────────────────────────────────────────────────
 function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-    const [form, setForm] = useState<CreateDiningTableRequest>({ tableCode: "", tableName: "", capacity: 4, status: "AVAILABLE" });
+    const [form, setForm] = useState<CreateMenuCategoryRequest>({ categoryName: "", description: "", displayOrder: 0 });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     async function handleSave() {
-        if (!form.tableCode.trim()) { setError("Mã bàn không được để trống"); return; }
+        if (!form.categoryName.trim()) { setError("Tên danh mục không được để trống"); return; }
         setSaving(true); setError(null);
-        try { await createTable(form); onSaved(); onClose(); }
+        try { await createMenuCategory(form); onSaved(); onClose(); }
         catch (e: unknown) { setError((e as Error).message); }
         finally { setSaving(false); }
     }
@@ -36,37 +25,30 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className={styles.modal}>
                 <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Thêm bàn mới</span>
+                    <span className={styles.modalTitle}>Thêm danh mục</span>
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.modalBody}>
                     {error && <div className={styles.modalError}>{error}</div>}
                     <div className={styles.field}>
-                        <label className={styles.label}>Mã bàn *</label>
-                        <input id="create-tableCode" className={styles.input} placeholder="VD: T01" value={form.tableCode}
-                            onChange={(e) => setForm({ ...form, tableCode: e.target.value })} />
+                        <label className={styles.label}>Tên danh mục *</label>
+                        <input id="create-catName" className={styles.input} placeholder="VD: Khai vị"
+                            value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} />
                     </div>
                     <div className={styles.field}>
-                        <label className={styles.label}>Tên bàn</label>
-                        <input id="create-tableName" className={styles.input} placeholder="VD: Bàn VIP 01" value={form.tableName ?? ""}
-                            onChange={(e) => setForm({ ...form, tableName: e.target.value })} />
+                        <label className={styles.label}>Mô tả</label>
+                        <input className={styles.input} placeholder="Mô tả ngắn..."
+                            value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                     </div>
                     <div className={styles.field}>
-                        <label className={styles.label}>Sức chứa (người)</label>
-                        <input id="create-capacity" className={styles.input} type="number" min={1} value={form.capacity}
-                            onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
-                    </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Trạng thái</label>
-                        <select id="create-status" className={styles.select} value={form.status}
-                            onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                        <label className={styles.label}>Thứ tự hiển thị</label>
+                        <input className={styles.input} type="number" min={0}
+                            value={form.displayOrder} onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })} />
                     </div>
                 </div>
                 <div className={styles.modalFoot}>
                     <button className={styles.btnCancel} onClick={onClose}>Huỷ</button>
-                    <button id="create-save" className={styles.btnSave} onClick={handleSave} disabled={saving}>
+                    <button id="create-cat-save" className={styles.btnSave} onClick={handleSave} disabled={saving}>
                         {saving ? "Đang lưu..." : "Lưu"}
                     </button>
                 </div>
@@ -76,17 +58,17 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 }
 
 // ── Edit Modal ───────────────────────────────────────────────────
-function EditModal({ table, onClose, onSaved }: { table: DiningTable; onClose: () => void; onSaved: () => void }) {
-    const [form, setForm] = useState<UpdateDiningTableRequest>({
-        tableCode: table.tableCode, tableName: table.tableName ?? "", capacity: table.capacity,
-        status: table.status, isActive: table.isActive,
+function EditModal({ cat, onClose, onSaved }: { cat: MenuCategory; onClose: () => void; onSaved: () => void }) {
+    const [form, setForm] = useState<UpdateMenuCategoryRequest>({
+        categoryName: cat.categoryName, description: cat.description ?? "",
+        displayOrder: cat.displayOrder, isActive: cat.isActive,
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     async function handleSave() {
         setSaving(true); setError(null);
-        try { await updateTable(table.tableId, form); onSaved(); onClose(); }
+        try { await updateMenuCategory(cat.categoryId, form); onSaved(); onClose(); }
         catch (e: unknown) { setError((e as Error).message); }
         finally { setSaving(false); }
     }
@@ -95,33 +77,28 @@ function EditModal({ table, onClose, onSaved }: { table: DiningTable; onClose: (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className={styles.modal}>
                 <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Sửa bàn — {table.tableCode}</span>
+                    <span className={styles.modalTitle}>Sửa — {cat.categoryName}</span>
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.modalBody}>
                     {error && <div className={styles.modalError}>{error}</div>}
                     <div className={styles.field}>
-                        <label className={styles.label}>Mã bàn</label>
-                        <input className={styles.input} value={form.tableCode ?? ""} onChange={(e) => setForm({ ...form, tableCode: e.target.value })} />
+                        <label className={styles.label}>Tên danh mục</label>
+                        <input className={styles.input} value={form.categoryName ?? ""}
+                            onChange={(e) => setForm({ ...form, categoryName: e.target.value })} />
                     </div>
                     <div className={styles.field}>
-                        <label className={styles.label}>Tên bàn</label>
-                        <input className={styles.input} value={form.tableName ?? ""} onChange={(e) => setForm({ ...form, tableName: e.target.value })} />
+                        <label className={styles.label}>Mô tả</label>
+                        <input className={styles.input} value={form.description ?? ""}
+                            onChange={(e) => setForm({ ...form, description: e.target.value })} />
                     </div>
                     <div className={styles.field}>
-                        <label className={styles.label}>Sức chứa</label>
-                        <input className={styles.input} type="number" min={1} value={form.capacity ?? table.capacity}
-                            onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
-                    </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Trạng thái</label>
-                        <select className={styles.select} value={form.status ?? table.status}
-                            onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                        <label className={styles.label}>Thứ tự hiển thị</label>
+                        <input className={styles.input} type="number" min={0} value={form.displayOrder ?? cat.displayOrder}
+                            onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })} />
                     </div>
                     <label className={styles.checkRow}>
-                        <input type="checkbox" checked={form.isActive ?? table.isActive}
+                        <input type="checkbox" checked={form.isActive ?? cat.isActive}
                             onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
                         Còn hoạt động
                     </label>
@@ -138,11 +115,11 @@ function EditModal({ table, onClose, onSaved }: { table: DiningTable; onClose: (
 }
 
 // ── Delete Modal ─────────────────────────────────────────────────
-function DeleteModal({ table, onClose, onSaved }: { table: DiningTable; onClose: () => void; onSaved: () => void }) {
+function DeleteModal({ cat, onClose, onSaved }: { cat: MenuCategory; onClose: () => void; onSaved: () => void }) {
     const [saving, setSaving] = useState(false);
     async function handleDelete() {
         setSaving(true);
-        try { await deleteTable(table.tableId); onSaved(); onClose(); }
+        try { await deleteMenuCategory(cat.categoryId); onSaved(); onClose(); }
         catch { /* ignore */ }
         finally { setSaving(false); }
     }
@@ -154,8 +131,7 @@ function DeleteModal({ table, onClose, onSaved }: { table: DiningTable; onClose:
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>🗑️</div>
-                    <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá bàn <strong>{table.tableCode}</strong>?<br />Bàn sẽ bị đánh dấu không hoạt động.</p>
+                    <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá danh mục <strong>{cat.categoryName}</strong>?</p>
                 </div>
                 <div className={styles.modalFoot}>
                     <button className={styles.btnCancel} onClick={onClose}>Huỷ</button>
@@ -167,31 +143,33 @@ function DeleteModal({ table, onClose, onSaved }: { table: DiningTable; onClose:
 }
 
 // ── Page ─────────────────────────────────────────────────────────
-export default function DiningTablesPage() {
-    const [tables, setTables] = useState<DiningTable[]>([]);
+export default function MenuCategoriesPage() {
+    const [cats, setCats] = useState<MenuCategory[]>([]);
     const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState<{ type: "create" | "edit" | "delete"; table?: DiningTable } | null>(null);
+    const [modal, setModal] = useState<{ type: "create" | "edit" | "delete"; cat?: MenuCategory } | null>(null);
 
     // Filter & Pagination state
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState("ALL"); // ALL, AVAILABLE, OCCUPIED, RESERVED
+    const [filterStatus, setFilterStatus] = useState("ALL");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
     const load = useCallback(async () => {
         setLoading(true);
-        try { setTables(await getTables()); }
-        catch { setTables([]); }
+        try { setCats(await getMenuCategories()); }
+        catch { setCats([]); }
         finally { setLoading(false); }
     }, []);
 
     useEffect(() => { void load(); }, [load]);
 
     // Derived state
-    const filteredItems = tables.filter(t => {
-        const matchSearch = t.tableCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            (t.tableName || "").toLowerCase().includes(searchTerm.toLowerCase());
-        const matchStatus = filterStatus === "ALL" || t.status === filterStatus;
+    const filteredItems = cats.filter(c => {
+        const matchSearch = c.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (c.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = filterStatus === "ALL" 
+            || (filterStatus === "ACTIVE" && c.isActive) 
+            || (filterStatus === "INACTIVE" && !c.isActive);
         return matchSearch && matchStatus;
     });
 
@@ -204,11 +182,11 @@ export default function DiningTablesPage() {
                 <div className={styles.cardHeader}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
-                            <h1 className={styles.cardTitle}>Quản lý bàn ăn</h1>
-                            <p className={styles.pageSubtitle}>Danh sách bàn — {tables.length} bàn</p>
+                            <h1 className={styles.cardTitle}>Danh mục menu</h1>
+                            <p className={styles.pageSubtitle}>Quản lý danh mục — {cats.length} danh mục</p>
                         </div>
-                        <button id="add-table-btn" className={styles.btnAdd} onClick={() => setModal({ type: "create" })}>
-                            + Thêm bàn
+                        <button id="add-category-btn" className={styles.btnAdd} onClick={() => setModal({ type: "create" })}>
+                            + Thêm danh mục
                         </button>
                     </div>
                 </div>
@@ -218,7 +196,7 @@ export default function DiningTablesPage() {
                         <input 
                             type="text" 
                             className={styles.searchInput}
-                            placeholder="Tìm theo mã bàn, tên bàn..." 
+                            placeholder="Tìm tên, mô tả..." 
                             value={searchTerm} 
                             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
                         />
@@ -229,9 +207,8 @@ export default function DiningTablesPage() {
                             onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                         >
                             <option value="ALL">Tất cả trạng thái</option>
-                            <option value="AVAILABLE">Trống</option>
-                            <option value="OCCUPIED">Đang dùng</option>
-                            <option value="RESERVED">Đã đặt</option>
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="INACTIVE">Ngừng hoạt động</option>
                         </select>
                     </div>
 
@@ -240,35 +217,33 @@ export default function DiningTablesPage() {
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Mã bàn</th>
-                            <th>Tên bàn</th>
-                            <th>Sức chứa</th>
+                            <th>Tên danh mục</th>
+                            <th>Mô tả</th>
+                            <th>Thứ tự</th>
                             <th>Trạng thái</th>
-                            <th>Hoạt động</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={7} className={styles.loading}>Đang tải...</td></tr>
+                            <tr><td colSpan={6} className={styles.loading}>Đang tải...</td></tr>
                         ) : paginatedItems.length === 0 ? (
-                            <tr><td colSpan={7} className={styles.empty}>Chưa có bàn nào phù hợp</td></tr>
-                        ) : paginatedItems.map((t, i) => (
-                            <tr key={t.tableId}>
+                            <tr><td colSpan={6} className={styles.empty}>Chưa có danh mục nào phù hợp</td></tr>
+                        ) : paginatedItems.map((c, i) => (
+                            <tr key={c.categoryId}>
                                 <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
-                                <td><strong>{t.tableCode}</strong></td>
-                                <td>{t.tableName ?? "—"}</td>
-                                <td>{t.capacity} người</td>
-                                <td>{statusBadge(t.status, t.isActive)}</td>
+                                <td><strong>{c.categoryName}</strong></td>
+                                <td>{c.description ?? "—"}</td>
+                                <td>{c.displayOrder}</td>
                                 <td>
-                                    <span className={`${styles.badge} ${t.isActive ? styles.badgeActive : styles.badgeInactive}`}>
-                                        {t.isActive ? "Có" : "Không"}
+                                    <span className={`${styles.badge} ${c.isActive ? styles.badgeActive : styles.badgeInactive}`}>
+                                        {c.isActive ? "Hoạt động" : "Ngừng"}
                                     </span>
                                 </td>
                                 <td>
                                     <div className={styles.btnRow}>
-                                        <button className={styles.btnEdit} onClick={() => setModal({ type: "edit", table: t })}>Sửa</button>
-                                        <button className={styles.btnDelete} onClick={() => setModal({ type: "delete", table: t })}>Xoá</button>
+                                        <button className={styles.btnEdit} onClick={() => setModal({ type: "edit", cat: c })}>Sửa</button>
+                                        <button className={styles.btnDelete} onClick={() => setModal({ type: "delete", cat: c })}>Xoá</button>
                                     </div>
                                 </td>
                             </tr>
@@ -279,7 +254,7 @@ export default function DiningTablesPage() {
                     {totalPages > 1 && (
                         <div className={styles.pagination}>
                             <div className={styles.pageInfo}>
-                                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} bàn ăn
+                                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} danh mục
                             </div>
                             <div className={styles.paginationControls}>
                                 <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
@@ -295,8 +270,8 @@ export default function DiningTablesPage() {
             </div>
 
             {modal?.type === "create" && <CreateModal onClose={() => setModal(null)} onSaved={load} />}
-            {modal?.type === "edit" && modal.table && <EditModal table={modal.table} onClose={() => setModal(null)} onSaved={load} />}
-            {modal?.type === "delete" && modal.table && <DeleteModal table={modal.table} onClose={() => setModal(null)} onSaved={load} />}
+            {modal?.type === "edit" && modal.cat && <EditModal cat={modal.cat} onClose={() => setModal(null)} onSaved={load} />}
+            {modal?.type === "delete" && modal.cat && <DeleteModal cat={modal.cat} onClose={() => setModal(null)} onSaved={load} />}
         </>
     );
 }

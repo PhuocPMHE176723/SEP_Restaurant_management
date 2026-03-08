@@ -31,7 +31,7 @@ public class CategoryController : BaseController
         return Success(category);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
     public async Task<IActionResult> CreateCategory(CreateCategoryDTO createDto)
     {
@@ -46,7 +46,7 @@ public class CategoryController : BaseController
         }
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCategory(int id, UpdateCategoryDTO updateDto)
     {
@@ -62,7 +62,7 @@ public class CategoryController : BaseController
         }
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Manager")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {

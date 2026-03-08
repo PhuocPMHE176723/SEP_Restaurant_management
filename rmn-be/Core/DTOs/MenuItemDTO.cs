@@ -7,6 +7,7 @@ public class MenuItemDTO
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = null!;
     public string ItemName { get; set; } = null!;
+    public string? Unit { get; set; }
     public string? Description { get; set; }
     public decimal BasePrice { get; set; }
     public string? Thumbnail { get; set; }
@@ -18,6 +19,7 @@ public class CreateMenuItemDTO
 {
     public int CategoryId { get; set; }
     public string ItemName { get; set; } = null!;
+    public string? Unit { get; set; }
     public string? Description { get; set; }
     public decimal BasePrice { get; set; }
     public string? Thumbnail { get; set; }   // URL từ Cloudinary (upload trước)
@@ -27,6 +29,7 @@ public class UpdateMenuItemDTO
 {
     public int? CategoryId { get; set; }
     public string? ItemName { get; set; }
+    public string? Unit { get; set; }
     public string? Description { get; set; }
     public decimal? BasePrice { get; set; }
     public string? Thumbnail { get; set; }

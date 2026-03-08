@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getIngredients, createIngredient, updateIngredient, deleteIngredient, getIngredientPriceHistory } from "../../../lib/api/warehouse";
-import styles from "../../admin/admin.module.css";
+import styles from "../../manager/manager.module.css";
 import Swal from 'sweetalert2';
 
 import { IngredientResponse as Ingredient } from "../../../types/models";

@@ -53,6 +53,7 @@ export interface MenuItem {
     categoryId: number;
     categoryName: string;
     itemName: string;
+    unit?: string | null;
     description?: string | null;
     basePrice: number;
     thumbnail?: string | null;
@@ -63,6 +64,7 @@ export interface MenuItem {
 export interface CreateMenuItemRequest {
     categoryId: number;
     itemName: string;
+    unit?: string;
     description?: string;
     basePrice: number;
     thumbnail?: string;
@@ -71,6 +73,7 @@ export interface CreateMenuItemRequest {
 export interface UpdateMenuItemRequest {
     categoryId?: number;
     itemName?: string;
+    unit?: string;
     description?: string;
     basePrice?: number;
     thumbnail?: string;
@@ -148,7 +151,7 @@ export async function deleteMenuCategory(id: number): Promise<void> {
 
 // ── MenuItem API ──────────────────────────────────────────────────
 export async function getMenuItems(categoryId?: number): Promise<MenuItem[]> {
-    const url = categoryId 
+    const url = categoryId
         ? `${apiBaseUrl}/api/menuitem?categoryId=${categoryId}`
         : `${apiBaseUrl}/api/menuitem`;
     const res = await fetch(url, { headers: authHeaders(), cache: "no-store" });
@@ -180,7 +183,7 @@ export async function uploadMenuImage(file: File): Promise<{ url: string }> {
     const token = getToken();
     const formData = new FormData();
     formData.append("file", file);
-    
+
     const res = await fetch(`${apiBaseUrl}/api/menuitem/upload-image`, {
         method: "POST",
         headers: {
@@ -188,6 +191,6 @@ export async function uploadMenuImage(file: File): Promise<{ url: string }> {
         },
         body: formData,
     });
-    
+
     return handleResponse<{ url: string }>(res);
 }

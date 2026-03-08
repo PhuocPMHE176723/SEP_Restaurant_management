@@ -414,6 +414,151 @@
     margin-top: var(--space-1);
 }
 
+/* Optional tag */
+.optionalTag {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+/* Table auto-calculation badge */
+.tableBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.06));
+    border: 1.5px solid rgba(249,115,22,0.3);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    width: fit-content;
+}
+
+.tableBadgeIcon {
+    font-size: 1rem;
+}
+
+.tableBadgeNum {
+    color: var(--brand-primary);
+    font-size: 1.1rem;
+}
+
+.tableBadgeSub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Category tabs */
+.categoryTabs {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.categoryTab {
+    padding: var(--space-2) var(--space-4);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: all var(--t-fast);
+    cursor: pointer;
+}
+
+.categoryTab:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+}
+
+.categoryTabActive {
+    background: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+    box-shadow: var(--shadow-orange);
+}
+
+/* Menu row selected */
+.menuRowSelected {
+    border-color: var(--brand-primary) !important;
+    background: rgba(249,115,22,0.04) !important;
+}
+
+/* Menu item extras */
+.menuItemUnit {
+    font-size: 0.8em;
+    color: #888;
+    font-weight: normal;
+}
+
+.menuItemCategory {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.menuThumbPlaceholder,
+.selectedThumbPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-muted);
+    border-radius: var(--radius-md);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.menuThumbPlaceholder {
+    width: 60px;
+    height: 60px;
+}
+
+.selectedThumbPlaceholder {
+    width: 50px;
+    height: 50px;
+}
+
+/* Selected badge */
+.selectedBadge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    background: rgba(249,115,22,0.1);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+/* Pricing summary */
+.pricingSummary {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.pricingRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.pricingTotal {
+    color: var(--brand-primary);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
 @media (max-width: 640px) {
     .row {
         grid-template-columns: 1fr;
@@ -432,5 +577,14 @@
     .addMenuBtn {
         padding: var(--space-2) var(--space-3);
         font-size: 0.8rem;
+    }
+
+    .categoryTabs {
+        gap: var(--space-1);
+    }
+
+    .categoryTab {
+        font-size: 0.82rem;
+        padding: var(--space-1) var(--space-3);
     }
 }

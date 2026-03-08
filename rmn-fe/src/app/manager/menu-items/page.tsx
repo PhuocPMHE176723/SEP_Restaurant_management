@@ -5,7 +5,7 @@ import {
     getMenuItems, getMenuCategories, createMenuItem, updateMenuItem, deleteMenuItem, uploadMenuImage,
     type MenuItem, type MenuCategory, type CreateMenuItemRequest, type UpdateMenuItemRequest,
 } from "../../../lib/api/admin";
-import styles from "../admin.module.css";
+import styles from "../manager.module.css";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -83,7 +83,7 @@ function ImageUpload({ value, onChange, onFileChange }: ImageUploadProps) {
 
 // ── Create Modal ──────────────────────────────────────────────────
 function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategory[]; onClose: () => void; onSaved: () => void }) {
-    const [form, setForm] = useState<CreateMenuItemRequest>({ categoryId: 0, itemName: "", description: "", basePrice: 0, thumbnail: undefined });
+    const [form, setForm] = useState<CreateMenuItemRequest>({ categoryId: 0, itemName: "", unit: "", description: "", basePrice: 0, thumbnail: undefined });
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [saving, setSaving] = useState(false);
@@ -132,6 +132,32 @@ function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategor
                             value={form.itemName}
                             onChange={(e) => setForm({ ...form, itemName: e.target.value })}
                         />
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>Đơn vị / Định lượng (Sz, Phần, Con...)</label>
+                        <input
+                            className={styles.input}
+                            list="unit-options-create"
+                            placeholder="VD: Phần, Sz L, Con, Kg..."
+                            value={form.unit ?? ""}
+                            onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                        />
+                        <datalist id="unit-options-create">
+                            <option value="Phần" />
+                            <option value="Suất" />
+                            <option value="Con" />
+                            <option value="Kg" />
+                            <option value="100g" />
+                            <option value="Sz S" />
+                            <option value="Sz M" />
+                            <option value="Sz L" />
+                            <option value="Sz XL" />
+                            <option value="Lon" />
+                            <option value="Chai" />
+                            <option value="Ly" />
+                            <option value="Túi" />
+                        </datalist>
                     </div>
 
                     <div className={styles.field}>
@@ -193,6 +219,7 @@ function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategor
 function EditModal({ item, categories, onClose, onSaved }: { item: MenuItem; categories: MenuCategory[]; onClose: () => void; onSaved: () => void }) {
     const [form, setForm] = useState<UpdateMenuItemRequest>({
         itemName: item.itemName,
+        unit: item.unit ?? "",
         categoryId: item.categoryId,
         description: item.description ?? "",
         basePrice: item.basePrice,
@@ -242,6 +269,32 @@ function EditModal({ item, categories, onClose, onSaved }: { item: MenuItem; cat
                             value={form.itemName ?? ""}
                             onChange={(e) => setForm({ ...form, itemName: e.target.value })}
                         />
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>Đơn vị / Định lượng</label>
+                        <input
+                            className={styles.input}
+                            list="unit-options-edit"
+                            placeholder="VD: Phần, Sz L, Con, Kg..."
+                            value={form.unit ?? ""}
+                            onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                        />
+                        <datalist id="unit-options-edit">
+                            <option value="Phần" />
+                            <option value="Suất" />
+                            <option value="Con" />
+                            <option value="Kg" />
+                            <option value="100g" />
+                            <option value="Sz S" />
+                            <option value="Sz M" />
+                            <option value="Sz L" />
+                            <option value="Sz XL" />
+                            <option value="Lon" />
+                            <option value="Chai" />
+                            <option value="Ly" />
+                            <option value="Túi" />
+                        </datalist>
                     </div>
 
                     <div className={styles.field}>
@@ -323,7 +376,6 @@ function DeleteModal({ item, onClose, onSaved }: { item: MenuItem; onClose: () =
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>🗑️</div>
                     <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá món <strong>{item.itemName}</strong>?</p>
                 </div>
                 <div className={styles.modalFoot}>
@@ -347,7 +399,7 @@ export default function MenuItemsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("ALL");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = 6;
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -439,6 +491,7 @@ export default function MenuItemsPage() {
                             <th>#</th>
                             <th>Ảnh</th>
                             <th>Tên món</th>
+                            <th>ĐVT</th>
                             <th>Danh mục</th>
                             <th>Mô tả</th>
                             <th>Giá</th>
@@ -458,10 +511,11 @@ export default function MenuItemsPage() {
                                     {item.thumbnail ? (
                                         <img src={item.thumbnail} alt={item.itemName} className={styles.thumbnail} />
                                     ) : (
-                                        <div className={styles.noImage}>🍽️</div>
+                                        <div className={styles.noImage}>Sửa ảnh</div>
                                     )}
                                 </td>
                                 <td><strong>{item.itemName}</strong></td>
+                                <td>{item.unit ?? "—"}</td>
                                 <td>{item.categoryName}</td>
                                 <td>{item.description ?? "—"}</td>
                                 <td>{formatPrice(item.basePrice)}</td>
