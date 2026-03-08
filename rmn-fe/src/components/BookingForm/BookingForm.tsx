@@ -74,11 +74,17 @@ export default function BookingForm() {
     setErrors((e) => ({ ...e, [field]: "" }));
   }
 
+  const numberOfTables = Math.ceil((form.partySize || 1) / 8);
+
   function addMenuItem(itemId: number) {
     setSelectedItems((prev) => {
       const newMap = new Map(prev);
       const currentQty = newMap.get(itemId) || 0;
-      newMap.set(itemId, Math.min(currentQty + 1, 50));
+      if (currentQty === 0) {
+        newMap.set(itemId, numberOfTables); // initially add 1 per table
+      } else {
+        newMap.set(itemId, currentQty + 1);
+      }
       return newMap;
     });
   }
@@ -91,7 +97,7 @@ export default function BookingForm() {
         return newMap;
       });
     } else {
-      setSelectedItems((prev) => new Map(prev).set(itemId, Math.min(quantity, 50)));
+      setSelectedItems((prev) => new Map(prev).set(itemId, quantity));
     }
   }
 
@@ -120,8 +126,8 @@ export default function BookingForm() {
       e.timeSlot = "Vui lòng chọn giờ";
     }
     
-    if (form.partySize < 1 || form.partySize > 50) {
-      e.partySize = "Số khách phải từ 1 đến 50 người";
+    if (form.partySize < 1) {
+      e.partySize = "Số khách phải từ 1 trở lên";
     }
     
     setErrors(e);
@@ -291,12 +297,11 @@ export default function BookingForm() {
         {/* Party size */}
         <div className={styles.field}>
           <label className={styles.label}>
-            Số khách: <strong>{form.partySize} người</strong> (Tối đa 50)
+            Số khách: <strong>{form.partySize} người</strong> (Dự kiến: {numberOfTables} bàn 8 người)
           </label>
           <input
             type="number"
             min="1"
-            max="50"
             value={form.partySize}
             onChange={(e) => set("partySize", parseInt(e.target.value) || 1)}
             className={styles.input}
@@ -325,7 +330,7 @@ export default function BookingForm() {
                     <img src={item.thumbnail} alt={item.itemName} className={styles.menuThumb} />
                   )}
                   <div className={styles.menuDetails}>
-                    <h4 className={styles.menuItemName}>{item.itemName}</h4>
+                    <h4 className={styles.menuItemName}>{item.itemName} {item.unit && <span style={{ fontSize: '0.85em', color: '#666', fontWeight: 'normal' }}>({item.unit})</span>}</h4>
                     <p className={styles.menuItemPrice}>
                       {item.basePrice.toLocaleString("vi-VN")} đ
                     </p>
@@ -354,7 +359,7 @@ export default function BookingForm() {
                           <img src={item.thumbnail} alt={item.itemName} className={styles.selectedThumb} />
                         )}
                         <div className={styles.selectedInfo}>
-                          <p className={styles.selectedName}>{item.itemName}</p>
+                          <p className={styles.selectedName}>{item.itemName} {item.unit && <span style={{ fontSize: '0.85em', color: '#666' }}>({item.unit})</span>}</p>
                           <p className={styles.selectedPrice}>
                             {item.basePrice.toLocaleString("vi-VN")} đ
                           </p>
@@ -380,6 +385,26 @@ export default function BookingForm() {
                     );
                   })}
                 </div>
+                {(() => {
+                  const totalAmount = Array.from(selectedItems.entries()).reduce((sum, [id, qty]) => {
+                    const i = menuItems.find(m => m.itemId === id);
+                    return sum + (i ? i.basePrice * qty : 0);
+                  }, 0);
+                  const amountPerTable = numberOfTables > 0 ? totalAmount / numberOfTables : 0;
+                  
+                  return (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#333' }}>
+                        <span><strong>Tổng tạm tính:</strong></span>
+                        <span style={{ color: '#d9534f', fontWeight: 'bold' }}>{totalAmount.toLocaleString("vi-VN")} đ</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', fontSize: '0.95rem' }}>
+                        <span>Dự kiến chia mỗi bàn ({numberOfTables} bàn):</span>
+                        <span>{Math.round(amountPerTable).toLocaleString("vi-VN")} đ</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </>

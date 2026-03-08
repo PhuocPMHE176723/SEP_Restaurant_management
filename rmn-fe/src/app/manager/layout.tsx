@@ -24,11 +24,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     useEffect(() => {
         if (!mounted) return;
         if (!isLoggedIn) { router.replace("/login?redirect=/manager"); return; }
-        if (!user?.roles.includes("Manager")) { router.replace("/"); }
+        if (!user?.roles.includes("Manager") && !user?.roles.includes("Admin")) { router.replace("/"); }
     }, [mounted, isLoggedIn, user, router]);
 
     // Chờ hydration hoặc đang chờ auth state
-    if (!mounted || !isLoggedIn || !user?.roles.includes("Manager")) {
+    if (!mounted || !isLoggedIn || (!user?.roles.includes("Manager") && !user?.roles.includes("Admin"))) {
         return (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100svh", color: "#94a3b8", fontSize: "0.9rem" }}>
                 Đang kiểm tra quyền truy cập...

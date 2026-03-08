@@ -83,7 +83,7 @@ function ImageUpload({ value, onChange, onFileChange }: ImageUploadProps) {
 
 // ── Create Modal ──────────────────────────────────────────────────
 function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategory[]; onClose: () => void; onSaved: () => void }) {
-    const [form, setForm] = useState<CreateMenuItemRequest>({ categoryId: 0, itemName: "", description: "", basePrice: 0, thumbnail: undefined });
+    const [form, setForm] = useState<CreateMenuItemRequest>({ categoryId: 0, itemName: "", unit: "", description: "", basePrice: 0, thumbnail: undefined });
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [saving, setSaving] = useState(false);
@@ -131,6 +131,16 @@ function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategor
                             placeholder="VD: Phở bò"
                             value={form.itemName}
                             onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+                        />
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>Đơn vị tính (Sz, Phần, Con...)</label>
+                        <input
+                            className={styles.input}
+                            placeholder="VD: Phần, Sz L, Con"
+                            value={form.unit ?? ""}
+                            onChange={(e) => setForm({ ...form, unit: e.target.value })}
                         />
                     </div>
 
@@ -193,6 +203,7 @@ function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategor
 function EditModal({ item, categories, onClose, onSaved }: { item: MenuItem; categories: MenuCategory[]; onClose: () => void; onSaved: () => void }) {
     const [form, setForm] = useState<UpdateMenuItemRequest>({
         itemName: item.itemName,
+        unit: item.unit ?? "",
         categoryId: item.categoryId,
         description: item.description ?? "",
         basePrice: item.basePrice,
@@ -241,6 +252,15 @@ function EditModal({ item, categories, onClose, onSaved }: { item: MenuItem; cat
                             className={styles.input}
                             value={form.itemName ?? ""}
                             onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+                        />
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>Đơn vị tính</label>
+                        <input
+                            className={styles.input}
+                            value={form.unit ?? ""}
+                            onChange={(e) => setForm({ ...form, unit: e.target.value })}
                         />
                     </div>
 
@@ -439,6 +459,7 @@ export default function MenuItemsPage() {
                             <th>#</th>
                             <th>Ảnh</th>
                             <th>Tên món</th>
+                            <th>ĐVT</th>
                             <th>Danh mục</th>
                             <th>Mô tả</th>
                             <th>Giá</th>
@@ -462,6 +483,7 @@ export default function MenuItemsPage() {
                                     )}
                                 </td>
                                 <td><strong>{item.itemName}</strong></td>
+                                <td>{item.unit ?? "—"}</td>
                                 <td>{item.categoryName}</td>
                                 <td>{item.description ?? "—"}</td>
                                 <td>{formatPrice(item.basePrice)}</td>

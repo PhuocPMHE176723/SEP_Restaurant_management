@@ -8,6 +8,7 @@ export interface MenuItem {
     categoryId: number;
     categoryName: string;
     itemName: string;
+    unit?: string | null;
     description?: string | null;
     basePrice: number;
     thumbnail?: string | null;
@@ -79,9 +80,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ── Menu Items API (Public) ───────────────────────────────────
 export async function getPublicMenuItems(): Promise<MenuItem[]> {
-    const res = await fetch(`${apiBaseUrl}/api/menuitem`, { 
+    const res = await fetch(`${apiBaseUrl}/api/menuitem`, {
         headers: { "Content-Type": "application/json" },
-        cache: "no-store" 
+        cache: "no-store"
     });
     return handleResponse<MenuItem[]>(res);
 }

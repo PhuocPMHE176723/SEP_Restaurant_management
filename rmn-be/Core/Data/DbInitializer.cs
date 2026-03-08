@@ -40,6 +40,9 @@ public static class DbInitializer
 
         // Seed system configurations
         await SeedSystemConfig(serviceProvider);
+
+        // Seed restaurant management data
+        await SeedRestaurantData(serviceProvider);
     }
 
     private static async Task SeedUser(
@@ -96,6 +99,16 @@ public static class DbInitializer
                 new LoyaltyTier { TierName = "Bạc", MinPoints = 100, DiscountRate = 5, IsActive = true },
                 new LoyaltyTier { TierName = "Vàng", MinPoints = 500, DiscountRate = 10, IsActive = true },
                 new LoyaltyTier { TierName = "Kim Cương", MinPoints = 1000, DiscountRate = 15, IsActive = true }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        if (!context.DiscountCodes.Any())
+        {
+            context.DiscountCodes.AddRange(
+                new DiscountCode { Code = "WELCOME10", DiscountType = "PERCENT", DiscountValue = 10, MinOrderValue = 100000, MaxDiscountAmount = 50000, IsActive = true },
+                new DiscountCode { Code = "TET2026", DiscountType = "PERCENT", DiscountValue = 15, MinOrderValue = 500000, MaxDiscountAmount = 100000, IsActive = true },
+                new DiscountCode { Code = "GIAM50K", DiscountType = "AMOUNT", DiscountValue = 50000, MinOrderValue = 300000, IsActive = true }
             );
             await context.SaveChangesAsync();
         }
@@ -230,6 +243,90 @@ public static class DbInitializer
                     await context.SaveChangesAsync();
                 }
             }
+        }
+    }
+
+    private static async Task SeedRestaurantData(IServiceProvider serviceProvider)
+    {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+
+        // Wipe existing to force full data for manager testing
+        if (context.MenuItems.Any()) {
+            context.MenuItems.RemoveRange(context.MenuItems);
+            await context.SaveChangesAsync();
+        }
+        if (context.MenuCategories.Any()) {
+            context.MenuCategories.RemoveRange(context.MenuCategories);
+            await context.SaveChangesAsync();
+        }
+        if (context.DiningTables.Any()) {
+            context.DiningTables.RemoveRange(context.DiningTables);
+            await context.SaveChangesAsync();
+        }
+
+        // 1. Seed Menu Categories
+        if (!context.MenuCategories.Any())
+        {
+            var categories = new List<MenuCategory>
+            {
+                new MenuCategory { CategoryName = "Món Khai Vị", Description = "Các món ăn nhẹ đầu bữa", DisplayOrder = 1, IsActive = true },
+                new MenuCategory { CategoryName = "Món Chính", Description = "Các món chính đậm đà", DisplayOrder = 2, IsActive = true },
+                new MenuCategory { CategoryName = "Lẩu & Nướng", Description = "Thích hợp cho đi đông người", DisplayOrder = 3, IsActive = true },
+                new MenuCategory { CategoryName = "Tráng Miệng", Description = "Đồ ngọt và trái cây", DisplayOrder = 4, IsActive = true },
+                new MenuCategory { CategoryName = "Đồ Uống", Description = "Nước giải khát, bia và rượu", DisplayOrder = 5, IsActive = true }
+            };
+            context.MenuCategories.AddRange(categories);
+            await context.SaveChangesAsync();
+        }
+
+        // 2. Seed Menu Items
+        if (!context.MenuItems.Any() && context.MenuCategories.Any())
+        {
+            var categories = context.MenuCategories.ToList();
+            var appetizerCat = categories.FirstOrDefault(c => c.CategoryName == "Món Khai Vị")?.CategoryId ?? categories.First().CategoryId;
+            var mainCat = categories.FirstOrDefault(c => c.CategoryName == "Món Chính")?.CategoryId ?? categories.First().CategoryId;
+            var hotpotCat = categories.FirstOrDefault(c => c.CategoryName == "Lẩu & Nướng")?.CategoryId ?? categories.First().CategoryId;
+            var drinkCat = categories.FirstOrDefault(c => c.CategoryName == "Đồ Uống")?.CategoryId ?? categories.First().CategoryId;
+
+            var items = new List<MenuItem>
+            {
+                // Khai vị
+                new MenuItem { CategoryId = appetizerCat, ItemName = "Salad Dầu Giấm", Unit = "Dĩa", Description = "Salad tươi mát", BasePrice = 45000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new MenuItem { CategoryId = appetizerCat, ItemName = "Gỏi Ngó Sen Tôm Thịt", Unit = "Dĩa", Description = "Gỏi ngó sen giòn rụm", BasePrice = 85000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                
+                // Món chính
+                new MenuItem { CategoryId = mainCat, ItemName = "Gà Bó Xôi", Unit = "Con", Description = "Gà ta bó xôi chiên giòn", BasePrice = 350000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new MenuItem { CategoryId = mainCat, ItemName = "Tôm Hùm Nướng Phô Mai", Unit = "Kg", Description = "Tôm hùm Pháp", BasePrice = 1250000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new MenuItem { CategoryId = mainCat, ItemName = "Bò Lúc Lắc", Unit = "Phần", Description = "Bò Úc xào", BasePrice = 150000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                
+                // Lẩu & nướng
+                new MenuItem { CategoryId = hotpotCat, ItemName = "Lẩu Thái Hải Sản", Unit = "Nồi", Description = "Lẩu chua cay", BasePrice = 280000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new MenuItem { CategoryId = hotpotCat, ItemName = "Sườn Nướng BBQ", Unit = "Sz L", Description = "Sườn nướng tảng", BasePrice = 450000, IsActive = true, CreatedAt = DateTime.UtcNow },
+
+                // Đồ uống
+                new MenuItem { CategoryId = drinkCat, ItemName = "Bia Tiger", Unit = "Lon", Description = "Bia lạnh", BasePrice = 20000, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new MenuItem { CategoryId = drinkCat, ItemName = "Nước Ép Trái Cây", Unit = "Ly", Description = "Nhiều vị", BasePrice = 35000, IsActive = true, CreatedAt = DateTime.UtcNow }
+            };
+            context.MenuItems.AddRange(items);
+            await context.SaveChangesAsync();
+        }
+
+        // 3. Seed Dining Tables
+        if (!context.DiningTables.Any())
+        {
+            var tables = new List<DiningTable>();
+            // Tầng 1
+            for (int i = 1; i <= 6; i++)
+            {
+                tables.Add(new DiningTable { TableCode = $"T1-{i:D2}", TableName = $"Bàn T1-{i}", Capacity = 4, Status = "AVAILABLE", IsActive = true });
+            }
+            // Tầng 2 & VIP
+            for (int i = 1; i <= 4; i++)
+            {
+                tables.Add(new DiningTable { TableCode = $"VIP-{i}", TableName = $"VIP {i}", Capacity = 8, Status = "AVAILABLE", IsActive = true });
+            }
+            context.DiningTables.AddRange(tables);
+            await context.SaveChangesAsync();
         }
     }
 }
