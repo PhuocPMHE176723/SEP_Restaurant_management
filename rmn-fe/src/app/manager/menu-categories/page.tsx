@@ -131,7 +131,6 @@ function DeleteModal({ cat, onClose, onSaved }: { cat: MenuCategory; onClose: ()
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>🗑️</div>
                     <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá danh mục <strong>{cat.categoryName}</strong>?</p>
                 </div>
                 <div className={styles.modalFoot}>

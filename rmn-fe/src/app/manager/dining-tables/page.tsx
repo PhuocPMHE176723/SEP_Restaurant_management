@@ -154,7 +154,6 @@ function DeleteModal({ table, onClose, onSaved }: { table: DiningTable; onClose:
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>🗑️</div>
                     <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá bàn <strong>{table.tableCode}</strong>?<br />Bàn sẽ bị đánh dấu không hoạt động.</p>
                 </div>
                 <div className={styles.modalFoot}>

@@ -3,9 +3,11 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
+using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Interface;
 
@@ -17,34 +19,59 @@ public class ReservationController : BaseController
 {
     private readonly IReservationService _reservationService;
     private readonly SepDatabaseContext _context;
+    private readonly UserManager<UserIdentity> _userManager;
 
-    public ReservationController(IReservationService reservationService, SepDatabaseContext context)
+    public ReservationController(
+        IReservationService reservationService,
+        SepDatabaseContext context,
+        UserManager<UserIdentity> userManager
+    )
     {
         _reservationService = reservationService;
         _context = context;
+        _userManager = userManager;
     }
 
     private async Task<long> GetCustomerIdAsync()
     {
         // Get UserId from token (sub claim)
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                     ?? User.FindFirst("sub")?.Value;
-        
+        var userId =
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+
         if (string.IsNullOrEmpty(userId))
         {
             throw new UnauthorizedAccessException("User ID not found in token");
         }
 
         // Query Customer table by UserId
-        var customer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
 
-        if (customer == null)
+        if (customer != null)
+        {
+            return customer.CustomerId;
+        }
+
+        // Auto-provision customer record if missing but user exists
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
         {
             throw new UnauthorizedAccessException("Customer record not found for this user");
         }
 
-        return customer.CustomerId;
+        var newCustomer = new Customer
+        {
+            UserId = user.Id,
+            FullName = user.FullName ?? user.UserName ?? "Guest",
+            Phone = user.PhoneNumber,
+            Email = user.Email,
+            TotalPoints = 0,
+            CreatedAt = DateTimeHelper.VietnamNow(),
+        };
+
+        _context.Customers.Add(newCustomer);
+        await _context.SaveChangesAsync();
+
+        return newCustomer.CustomerId;
     }
 
     [HttpPost]
@@ -54,28 +81,29 @@ public class ReservationController : BaseController
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
+                var errors = ModelState
+                    .Values.SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
                 return Failure("Validation failed", errors);
             }
 
             var customerId = await GetCustomerIdAsync();
-            
+
             // Validate reservation date is within 7 days
             // Frontend sends local time string (e.g., "2026-03-11T13:45:00")
             // ASP.NET parses it as Unspecified Kind, treat it as local time
             var now = DateTime.Now;
             var today = now.Date; // Chỉ lấy ngày, bỏ giờ phút
             var maxDate = today.AddDays(7); // Ngày tối đa (7 ngày từ hôm nay)
-            
+
             // Ensure reservedAt is treated as local time
-            var reservedDate = request.ReservedAt.Kind == DateTimeKind.Unspecified 
-                ? DateTime.SpecifyKind(request.ReservedAt, DateTimeKind.Local)
-                : request.ReservedAt.ToLocalTime();
+            var reservedDate =
+                request.ReservedAt.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(request.ReservedAt, DateTimeKind.Local)
+                    : request.ReservedAt.ToLocalTime();
             var reservedDay = reservedDate.Date;
-            
+
             // Check if reservation time is in the past (with 5 minute grace period)
             if (reservedDate < now.AddMinutes(-5))
             {

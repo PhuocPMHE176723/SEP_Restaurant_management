@@ -135,13 +135,29 @@ function CreateModal({ categories, onClose, onSaved }: { categories: MenuCategor
                     </div>
 
                     <div className={styles.field}>
-                        <label className={styles.label}>Đơn vị tính (Sz, Phần, Con...)</label>
+                        <label className={styles.label}>Đơn vị / Định lượng (Sz, Phần, Con...)</label>
                         <input
                             className={styles.input}
-                            placeholder="VD: Phần, Sz L, Con"
+                            list="unit-options-create"
+                            placeholder="VD: Phần, Sz L, Con, Kg..."
                             value={form.unit ?? ""}
                             onChange={(e) => setForm({ ...form, unit: e.target.value })}
                         />
+                        <datalist id="unit-options-create">
+                            <option value="Phần" />
+                            <option value="Suất" />
+                            <option value="Con" />
+                            <option value="Kg" />
+                            <option value="100g" />
+                            <option value="Sz S" />
+                            <option value="Sz M" />
+                            <option value="Sz L" />
+                            <option value="Sz XL" />
+                            <option value="Lon" />
+                            <option value="Chai" />
+                            <option value="Ly" />
+                            <option value="Túi" />
+                        </datalist>
                     </div>
 
                     <div className={styles.field}>
@@ -256,12 +272,29 @@ function EditModal({ item, categories, onClose, onSaved }: { item: MenuItem; cat
                     </div>
 
                     <div className={styles.field}>
-                        <label className={styles.label}>Đơn vị tính</label>
+                        <label className={styles.label}>Đơn vị / Định lượng</label>
                         <input
                             className={styles.input}
+                            list="unit-options-edit"
+                            placeholder="VD: Phần, Sz L, Con, Kg..."
                             value={form.unit ?? ""}
                             onChange={(e) => setForm({ ...form, unit: e.target.value })}
                         />
+                        <datalist id="unit-options-edit">
+                            <option value="Phần" />
+                            <option value="Suất" />
+                            <option value="Con" />
+                            <option value="Kg" />
+                            <option value="100g" />
+                            <option value="Sz S" />
+                            <option value="Sz M" />
+                            <option value="Sz L" />
+                            <option value="Sz XL" />
+                            <option value="Lon" />
+                            <option value="Chai" />
+                            <option value="Ly" />
+                            <option value="Túi" />
+                        </datalist>
                     </div>
 
                     <div className={styles.field}>
@@ -343,7 +376,6 @@ function DeleteModal({ item, onClose, onSaved }: { item: MenuItem; onClose: () =
                     <button className={styles.modalClose} onClick={onClose}>✕</button>
                 </div>
                 <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>🗑️</div>
                     <p className={styles.deleteMsg}>Bạn chắc muốn vô hiệu hoá món <strong>{item.itemName}</strong>?</p>
                 </div>
                 <div className={styles.modalFoot}>
@@ -367,7 +399,7 @@ export default function MenuItemsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("ALL");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = 6;
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -479,7 +511,7 @@ export default function MenuItemsPage() {
                                     {item.thumbnail ? (
                                         <img src={item.thumbnail} alt={item.itemName} className={styles.thumbnail} />
                                     ) : (
-                                        <div className={styles.noImage}>🍽️</div>
+                                        <div className={styles.noImage}>Sửa ảnh</div>
                                     )}
                                 </td>
                                 <td><strong>{item.itemName}</strong></td>

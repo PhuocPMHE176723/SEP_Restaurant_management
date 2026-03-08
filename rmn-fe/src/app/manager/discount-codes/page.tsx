@@ -121,17 +121,23 @@ export default function DiscountCodesPage() {
     if (loading) return <div className={styles.loading}>Đang tải...</div>;
 
     return (
-        <div className={styles.page}>
-            <header className={styles.pageHeader}>
-                <h1 className={styles.pageTitle}>Quản lý Mã giảm giá</h1>
-                <button className={styles.btnPrimary} onClick={() => handleOpenModal()}>
-                    + Thêm mã mới
-                </button>
-            </header>
+        <div className={styles.contentCard}>
+            <div className={styles.cardHeader}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                        <h1 className={styles.cardTitle}>Quản lý Mã giảm giá</h1>
+                        <p className={styles.pageSubtitle}>Danh sách mã giảm giá — {discounts.length} mã</p>
+                    </div>
+                    <button className={styles.btnAdd} onClick={() => handleOpenModal()}>
+                        + Thêm mã mới
+                    </button>
+                </div>
+            </div>
 
-            <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                    <thead>
+            <div className={styles.cardBody}>
+                <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                        <thead>
                         <tr>
                             <th>Mã KH</th>
                             <th>Loại</th>
@@ -140,7 +146,7 @@ export default function DiscountCodesPage() {
                             <th>Giảm tối đa</th>
                             <th>Lượt dùng</th>
                             <th>Trạng thái</th>
-                            <th className={styles.actionsBox}>Hành động</th>
+                            <th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -160,15 +166,18 @@ export default function DiscountCodesPage() {
                                             {d.isActive ? 'Đang bật' : 'Đã tắt'}
                                         </button>
                                     </td>
-                                    <td className={styles.actionsBox}>
-                                        <button className={styles.btnAction} onClick={() => handleOpenModal(d)}>✏️</button>
-                                        <button className={styles.btnActionDelete} onClick={() => handleDelete(d.discountId)}>🗑️</button>
+                                    <td>
+                                        <div className={styles.btnRow}>
+                                            <button className={styles.btnEdit} onClick={() => handleOpenModal(d)}>Sửa</button>
+                                            <button className={styles.btnDelete} onClick={() => handleDelete(d.discountId)}>Xoá</button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             {showModal && (

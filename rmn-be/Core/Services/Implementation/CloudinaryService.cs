@@ -6,16 +6,34 @@ namespace SEP_Restaurant_management.Core.Services.Implementation;
 
 public class CloudinaryService : ICloudinaryService
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly IConfiguration _config;
+    private Cloudinary? _cloudinary;
 
     public CloudinaryService(IConfiguration config)
     {
-        var cloudName  = config["Cloudinary:CloudName"]  ?? throw new InvalidOperationException("Cloudinary:CloudName missing");
-        var apiKey     = config["Cloudinary:ApiKey"]     ?? throw new InvalidOperationException("Cloudinary:ApiKey missing");
-        var apiSecret  = config["Cloudinary:ApiSecret"]  ?? throw new InvalidOperationException("Cloudinary:ApiSecret missing");
+        _config = config;
+    }
 
-        var account   = new Account(cloudName, apiKey, apiSecret);
-        _cloudinary   = new Cloudinary(account) { Api = { Secure = true } };
+    private Cloudinary GetClient()
+    {
+        if (_cloudinary != null) return _cloudinary;
+
+        var cloudName = _config["Cloudinary:CloudName"];
+        var apiKey    = _config["Cloudinary:ApiKey"];
+        var apiSecret = _config["Cloudinary:ApiSecret"];
+
+        if (string.IsNullOrWhiteSpace(cloudName) || cloudName == "your_cloud_name")
+            throw new InvalidOperationException("Cloudinary:CloudName is not configured. Please set your Cloudinary details in appsettings.json.");
+
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "your_api_key")
+            throw new InvalidOperationException("Cloudinary:ApiKey is not configured.");
+
+        if (string.IsNullOrWhiteSpace(apiSecret) || apiSecret == "your_api_secret")
+            throw new InvalidOperationException("Cloudinary:ApiSecret is not configured.");
+
+        var account = new Account(cloudName, apiKey, apiSecret);
+        _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
+        return _cloudinary;
     }
 
     public async Task<string> UploadImageAsync(IFormFile file, string folder = "menu-items")
@@ -36,7 +54,7 @@ public class CloudinaryService : ICloudinaryService
                 .FetchFormat("auto"),
         };
 
-        var result = await _cloudinary.UploadAsync(uploadParams);
+        var result = await GetClient().UploadAsync(uploadParams);
 
         if (result.Error != null)
             throw new InvalidOperationException($"Cloudinary upload error: {result.Error.Message}");
@@ -47,6 +65,6 @@ public class CloudinaryService : ICloudinaryService
     public async Task DeleteImageAsync(string publicId)
     {
         var deleteParams = new DeletionParams(publicId);
-        await _cloudinary.DestroyAsync(deleteParams);
+        await GetClient().DestroyAsync(deleteParams);
     }
 }
