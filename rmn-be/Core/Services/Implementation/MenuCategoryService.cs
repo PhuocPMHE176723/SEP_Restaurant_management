@@ -32,11 +32,16 @@ public class MenuCategoryService : IMenuCategoryService
 
     public async Task<MenuCategoryDTO> CreateAsync(CreateMenuCategoryDTO dto)
     {
+        var trimmedName = NormalizeName(dto.CategoryName);
+        if (string.IsNullOrWhiteSpace(trimmedName))
+            throw new InvalidOperationException("Tên danh mục không được để trống.");
+
         // Kiểm tra trùng tên
-        if (await _unitOfWork.MenuCategories.IsNameExistsAsync(dto.CategoryName))
-            throw new InvalidOperationException($"Category name '{dto.CategoryName}' already exists.");
+        if (await _unitOfWork.MenuCategories.IsNameExistsAsync(trimmedName))
+            throw new InvalidOperationException($"Tên danh mục '{trimmedName}' đã tồn tại.");
 
         var category = _mapper.Map<MenuCategory>(dto);
+        category.CategoryName = trimmedName;
         await _unitOfWork.MenuCategories.AddAsync(category);
         await _unitOfWork.SaveChangesAsync();
 
@@ -46,17 +51,27 @@ public class MenuCategoryService : IMenuCategoryService
     public async Task<bool> UpdateAsync(int id, UpdateMenuCategoryDTO dto)
     {
         var category = await _unitOfWork.MenuCategories.GetByIdAsync(id);
-        if (category == null) return false;
+        if (category == null)
+            return false;
 
         // Kiểm tra trùng tên với category khác
-        if (dto.CategoryName != null &&
-            await _unitOfWork.MenuCategories.IsNameExistsAsync(dto.CategoryName, excludeId: id))
-            throw new InvalidOperationException($"Category name '{dto.CategoryName}' already exists.");
+        if (dto.CategoryName != null)
+        {
+            var trimmedName = NormalizeName(dto.CategoryName);
+            if (string.IsNullOrWhiteSpace(trimmedName))
+                throw new InvalidOperationException("Tên danh mục không được để trống.");
 
-        if (dto.CategoryName != null) category.CategoryName = dto.CategoryName;
-        if (dto.Description != null) category.Description = dto.Description;
-        if (dto.DisplayOrder.HasValue) category.DisplayOrder = dto.DisplayOrder.Value;
-        if (dto.IsActive.HasValue) category.IsActive = dto.IsActive.Value;
+            if (await _unitOfWork.MenuCategories.IsNameExistsAsync(trimmedName, excludeId: id))
+                throw new InvalidOperationException($"Tên danh mục '{trimmedName}' đã tồn tại.");
+
+            category.CategoryName = trimmedName;
+        }
+        if (dto.Description != null)
+            category.Description = dto.Description;
+        if (dto.DisplayOrder.HasValue)
+            category.DisplayOrder = dto.DisplayOrder.Value;
+        if (dto.IsActive.HasValue)
+            category.IsActive = dto.IsActive.Value;
 
         _unitOfWork.MenuCategories.Update(category);
         return await _unitOfWork.SaveChangesAsync() > 0;
@@ -65,12 +80,14 @@ public class MenuCategoryService : IMenuCategoryService
     public async Task<bool> DeleteAsync(int id)
     {
         var category = await _unitOfWork.MenuCategories.GetByIdAsync(id);
-        if (category == null) return false;
+        if (category == null)
+            return false;
 
         // Soft delete
         category.IsActive = false;
         _unitOfWork.MenuCategories.Update(category);
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
-}
 
+    private static string NormalizeName(string name) => name.Trim();
+}

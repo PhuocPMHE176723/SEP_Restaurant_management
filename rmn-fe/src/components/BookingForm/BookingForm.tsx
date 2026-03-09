@@ -582,44 +582,51 @@ export default function BookingForm() {
       </div>
 
       {/* Submit */}
-      <button
-        id="booking-submit"
-        type="submit"
-        disabled={loading}
-        className={`btn btn-primary ${styles.submitBtn}`}
-      >
-        {loading ? (
-          <>
-            <span className={styles.spinner} />
-            Đang xử lý...
-          </>
-        ) : (
-          <>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            Xác nhận đặt bàn
-          </>
-        )}
-      </button>
+      {user?.roles?.includes("Customer") ? (
+        <button
+          id="booking-submit"
+          type="submit"
+          disabled={loading}
+          className={`btn btn-primary ${styles.submitBtn}`}
+        >
+          {loading ? (
+            <>
+              <span className={styles.spinner} />
+              Đang xử lý...
+            </>
+          ) : (
+            <>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Xác nhận đặt bàn
+            </>
+          )}
+        </button>
+      ) : (
+        <div className={styles.submitBtn} style={{ background: '#f5f5f5', color: '#666', textAlign: 'center', cursor: 'not-allowed', border: '1px solid #ddd' }}>
+          <i>Chỉ khách hàng mới có thể thực hiện đặt bàn.</i>
+        </div>
+      )}
 
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={modalTitle}
-        message={modalMessage}
         type={modalType}
-      />
+      >
+        <p className={styles.message}>{modalMessage}</p>
+      </Modal>
     </form>
   );
 }

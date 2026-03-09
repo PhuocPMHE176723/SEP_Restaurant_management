@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header/Header";
 import Footer from "../../../components/Footer/Footer";
 import { useAuth } from "../../../contexts/AuthContext";
-import { getMyReservations, cancelReservation, type ReservationDTO } from "../../../lib/api/reservation";
+import {
+  getMyReservations,
+  cancelReservation,
+  type ReservationDTO,
+} from "../../../lib/api/reservation";
 import Modal from "../../../components/Modal/Modal";
 import styles from "./page.module.css";
 
@@ -15,11 +19,11 @@ export default function ReservationsPage() {
   const [reservations, setReservations] = useState<ReservationDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  
+
   // Cancel modal
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  
+
   // Result modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"success" | "error">("success");
@@ -63,12 +67,12 @@ export default function ReservationsPage() {
     try {
       setCancelling(true);
       await cancelReservation(cancelId);
-      
+
       setModalType("success");
       setModalTitle("Đã hủy đặt bàn");
       setModalMessage("Đặt bàn đã được hủy thành công.");
       setModalOpen(true);
-      
+
       setCancelId(null);
       loadReservations();
     } catch (error: any) {
@@ -98,24 +102,24 @@ export default function ReservationsPage() {
 
   function getStatusLabel(status: string) {
     const statusMap: Record<string, string> = {
-      "PENDING": "Chờ xác nhận",
-      "CONFIRMED": "Đã xác nhận",
-      "CANCELLED": "Đã hủy",
-      "NO_SHOW": "Không đến",
-      "COMPLETED": "Hoàn thành",
-      "RESERVED": "Đã đặt"
+      PENDING: "Chờ xác nhận",
+      CONFIRMED: "Đã xác nhận",
+      CANCELLED: "Đã hủy",
+      NO_SHOW: "Không đến",
+      COMPLETED: "Hoàn thành",
+      RESERVED: "Đã đặt",
     };
     return statusMap[status] || status;
   }
 
   function getStatusClass(status: string) {
     const classMap: Record<string, string> = {
-      "PENDING": styles.statusPending,
-      "CONFIRMED": styles.statusConfirmed,
-      "RESERVED": styles.statusConfirmed,
-      "CANCELLED": styles.statusCancelled,
-      "NO_SHOW": styles.statusCancelled,
-      "COMPLETED": styles.statusCompleted
+      PENDING: styles.statusPending,
+      CONFIRMED: styles.statusConfirmed,
+      RESERVED: styles.statusConfirmed,
+      CANCELLED: styles.statusCancelled,
+      NO_SHOW: styles.statusCancelled,
+      COMPLETED: styles.statusCompleted,
     };
     return classMap[status] || "";
   }
@@ -148,14 +152,18 @@ export default function ReservationsPage() {
             <div className={styles.empty}>
               <h3>Chưa có đặt bàn nào</h3>
               <p>Bạn chưa có lịch sử đặt bàn. Hãy đặt bàn ngay!</p>
-              <a href="/booking" className="btn btn-primary">Đặt bàn ngay</a>
+              <a href="/booking" className="btn btn-primary">
+                Đặt bàn ngay
+              </a>
             </div>
           ) : (
             <div className={styles.list}>
-              {reservations.map(reservation => (
+              {reservations.map((reservation) => (
                 <div key={reservation.reservationId} className={styles.card}>
                   <div className={styles.cardHeader}>
-                    <span className={`${styles.status} ${getStatusClass(reservation.status)}`}>
+                    <span
+                      className={`${styles.status} ${getStatusClass(reservation.status)}`}
+                    >
                       {getStatusLabel(reservation.status)}
                     </span>
                     {reservation.status === "PENDING" && (
@@ -168,7 +176,8 @@ export default function ReservationsPage() {
                       </button>
                     )}
                     <div className={styles.cardDate}>
-                      Đặt lúc: {formatDate(reservation.createdAt)} {formatTime(reservation.createdAt)}
+                      Đặt lúc: {formatDate(reservation.createdAt)}{" "}
+                      {formatTime(reservation.createdAt)}
                     </div>
                   </div>
 
@@ -176,42 +185,59 @@ export default function ReservationsPage() {
                     <div className={styles.infoRow}>
                       <div className={styles.infoGroup}>
                         <span className={styles.infoLabel}>Ngày:</span>
-                        <span className={styles.infoValue}>{formatDate(reservation.reservedAt)}</span>
+                        <span className={styles.infoValue}>
+                          {formatDate(reservation.reservedAt)}
+                        </span>
                       </div>
                       <div className={styles.infoGroup}>
                         <span className={styles.infoLabel}>Giờ:</span>
-                        <span className={styles.infoValue}>{formatTime(reservation.reservedAt)}</span>
+                        <span className={styles.infoValue}>
+                          {formatTime(reservation.reservedAt)}
+                        </span>
                       </div>
                       <div className={styles.infoGroup}>
                         <span className={styles.infoLabel}>Số khách:</span>
-                        <span className={styles.infoValue}>{reservation.partySize} người</span>
+                        <span className={styles.infoValue}>
+                          {reservation.partySize} người
+                        </span>
                       </div>
                     </div>
                     {reservation.note && (
                       <div className={styles.note}>
                         <span className={styles.noteLabel}>Ghi chú:</span>
-                        <span className={styles.noteText}>{reservation.note}</span>
+                        <span className={styles.noteText}>
+                          {reservation.note}
+                        </span>
                       </div>
                     )}
 
-                    {reservation.order && reservation.order.orderItems.length > 0 && (
-                      <div className={styles.orderSection}>
-                        <h4 className={styles.orderTitle}>Món ăn đã đặt</h4>
-                        <div className={styles.orderItems}>
-                          {reservation.order.orderItems.map(item => (
-                            <div key={item.orderItemId} className={styles.orderItem}>
-                              <div className={styles.orderItemName}>
-                                <span className={styles.orderItemQty}>{item.quantity}x</span>
-                                {item.itemNameSnapshot}
+                    {reservation.order &&
+                      reservation.order.orderItems.length > 0 && (
+                        <div className={styles.orderSection}>
+                          <h4 className={styles.orderTitle}>Món ăn đã đặt</h4>
+                          <div className={styles.orderItems}>
+                            {reservation.order.orderItems.map((item) => (
+                              <div
+                                key={item.orderItemId}
+                                className={styles.orderItem}
+                              >
+                                <div className={styles.orderItemName}>
+                                  <span className={styles.orderItemQty}>
+                                    {item.quantity}x
+                                  </span>
+                                  {item.itemNameSnapshot}
+                                </div>
+                                <div className={styles.orderItemPrice}>
+                                  {(
+                                    item.unitPrice * item.quantity
+                                  ).toLocaleString("vi-VN")}
+                                  đ
+                                </div>
                               </div>
-                              <div className={styles.orderItemPrice}>
-                                {(item.unitPrice * item.quantity).toLocaleString('vi-VN')}đ
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 </div>
               ))}
@@ -223,8 +249,14 @@ export default function ReservationsPage() {
 
       {/* Cancel Confirmation Modal */}
       {cancelId !== null && (
-        <div className={styles.confirmOverlay} onClick={() => !cancelling && setCancelId(null)}>
-          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => !cancelling && setCancelId(null)}
+        >
+          <div
+            className={styles.confirmModal}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className={styles.confirmTitle}>Xác nhận hủy đặt bàn</h3>
             <p className={styles.confirmMessage}>
               Bạn có chắc chắn muốn hủy đặt bàn #{cancelId}?<br />
@@ -255,9 +287,10 @@ export default function ReservationsPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={modalTitle}
-        message={modalMessage}
         type={modalType}
-      />
+      >
+        <p>{modalMessage}</p>
+      </Modal>
     </>
   );
 }
