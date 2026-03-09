@@ -31,10 +31,15 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDTO> CreateCategoryAsync(CreateCategoryDTO createDto)
     {
-        if (await _unitOfWork.MenuCategories.IsNameExistsAsync(createDto.CategoryName))
-            throw new InvalidOperationException($"Danh mục '{createDto.CategoryName}' đã tồn tại.");
+        var normalizedName = NormalizeName(createDto.CategoryName);
+        if (string.IsNullOrWhiteSpace(normalizedName))
+            throw new InvalidOperationException("Tên danh mục không được để trống.");
+
+        if (await _unitOfWork.MenuCategories.IsNameExistsAsync(normalizedName))
+            throw new InvalidOperationException($"Danh mục '{normalizedName}' đã tồn tại.");
 
         var category = _mapper.Map<MenuCategory>(createDto);
+        category.CategoryName = normalizedName;
 
         await _unitOfWork.GetRepository<MenuCategory>().AddAsync(category);
         await _unitOfWork.SaveChangesAsync();
@@ -45,12 +50,24 @@ public class CategoryService : ICategoryService
     public async Task<bool> UpdateCategoryAsync(int id, UpdateCategoryDTO updateDto)
     {
         var existingCategory = await _unitOfWork.GetRepository<MenuCategory>().GetByIdAsync(id);
-        if (existingCategory == null) return false;
+        if (existingCategory == null)
+            return false;
 
-        if (updateDto.CategoryName != existingCategory.CategoryName && 
-            await _unitOfWork.MenuCategories.IsNameExistsAsync(updateDto.CategoryName, excludeId: id))
+        if (updateDto.CategoryName != null)
         {
-            throw new InvalidOperationException($"Danh mục '{updateDto.CategoryName}' đã tồn tại.");
+            var normalizedName = NormalizeName(updateDto.CategoryName);
+            if (string.IsNullOrWhiteSpace(normalizedName))
+                throw new InvalidOperationException("Tên danh mục không được để trống.");
+
+            if (
+                updateDto.CategoryName != existingCategory.CategoryName
+                && await _unitOfWork.MenuCategories.IsNameExistsAsync(normalizedName, excludeId: id)
+            )
+            {
+                throw new InvalidOperationException($"Danh mục '{normalizedName}' đã tồn tại.");
+            }
+
+            updateDto.CategoryName = normalizedName;
         }
 
         _mapper.Map(updateDto, existingCategory);
@@ -64,11 +81,14 @@ public class CategoryService : ICategoryService
     public async Task<bool> DeleteCategoryAsync(int id)
     {
         var category = await _unitOfWork.GetRepository<MenuCategory>().GetByIdAsync(id);
-        if (category == null) return false;
+        if (category == null)
+            return false;
 
         _unitOfWork.GetRepository<MenuCategory>().Delete(category);
         var result = await _unitOfWork.SaveChangesAsync();
 
         return result > 0;
     }
+
+    private static string NormalizeName(string name) => name.Trim();
 }

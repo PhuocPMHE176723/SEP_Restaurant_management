@@ -7,11 +7,11 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  message: string;
-  type?: "success" | "error";
+  type?: "success" | "error" | "info";
+  children?: React.ReactNode;
 }
 
-export default function Modal({ isOpen, onClose, title, message, type = "success" }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, type = "success", children }: ModalProps) {
   const handleEscape = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       onClose();
@@ -37,14 +37,18 @@ export default function Modal({ isOpen, onClose, title, message, type = "success
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={`${styles.header} ${type === "error" ? styles.headerError : styles.headerSuccess}`}>
+        <div className={`${styles.header} ${
+          type === "error" ? styles.headerError : 
+          type === "info" ? styles.headerInfo : 
+          styles.headerSuccess
+        }`}>
           <div className={styles.icon}>
-            {type === "success" ? "✓" : "✕"}
+            {type === "success" ? "✓" : type === "error" ? "✕" : "i"}
           </div>
           <h3 className={styles.title}>{title}</h3>
         </div>
         <div className={styles.body}>
-          <p className={styles.message}>{message}</p>
+          {children}
         </div>
         <div className={styles.footer}>
           <button onClick={onClose} className={styles.button}>

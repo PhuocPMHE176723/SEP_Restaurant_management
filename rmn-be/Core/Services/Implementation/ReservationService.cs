@@ -134,6 +134,17 @@ public class ReservationService : IReservationService
         return _mapper.Map<List<ReservationDTO>>(reservations);
     }
 
+    public async Task<List<ReservationDTO>> GetAllReservationsAsync()
+    {
+        var reservations = await _context.Reservations
+            .Include(r => r.Order)
+                .ThenInclude(o => o!.OrderItems)
+            .OrderByDescending(r => r.ReservedAt)
+            .ToListAsync();
+
+        return _mapper.Map<List<ReservationDTO>>(reservations);
+    }
+
     public async Task<ReservationDTO?> GetReservationByIdAsync(long reservationId)
     {
         var reservation = await _context.Reservations
