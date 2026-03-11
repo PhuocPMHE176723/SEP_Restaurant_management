@@ -37,6 +37,16 @@ public class MappingProfile : Profile
 
         // ── OrderItem ──────────────────────────────────────────
         CreateMap<OrderItem, OrderItemDTO>();
+
+        // ── Blog & Sliders ─────────────────────────────────────
+        CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();
+        CreateMap<BlogPost, BlogPostDTO>()
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.Author != null ? src.Author.FullName : "Admin"));
+        CreateMap<CreateBlogPostDTO, BlogPost>();
+        
+        CreateMap<Slider, SliderDTO>().ReverseMap();
+        CreateMap<CreateSliderDTO, Slider>();
     }
 }
 

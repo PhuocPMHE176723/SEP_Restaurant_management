@@ -8,4 +8,5 @@ public interface IDiningTableRepository : IGenericRepository<DiningTable>
     Task<IEnumerable<DiningTable>> GetActiveTablesAsync();
     Task<DiningTable?> GetByCodeAsync(string tableCode);
     Task<bool> IsCodeExistsAsync(string tableCode, int? excludeId = null);
+    Task<IEnumerable<DiningTable>> GetTablesWithCurrentOrdersAsync();
 }

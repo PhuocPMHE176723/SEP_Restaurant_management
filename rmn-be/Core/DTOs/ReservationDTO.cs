@@ -26,15 +26,18 @@ public class OrderDTO
     public long OrderId { get; set; }
     public string OrderCode { get; set; } = default!;
     public string Status { get; set; } = default!;
-    public decimal Subtotal { get; set; }
+    public string? TableName { get; set; }
+    public string? CustomerName { get; set; }
+    public DateTime OpenedAt { get; set; }
+    public DateTime? ClosedAt { get; set; }
+    public decimal TotalAmount { get; set; }
     public List<OrderItemDTO> OrderItems { get; set; } = new();
 }
 
 public class OrderItemDTO
 {
     public long OrderItemId { get; set; }
-    public long ItemId { get; set; }
-    public string ItemNameSnapshot { get; set; } = default!;
+    public string MenuItemName { get; set; } = default!;
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public string? Note { get; set; }
@@ -76,4 +79,7 @@ public class UpdateReservationStatusRequest
     [Required]
     [MaxLength(20)]
     public string Status { get; set; } = default!;
+
+    /// <summary>Tuỳ chọn gán/chuyển bàn khi cập nhật trạng thái</summary>
+    public int? TableId { get; set; }
 }

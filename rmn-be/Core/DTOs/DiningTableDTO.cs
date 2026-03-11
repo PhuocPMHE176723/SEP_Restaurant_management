@@ -11,6 +11,20 @@ public class DiningTableDTO
     public bool IsActive { get; set; }
 }
 
+public class DiningTableWithOrderDTO : DiningTableDTO
+{
+    public CurrentOrderDTO? CurrentOrder { get; set; }
+}
+
+public class CurrentOrderDTO
+{
+    public long OrderId { get; set; }
+    public string OrderCode { get; set; } = null!;
+    public string? CustomerName { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int ItemCount { get; set; }
+}
+
 public class CreateDiningTableDTO
 {
     public string TableCode { get; set; } = null!;

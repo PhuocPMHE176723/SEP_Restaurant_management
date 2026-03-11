@@ -42,4 +42,14 @@ public class DiningTableRepository : GenericRepository<DiningTable>, IDiningTabl
             t.TableCode == tableCode &&
             (excludeId == null || t.TableId != excludeId));
     }
+
+    /// <summary>Lấy danh sách bàn cùng với order hiện tại (nếu có)</summary>
+    public async Task<IEnumerable<DiningTable>> GetTablesWithCurrentOrdersAsync()
+    {
+        return await _dbSet
+            .Where(t => t.IsActive)
+            .Include(t => t.Orders.Where(o => o.Status != "CLOSED" && o.Status != "CANCELLED"))
+            .OrderBy(t => t.TableCode)
+            .ToListAsync();
+    }
 }
