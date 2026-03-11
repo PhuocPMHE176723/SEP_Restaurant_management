@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "media.cooky.vn",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
 };
