@@ -339,11 +339,13 @@ export default function BookingForm() {
       {/* Step 2 – Reservation details */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
-          <span className={styles.step}>2</span>Chi tiết đặt bàn
+          <span className={styles.step}>2</span>Thông tin đặt bàn
         </h3>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Ngày đến *</label>
+            <label className={styles.label}>
+              Ngày đến (trong 7 ngày tới) *
+            </label>
             <input
               id="date"
               type="date"
@@ -355,7 +357,7 @@ export default function BookingForm() {
               required
             />
             {errors.date && <p className={styles.error}>{errors.date}</p>}
-            <p className={styles.hint}>Chỉ có thể đặt trong vòng 7 ngày tới</p>
+            <p className={styles.hint}>Chỉ cho phép đặt tối đa trước 7 ngày</p>
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Giờ đến *</label>
@@ -397,14 +399,16 @@ export default function BookingForm() {
               <p className={styles.error}>{errors.timeSlot}</p>
             )}
             <p className={styles.hint}>
-              Khung giờ cách nhau 15 phút, bắt đầu 10:00 sáng
+              Khung giờ cách nhau 15 phút · phục vụ 10:00 – 22:00
             </p>
           </div>
         </div>
 
         {/* Phone for contact */}
         <div className={`${styles.field} ${styles.fieldNarrow}`}>
-          <label className={styles.label}>Số điện thoại liên hệ *</label>
+          <label className={styles.label}>
+            Số điện thoại để gọi xác nhận *
+          </label>
           <input
             type="tel"
             inputMode="tel"
@@ -415,12 +419,14 @@ export default function BookingForm() {
             required
           />
           {errors.phone && <p className={styles.error}>{errors.phone}</p>}
-          <p className={styles.hint}>Lễ tân sẽ liên hệ xác nhận</p>
+          <p className={styles.hint}>
+            Nhân viên sẽ gọi lại để xác nhận/nhắc lịch
+          </p>
         </div>
 
         {/* Party size */}
         <div className={styles.field}>
-          <label className={styles.label}>Số khách *</label>
+          <label className={styles.label}>Tổng số khách *</label>
           <input
             type="number"
             min="1"
@@ -443,6 +449,9 @@ export default function BookingForm() {
           {errors.partySize && (
             <p className={styles.error}>{errors.partySize}</p>
           )}
+          <p className={styles.hint}>
+            Bạn chỉ cần nhập tổng khách, hệ thống tự gợi ý bàn 4/6/8 chỗ.
+          </p>
           {/* Table auto-calculation badge with 4/6/8-seat mix */}
           <div className={styles.tableBadge}>
             <span className={styles.tableBadgeIcon}></span>

@@ -37,6 +37,7 @@ export default function Header() {
 
   const isManager = user?.roles.includes("Manager");
   const isWarehouse = user?.roles.includes("Warehouse");
+  const isStaff = user?.roles.includes("Staff");
   const isCustomer = user?.roles.includes("Customer");
 
   if (!mounted) {
@@ -102,6 +103,16 @@ export default function Header() {
                   className={`btn btn-ghost ${styles.adminBtn}`}
                 >
                   Quản lý kho
+                </Link>
+              )}
+
+              {/* Staff panel shortcut */}
+              {isStaff && (
+                <Link
+                  href="/staff"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
+                  Staff Panel
                 </Link>
               )}
 
