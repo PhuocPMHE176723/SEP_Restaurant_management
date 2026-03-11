@@ -53,6 +53,11 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<PurchaseReceiptItem> PurchaseReceiptItems { get; set; }
     public virtual DbSet<StockMovement> StockMovements { get; set; }
 
+    // ── Content Management ─────────────────────────────────
+    public virtual DbSet<BlogCategory> BlogCategories { get; set; }
+    public virtual DbSet<BlogPost> BlogPosts { get; set; }
+    public virtual DbSet<Slider> Sliders { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -542,6 +547,44 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                   .HasForeignKey(e => e.CreatedByStaffId)
                   .HasConstraintName("FK_SM_Staff")
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── BlogCategories ─────────────────────────────────
+        modelBuilder.Entity<BlogCategory>(entity =>
+        {
+            entity.ToTable("BlogCategories");
+            entity.HasKey(e => e.CategoryId);
+            entity.Property(e => e.CategoryName).HasMaxLength(100).IsRequired();
+        });
+
+        // ── BlogPosts ──────────────────────────────────────
+        modelBuilder.Entity<BlogPost>(entity =>
+        {
+            entity.ToTable("BlogPosts");
+            entity.HasKey(e => e.PostId);
+            entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("DRAFT");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(e => e.Category)
+                  .WithMany(c => c.BlogPosts)
+                  .HasForeignKey(e => e.CategoryId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Author)
+                  .WithMany()
+                  .HasForeignKey(e => e.AuthorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Sliders ────────────────────────────────────────
+        modelBuilder.Entity<Slider>(entity =>
+        {
+            entity.ToTable("Sliders");
+            entity.HasKey(e => e.SliderId);
+            entity.Property(e => e.ImageUrl).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(150);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
         });
 
         OnModelCreatingPartial(modelBuilder);
