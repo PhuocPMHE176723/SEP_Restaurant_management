@@ -32,18 +32,27 @@ function pickCategoryIcon(name: string): string {
   if (key.includes("salad")) return "🥗";
   if (key.includes("pizza")) return "🍕";
   if (key.includes("burger")) return "🍔";
-  return "🍽️"; // default
+  return "🍹"; // default
 }
 
 function normalizeCategory(c: any): Category {
   const rawId = c?.id ?? c?.categoryId ?? c?.code ?? c?.slug ?? c?.categoryID;
   const name = (c?.name ?? c?.categoryName ?? "").trim();
+  const forcedIcon = pickCategoryIcon(name);
+  const iconCandidate = c?.icon ?? c?.emoji;
+  const isGeneric = iconCandidate
+    ? /^(🍹|🍜|🍲|🍛|🥘)/.test(iconCandidate)
+    : true;
+  const icon =
+    forcedIcon !== "🍽️" && (isGeneric || !iconCandidate)
+      ? forcedIcon
+      : iconCandidate || forcedIcon || "🍽️";
   return {
     id: String(rawId ?? name ?? ""),
     categoryId: c?.categoryId ?? c?.id,
     name,
     categoryName: c?.categoryName ?? name,
-    icon: c?.icon ?? c?.emoji ?? pickCategoryIcon(name),
+    icon,
     itemCount: c?.itemCount ?? c?.count,
     description: c?.description,
     displayOrder: c?.displayOrder,
