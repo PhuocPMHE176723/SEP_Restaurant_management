@@ -1,4 +1,5 @@
 import type { ReservationResponse } from "../../types/models/reservation";
+import type { UpdateReservationStatusRequest } from "../../types/models/dining-table";
 import { apiBaseUrl } from "../config";
 import { getToken } from "../auth";
 
@@ -30,5 +31,15 @@ export const adminReservationApi = {
         });
 
         return handleResponse<ReservationResponse[]>(res);
+    },
+
+    async updateReservationStatus(id: number, data: UpdateReservationStatusRequest): Promise<string> {
+        const res = await fetch(`${apiBaseUrl}/api/AdminReservation/${id}/status`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify(data),
+        });
+
+        return handleResponse<string>(res);
     },
 };

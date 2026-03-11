@@ -16,7 +16,7 @@ public class DiningTableController : BaseController
         _tableService = tableService;
     }
 
-    /// <summary>Lấy danh sách tất cả bàn ăn</summary>
+    
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -24,16 +24,25 @@ public class DiningTableController : BaseController
         return Success(tables);
     }
 
-    /// <summary>Lấy thông tin một bàn theo ID</summary>
+    
+    [HttpGet("with-orders")]
+    [Authorize(Roles = "Staff,Manager,Admin")]
+    public async Task<IActionResult> GetAllWithOrders()
+    {
+        var tables = await _tableService.GetAllWithOrdersAsync();
+        return Success(tables);
+    }
+
+ 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
         var table = await _tableService.GetByIdAsync(id);
-        if (table == null) return NotFoundResponse($"Table with ID {id} not found");
+        if (table == null)
+            return NotFoundResponse($"Table with ID {id} not found");
         return Success(table);
     }
 
-    /// <summary>Tạo bàn mới (Admin)</summary>
     [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDiningTableDTO dto)
@@ -49,7 +58,6 @@ public class DiningTableController : BaseController
         }
     }
 
-    /// <summary>Cập nhật thông tin bàn (Admin)</summary>
     [Authorize(Roles = "Admin,Manager")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDiningTableDTO dto)
@@ -57,7 +65,8 @@ public class DiningTableController : BaseController
         try
         {
             var updated = await _tableService.UpdateAsync(id, dto);
-            if (!updated) return NotFoundResponse($"Table with ID {id} not found");
+            if (!updated)
+                return NotFoundResponse($"Table with ID {id} not found");
             return Success("Table updated successfully");
         }
         catch (InvalidOperationException ex)
@@ -66,13 +75,14 @@ public class DiningTableController : BaseController
         }
     }
 
-    /// <summary>Xóa bàn (soft delete, Admin)</summary>
+ 
     [Authorize(Roles = "Admin,Manager")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _tableService.DeleteAsync(id);
-        if (!deleted) return NotFoundResponse($"Table with ID {id} not found");
+        if (!deleted)
+            return NotFoundResponse($"Table with ID {id} not found");
         return Success("Table deactivated successfully");
     }
 }

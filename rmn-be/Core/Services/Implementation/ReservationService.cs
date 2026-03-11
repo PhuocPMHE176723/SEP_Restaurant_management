@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
+using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Interface;
-using SEP_Restaurant_management.Core.Middlewares;
 
 namespace SEP_Restaurant_management.Core.Services.Implementation;
 
@@ -22,13 +22,16 @@ public class ReservationService : IReservationService
         _mapper = mapper;
     }
 
-    public async Task<ReservationDTO> CreateReservationAsync(long customerId, CreateReservationRequest request)
+    public async Task<ReservationDTO> CreateReservationAsync(
+        long customerId,
+        CreateReservationRequest request
+    )
     {
         try
         {
             // Get customer info
-            var customer = await _context.Customers
-                .Include(c => c.User)
+            var customer = await _context
+                .Customers.Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
             if (customer == null)
@@ -48,7 +51,7 @@ public class ReservationService : IReservationService
                 Status = "PENDING",
                 Note = request.Note,
                 CreatedAt = DateTimeHelper.VietnamNow(),
-                CreatedByStaffId = null
+                CreatedByStaffId = null,
             };
 
             _context.Reservations.Add(reservation);
@@ -58,7 +61,8 @@ public class ReservationService : IReservationService
             if (request.MenuItems != null && request.MenuItems.Count > 0)
             {
                 // Generate order code
-                var orderCode = $"RES-{reservation.ReservationId}-{DateTimeHelper.VietnamNow():yyyyMMddHHmmss}";
+                var orderCode =
+                    $"RES-{reservation.ReservationId}-{DateTimeHelper.VietnamNow():yyyyMMddHHmmss}";
 
                 var order = new Order
                 {
@@ -69,7 +73,7 @@ public class ReservationService : IReservationService
                     Status = "RESERVED",
                     OpenedAt = DateTimeHelper.VietnamNow(),
                     CreatedByStaffId = null,
-                    Note = "Pre-order from reservation"
+                    Note = "Pre-order from reservation",
                 };
 
                 _context.Orders.Add(order);
@@ -78,8 +82,8 @@ public class ReservationService : IReservationService
                 // Create order items (orderdetail)
                 foreach (var item in request.MenuItems)
                 {
-                    var menuItem = await _context.MenuItems
-                        .Include(m => m.MenuItemPrices)
+                    var menuItem = await _context
+                        .MenuItems.Include(m => m.MenuItemPrices)
                         .FirstOrDefaultAsync(m => m.ItemId == item.ItemId);
 
                     if (menuItem == null)
@@ -88,8 +92,8 @@ public class ReservationService : IReservationService
                     }
 
                     // Get current price from MenuItemPrices, fallback to BasePrice
-                    var currentPrice = menuItem.MenuItemPrices
-                        .Where(p => p.EffectiveFrom <= DateTimeHelper.VietnamNow())
+                    var currentPrice = menuItem
+                        .MenuItemPrices.Where(p => p.EffectiveFrom <= DateTimeHelper.VietnamNow())
                         .OrderByDescending(p => p.EffectiveFrom)
                         .FirstOrDefault();
 
@@ -105,7 +109,7 @@ public class ReservationService : IReservationService
                         DiscountAmount = 0,
                         Status = "PENDING",
                         Note = item.Note,
-                        CreatedAt = DateTimeHelper.VietnamNow()
+                        CreatedAt = DateTimeHelper.VietnamNow(),
                     };
 
                     _context.OrderItems.Add(orderItem);
@@ -124,8 +128,8 @@ public class ReservationService : IReservationService
 
     public async Task<List<ReservationDTO>> GetCustomerReservationsAsync(long customerId)
     {
-        var reservations = await _context.Reservations
-            .Where(r => r.CustomerId == customerId)
+        var reservations = await _context
+            .Reservations.Where(r => r.CustomerId == customerId)
             .Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
             .OrderByDescending(r => r.CreatedAt)
@@ -136,8 +140,8 @@ public class ReservationService : IReservationService
 
     public async Task<List<ReservationDTO>> GetAllReservationsAsync()
     {
-        var reservations = await _context.Reservations
-            .Include(r => r.Order)
+        var reservations = await _context
+            .Reservations.Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
             .OrderByDescending(r => r.ReservedAt)
             .ToListAsync();
@@ -147,16 +151,18 @@ public class ReservationService : IReservationService
 
     public async Task<ReservationDTO?> GetReservationByIdAsync(long reservationId)
     {
-        var reservation = await _context.Reservations
-            .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
+        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
+            r.ReservationId == reservationId
+        );
 
         return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
     }
 
     public async Task<bool> CancelReservationAsync(long reservationId, long customerId)
     {
-        var reservation = await _context.Reservations
-            .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerId == customerId);
+        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
+            r.ReservationId == reservationId && r.CustomerId == customerId
+        );
 
         if (reservation == null || reservation.Status == "CANCELLED")
         {
@@ -164,10 +170,10 @@ public class ReservationService : IReservationService
         }
 
         reservation.Status = "CANCELLED";
-        
+
         // Cancel associated order and order items if exists
-        var order = await _context.Orders
-            .Include(o => o.OrderItems)
+        var order = await _context
+            .Orders.Include(o => o.OrderItems)
             .FirstOrDefaultAsync(o => o.ReservationId == reservationId);
 
         if (order != null)
@@ -183,6 +189,62 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateReservationStatusAsync(
+        long id,
+        string status,
+        int? tableId = null
+    )
+    {
+        var allowedStatuses = new HashSet<string>
+        {
+            "PENDING",
+            "CONFIRMED",
+            "CANCELLED",
+            "CHECKED_IN",
+            "COMPLETED",
+            "NO_SHOW",
+        };
+
+        if (!allowedStatuses.Contains(status.ToUpper()))
+        {
+            return false;
+        }
+
+        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
+            r.ReservationId == id
+        );
+        if (reservation == null)
+        {
+            return false;
+        }
+
+        reservation.Status = status.ToUpper();
+
+        if (tableId.HasValue)
+        {
+            var table = await _context.DiningTables.FirstOrDefaultAsync(t =>
+                t.TableId == tableId.Value
+            );
+            if (table == null)
+            {
+                return false;
+            }
+
+            reservation.TableId = tableId;
+
+            // Update table status if checking in
+            if (status.ToUpper() == "CHECKED_IN")
+            {
+                table.Status = "OCCUPIED";
+            }
+        }
+
+        _context.Reservations.Update(reservation);
+        await _context.SaveChangesAsync();
+
         return true;
     }
 }

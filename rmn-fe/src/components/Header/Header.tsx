@@ -37,7 +37,36 @@ export default function Header() {
 
   const isManager = user?.roles.includes("Manager");
   const isWarehouse = user?.roles.includes("Warehouse");
+  const isStaff = user?.roles.includes("Staff");
   const isCustomer = user?.roles.includes("Customer");
+
+  if (!mounted) {
+    return (
+      <header className={styles.header} suppressHydrationWarning>
+        <div className={`container ${styles.inner}`}>
+          <Link href="/" className={styles.logo}>
+            <span className={styles.logoText}>
+              Nhà Hàng <strong>Khói Quê</strong>
+            </span>
+          </Link>
+          <nav className={styles.nav}>
+            <Link href="/" className={styles.navLink}>
+              Trang chủ
+            </Link>
+            <Link href="/menu" className={styles.navLink}>
+              Thực đơn
+            </Link>
+            <Link href="/about" className={styles.navLink}>
+              Giới thiệu
+            </Link>
+          </nav>
+          <div className={styles.actions}>
+            <div style={{ width: 200, height: 40 }} />
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className={styles.header}>
@@ -51,29 +80,48 @@ export default function Header() {
 
         {/* Nav */}
         <nav className={styles.nav}>
-          <Link href="/" className={styles.navLink}>Trang chủ</Link>
-          <Link href="/menu" className={styles.navLink}>Thực đơn</Link>
-          <Link href="/about" className={styles.navLink}>Giới thiệu</Link>
+          <Link href="/" className={styles.navLink}>
+            Trang chủ
+          </Link>
+          <Link href="/menu" className={styles.navLink}>
+            Thực đơn
+          </Link>
+          <Link href="/about" className={styles.navLink}>
+            Giới thiệu
+          </Link>
         </nav>
 
         {/* Actions */}
         <div className={styles.actions}>
-          {!mounted ? (
-            /* Placeholder khi chưa mount */
-            <div style={{ width: '200px', height: '40px' }} />
-          ) : isLoggedIn && user ? (
+          {isLoggedIn && user ? (
             /* ── Đã đăng nhập ── */
             <div className={styles.userWrap} ref={menuRef}>
               {/* Warehouse portal shortcut */}
               {isWarehouse && (
-                <Link href="/warehouse" className={`btn btn-ghost ${styles.adminBtn}`}>
+                <Link
+                  href="/warehouse"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
                   Quản lý kho
+                </Link>
+              )}
+
+              {/* Staff panel shortcut */}
+              {isStaff && (
+                <Link
+                  href="/staff"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
+                  Staff Panel
                 </Link>
               )}
 
               {/* Manager panel shortcut */}
               {isManager && (
-                <Link href="/manager" className={`btn btn-ghost ${styles.adminBtn}`}>
+                <Link
+                  href="/manager"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
                   Manager Panel
                 </Link>
               )}
@@ -94,8 +142,12 @@ export default function Header() {
                 </div>
                 <svg
                   className={`${styles.chevron} ${menuOpen ? styles.chevronOpen : ""}`}
-                  width="14" height="14" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" strokeWidth="2.5"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -114,8 +166,16 @@ export default function Header() {
                     className={styles.dropdownItem}
                     onClick={() => setMenuOpen(false)}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                     </svg>
                     Hồ sơ cá nhân
                   </Link>
@@ -125,8 +185,22 @@ export default function Header() {
                       className={styles.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect
+                          x="3"
+                          y="4"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
                         <line x1="16" y1="2" x2="16" y2="6" />
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
@@ -140,9 +214,18 @@ export default function Header() {
                       className={styles.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                        <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
                       </svg>
                       Manager Panel
                     </Link>
@@ -153,7 +236,14 @@ export default function Header() {
                       className={styles.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                         <line x1="12" y1="22.08" x2="12" y2="12" />
@@ -167,7 +257,14 @@ export default function Header() {
                     className={`${styles.dropdownItem} ${styles.dropdownLogout}`}
                     onClick={handleLogout}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
@@ -180,14 +277,31 @@ export default function Header() {
           ) : (
             /* ── Chưa đăng nhập ── */
             <>
-              <Link href="/login" className={`btn btn-ghost ${styles.authBtn}`}>Đăng nhập</Link>
-              <Link href="/register" className={`btn btn-ghost ${styles.authBtn}`}>Đăng ký</Link>
+              <Link href="/login" className={`btn btn-ghost ${styles.authBtn}`}>
+                Đăng nhập
+              </Link>
+              <Link
+                href="/register"
+                className={`btn btn-ghost ${styles.authBtn}`}
+              >
+                Đăng ký
+              </Link>
             </>
           )}
 
           {(!isLoggedIn || isCustomer) && (
-            <Link href="/booking" className={`btn btn-primary ${styles.bookingBtn}`}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+            <Link
+              href="/booking"
+              className={`btn btn-primary ${styles.bookingBtn}`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2"
+              >
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
                 <line x1="8" y1="2" x2="8" y2="6" />

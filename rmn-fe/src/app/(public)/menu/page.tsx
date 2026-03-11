@@ -21,26 +21,43 @@ function MenuContent() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadItems = useCallback(async (catId: string) => {
-    setLoading(true);
-    const [data, cats] = await Promise.all([
-      getMenuItems(catId),
-      categories.length ? Promise.resolve(categories) : getCategories(),
-    ]);
-    setItems(data);
-    if (!categories.length) setCategories(cats);
-    setLoading(false);
-  }, [categories]);
+  const loadItems = useCallback(
+    async (catId: string) => {
+      setLoading(true);
+      const [data, cats] = await Promise.all([
+        getMenuItems(catId),
+        categories.length ? Promise.resolve(categories) : getCategories(),
+      ]);
+      setItems(data);
+      if (!categories.length) setCategories(cats);
+      setLoading(false);
+    },
+    [categories],
+  );
 
   useEffect(() => {
     void loadItems(activeCategory);
   }, [activeCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = items.filter((i) =>
-    search.trim() === "" ||
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = items.filter((i) => {
+    const q = search.trim();
+    if (!q) return true;
+    const normName =
+      i.name
+        ?.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase() ?? "";
+    const normDesc =
+      i.description
+        ?.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase() ?? "";
+    const normQ = q
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    return normName.includes(normQ) || normDesc.includes(normQ);
+  });
 
   return (
     <>
@@ -50,10 +67,22 @@ function MenuContent() {
         <div className={styles.hero}>
           <div className="container">
             <h1 className={styles.heroTitle}>Thực đơn nhà hàng</h1>
-            <p className={styles.heroSub}>Khám phá tinh hoa ẩm thực, mở cửa Trưa 11:00–14:00 · Tối 17:00–21:30</p>
+            <p className={styles.heroSub}>
+              Khám phá tinh hoa ẩm thực, mở cửa Trưa 11:00–14:00 · Tối
+              17:00–21:30
+            </p>
             <div className={styles.searchWrap}>
-              <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <svg
+                className={styles.searchIcon}
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <input
                 type="search"
@@ -89,13 +118,21 @@ function MenuContent() {
               <div className={styles.empty}>
                 <p>🍽️</p>
                 <p className={styles.emptyText}>Không tìm thấy món phù hợp</p>
-                <button onClick={() => { setSearch(""); setActiveCategory("all"); }} className="btn btn-primary">
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setActiveCategory("all");
+                  }}
+                  className="btn btn-primary"
+                >
                   Xem tất cả
                 </button>
               </div>
             ) : (
               <div className="grid-dishes">
-                {filtered.map((item) => <MenuCard key={item.id} item={item} />)}
+                {filtered.map((item) => (
+                  <MenuCard key={item.id} item={item} />
+                ))}
               </div>
             )}
           </div>
@@ -104,11 +141,18 @@ function MenuContent() {
 
       {/* Floating booking button */}
       <Link href="/booking" className={styles.floatingBooking}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
         Đặt bàn
       </Link>
@@ -120,7 +164,9 @@ function MenuContent() {
 
 export default function MenuPage() {
   return (
-    <Suspense fallback={<div className="spinner" style={{ marginTop: "8rem" }} />}>
+    <Suspense
+      fallback={<div className="spinner" style={{ marginTop: "8rem" }} />}
+    >
       <MenuContent />
     </Suspense>
   );

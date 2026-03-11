@@ -25,8 +25,53 @@ function generateTimeSlots(): string[] {
 }
 
 const TIME_SLOTS = generateTimeSlots();
-const SEATS_PER_TABLE = 8;
-const MAX_PARTY_SIZE = 50;
+const MAX_PARTY_SIZE = 100;
+
+type SeatingPlan = {
+  totalTables: number;
+  totalSeats: number;
+  unusedSeats: number;
+  counts: { 4: number; 6: number; 8: number };
+};
+
+function buildSeatingPlan(partySize: number): SeatingPlan {
+  const target = Math.max(0, Math.floor(partySize));
+  let best: SeatingPlan = {
+    totalTables: target === 0 ? 1 : Number.POSITIVE_INFINITY,
+    totalSeats: target === 0 ? 4 : Number.POSITIVE_INFINITY,
+    unusedSeats: target === 0 ? 4 : Number.POSITIVE_INFINITY,
+    counts: { 4: target === 0 ? 1 : 0, 6: 0, 8: 0 },
+  };
+
+  // Brute force small search space to minimize tables, then unused seats.
+  const maxTables = Math.ceil(target / 4) + 2;
+  for (let c8 = 0; c8 <= maxTables; c8++) {
+    for (let c6 = 0; c6 <= maxTables; c6++) {
+      const seatsUsed = c8 * 8 + c6 * 6;
+      if (seatsUsed > target + 8) continue; // small pruning
+      const remaining = Math.max(0, target - seatsUsed);
+      const c4 = Math.ceil(remaining / 4);
+      const totalSeats = seatsUsed + c4 * 4;
+      const totalTables = c8 + c6 + c4;
+      if (totalTables === 0) continue;
+      const unusedSeats = totalSeats - target;
+
+      const betterTables = totalTables < best.totalTables;
+      const betterUnused =
+        totalTables === best.totalTables && unusedSeats < best.unusedSeats;
+      if (betterTables || betterUnused) {
+        best = {
+          totalTables,
+          totalSeats,
+          unusedSeats,
+          counts: { 4: c4, 6: c6, 8: c8 },
+        };
+      }
+    }
+  }
+
+  return best;
+}
 
 export default function BookingForm() {
   const { user, isLoggedIn } = useAuth();
@@ -42,6 +87,7 @@ export default function BookingForm() {
     date: "",
     timeSlot: "",
     partySize: 8,
+    phone: "",
     note: "",
   });
 
@@ -82,11 +128,11 @@ export default function BookingForm() {
     setErrors((e) => ({ ...e, [field]: "" }));
   }
 
-  // Auto-calculate number of tables (ceiling division by SEATS_PER_TABLE)
-  const numberOfTables = Math.max(
-    1,
-    Math.ceil((form.partySize || 1) / SEATS_PER_TABLE),
+  const seatingPlan = useMemo(
+    () => buildSeatingPlan(form.partySize || 0),
+    [form.partySize],
   );
+  const numberOfTables = Math.max(1, seatingPlan.totalTables || 1);
 
   // Build list of unique categories from menu items
   const categories = useMemo(() => {
@@ -155,6 +201,12 @@ export default function BookingForm() {
     if (!form.timeSlot) {
       e.timeSlot = "Vui lòng chọn giờ";
     }
+    if (
+      !form.phone ||
+      !/^((\+?84|0)\d{8,10})$/.test(form.phone.replace(/\D/g, ""))
+    ) {
+      e.phone = "Vui lòng nhập số điện thoại hợp lệ (09xxxxxxxx hoặc +84)";
+    }
     if (form.partySize < 1) {
       e.partySize = "Số khách phải từ 1 trở lên";
     } else if (form.partySize > MAX_PARTY_SIZE) {
@@ -177,11 +229,14 @@ export default function BookingForm() {
         itemId,
         quantity,
       }));
+      const phoneLine = form.phone ? `SĐT liên hệ: ${form.phone}` : "";
+      const noteCombined = [phoneLine, form.note].filter(Boolean).join("\n");
+
       const result = await createReservation({
         reservedAt,
         partySize: form.partySize,
         durationMinutes: 90,
-        note: form.note || undefined,
+        note: noteCombined || undefined,
         menuItems: orderItems,
       });
       setModalType("success");
@@ -191,7 +246,7 @@ export default function BookingForm() {
           `Chúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`,
       );
       setModalOpen(true);
-      setForm({ date: "", timeSlot: "", partySize: 8, note: "" });
+      setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
       setSelectedItems(new Map());
     } catch (error: any) {
       const errorMessage =
@@ -213,6 +268,20 @@ export default function BookingForm() {
       return sum + (item ? item.basePrice * qty : 0);
     }, 0);
   }, [selectedItems, menuItems]);
+
+  const tableBreakdown = useMemo(() => {
+    const parts: string[] = [];
+    if (seatingPlan.counts[8]) parts.push(`${seatingPlan.counts[8]} bàn 8 chỗ`);
+    if (seatingPlan.counts[6]) parts.push(`${seatingPlan.counts[6]} bàn 6 chỗ`);
+    if (seatingPlan.counts[4]) parts.push(`${seatingPlan.counts[4]} bàn 4 chỗ`);
+    return {
+      text: parts.length ? parts.join(" · ") : "",
+      unused:
+        seatingPlan.unusedSeats > 0
+          ? `(+${seatingPlan.unusedSeats} ghế trống)`
+          : "",
+    };
+  }, [seatingPlan]);
 
   const amountPerTable =
     numberOfTables > 0 ? Math.round(totalAmount / numberOfTables) : 0;
@@ -270,11 +339,13 @@ export default function BookingForm() {
       {/* Step 2 – Reservation details */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
-          <span className={styles.step}>2</span>Chi tiết đặt bàn
+          <span className={styles.step}>2</span>Thông tin đặt bàn
         </h3>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Ngày đến *</label>
+            <label className={styles.label}>
+              Ngày đến (trong 7 ngày tới) *
+            </label>
             <input
               id="date"
               type="date"
@@ -286,7 +357,7 @@ export default function BookingForm() {
               required
             />
             {errors.date && <p className={styles.error}>{errors.date}</p>}
-            <p className={styles.hint}>Chỉ có thể đặt trong vòng 7 ngày tới</p>
+            <p className={styles.hint}>Chỉ cho phép đặt tối đa trước 7 ngày</p>
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Giờ đến *</label>
@@ -328,14 +399,34 @@ export default function BookingForm() {
               <p className={styles.error}>{errors.timeSlot}</p>
             )}
             <p className={styles.hint}>
-              Khung giờ cách nhau 15 phút, bắt đầu 10:00 sáng
+              Khung giờ cách nhau 15 phút · phục vụ 10:00 – 22:00
             </p>
           </div>
         </div>
 
+        {/* Phone for contact */}
+        <div className={`${styles.field} ${styles.fieldNarrow}`}>
+          <label className={styles.label}>
+            Số điện thoại để gọi xác nhận *
+          </label>
+          <input
+            type="tel"
+            inputMode="tel"
+            placeholder="Ví dụ: 0912345678"
+            className={`${styles.input} ${errors.phone ? styles.inputError : ""}`}
+            value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            required
+          />
+          {errors.phone && <p className={styles.error}>{errors.phone}</p>}
+          <p className={styles.hint}>
+            Nhân viên sẽ gọi lại để xác nhận/nhắc lịch
+          </p>
+        </div>
+
         {/* Party size */}
         <div className={styles.field}>
-          <label className={styles.label}>Số khách *</label>
+          <label className={styles.label}>Tổng số khách *</label>
           <input
             type="number"
             min="1"
@@ -358,7 +449,10 @@ export default function BookingForm() {
           {errors.partySize && (
             <p className={styles.error}>{errors.partySize}</p>
           )}
-          {/* Table auto-calculation badge */}
+          <p className={styles.hint}>
+            Bạn chỉ cần nhập tổng khách, hệ thống tự gợi ý bàn 4/6/8 chỗ.
+          </p>
+          {/* Table auto-calculation badge with 4/6/8-seat mix */}
           <div className={styles.tableBadge}>
             <span className={styles.tableBadgeIcon}></span>
             <span>
@@ -367,8 +461,8 @@ export default function BookingForm() {
                 {numberOfTables} bàn
               </strong>
               <span className={styles.tableBadgeSub}>
-                {" "}
-                ({SEATS_PER_TABLE} chỗ/bàn)
+                {tableBreakdown.text ? ` · ${tableBreakdown.text}` : ""}{" "}
+                {tableBreakdown.unused}
               </span>
             </span>
           </div>
@@ -614,7 +708,16 @@ export default function BookingForm() {
           )}
         </button>
       ) : (
-        <div className={styles.submitBtn} style={{ background: '#f5f5f5', color: '#666', textAlign: 'center', cursor: 'not-allowed', border: '1px solid #ddd' }}>
+        <div
+          className={styles.submitBtn}
+          style={{
+            background: "#f5f5f5",
+            color: "#666",
+            textAlign: "center",
+            cursor: "not-allowed",
+            border: "1px solid #ddd",
+          }}
+        >
           <i>Chỉ khách hàng mới có thể thực hiện đặt bàn.</i>
         </div>
       )}

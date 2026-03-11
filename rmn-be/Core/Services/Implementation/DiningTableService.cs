@@ -24,6 +24,12 @@ public class DiningTableService : IDiningTableService
         return _mapper.Map<IEnumerable<DiningTableDTO>>(tables);
     }
 
+    public async Task<IEnumerable<DiningTableWithOrderDTO>> GetAllWithOrdersAsync()
+    {
+        var tables = await _unitOfWork.DiningTables.GetTablesWithCurrentOrdersAsync();
+        return _mapper.Map<IEnumerable<DiningTableWithOrderDTO>>(tables);
+    }
+
     public async Task<DiningTableDTO?> GetByIdAsync(int id)
     {
         var table = await _unitOfWork.DiningTables.GetByIdAsync(id);
@@ -46,18 +52,26 @@ public class DiningTableService : IDiningTableService
     public async Task<bool> UpdateAsync(int id, UpdateDiningTableDTO dto)
     {
         var table = await _unitOfWork.DiningTables.GetByIdAsync(id);
-        if (table == null) return false;
+        if (table == null)
+            return false;
 
         // Kiểm tra trùng TableCode với bàn khác
-        if (dto.TableCode != null &&
-            await _unitOfWork.DiningTables.IsCodeExistsAsync(dto.TableCode, excludeId: id))
+        if (
+            dto.TableCode != null
+            && await _unitOfWork.DiningTables.IsCodeExistsAsync(dto.TableCode, excludeId: id)
+        )
             throw new InvalidOperationException($"TableCode '{dto.TableCode}' already exists.");
 
-        if (dto.TableCode != null) table.TableCode = dto.TableCode;
-        if (dto.TableName != null) table.TableName = dto.TableName;
-        if (dto.Capacity.HasValue) table.Capacity = dto.Capacity.Value;
-        if (dto.Status != null) table.Status = dto.Status;
-        if (dto.IsActive.HasValue) table.IsActive = dto.IsActive.Value;
+        if (dto.TableCode != null)
+            table.TableCode = dto.TableCode;
+        if (dto.TableName != null)
+            table.TableName = dto.TableName;
+        if (dto.Capacity.HasValue)
+            table.Capacity = dto.Capacity.Value;
+        if (dto.Status != null)
+            table.Status = dto.Status;
+        if (dto.IsActive.HasValue)
+            table.IsActive = dto.IsActive.Value;
 
         _unitOfWork.DiningTables.Update(table);
         return await _unitOfWork.SaveChangesAsync() > 0;
@@ -66,7 +80,8 @@ public class DiningTableService : IDiningTableService
     public async Task<bool> DeleteAsync(int id)
     {
         var table = await _unitOfWork.DiningTables.GetByIdAsync(id);
-        if (table == null) return false;
+        if (table == null)
+            return false;
 
         // Soft delete
         table.IsActive = false;
@@ -74,4 +89,3 @@ public class DiningTableService : IDiningTableService
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
 }
-
