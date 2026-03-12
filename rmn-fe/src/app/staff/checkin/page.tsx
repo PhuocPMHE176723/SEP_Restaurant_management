@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { adminReservationApi } from "../../../lib/api/admin-reservation";
 import { diningTableApi } from "../../../lib/api/dining-table";
+import { showSuccess, showError } from "../../../lib/ui/alerts";
 import type {
   ReservationResponse,
   DiningTableResponse,
@@ -70,11 +71,11 @@ export default function CheckinPage() {
         tableId: tableId,
       });
 
-      alert("Check-in thành công!");
+      showSuccess("Thành công", "Check-in thành công!");
       fetchData(); // Refresh data
     } catch (error) {
       console.error("Check-in failed:", error);
-      alert("Check-in thất bại!");
+      showError("Lỗi", "Check-in thất bại!");
     }
   };
 

@@ -1,7 +1,7 @@
 export interface OrderItemResponse {
     orderItemId: number;
     itemId: number;
-    itemNameSnapshot: string;
+    menuItemName: string;
     quantity: number;
     unitPrice: number;
     note?: string;
@@ -11,7 +11,7 @@ export interface OrderResponse {
     orderId: number;
     orderCode: string;
     status: string;
-    subtotal: number;
+    totalAmount: number;
     orderItems: OrderItemResponse[];
 }
 

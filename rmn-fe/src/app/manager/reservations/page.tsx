@@ -131,6 +131,18 @@ export default function AdminReservationsPage() {
             ) : (
               reservations.map((res) => {
                 const statusInfo = getStatusText(res.status);
+                
+                let displayPhone = res.customerPhone && res.customerPhone !== "N/A" ? res.customerPhone : "N/A";
+                let displayNote = res.note || "";
+                
+                if (displayNote.includes("SĐT liên hệ:")) {
+                  const phoneMatch = displayNote.match(/SĐT liên hệ:\s*([^\n]+)/);
+                  if (phoneMatch && displayPhone === "N/A") {
+                    displayPhone = phoneMatch[1].trim();
+                  }
+                  displayNote = displayNote.replace(/SĐT liên hệ:\s*[^\n]+\n?/, "").trim();
+                }
+
                 return (
                   <tr key={res.reservationId}>
                     <td>#{res.reservationId}</td>
@@ -139,7 +151,7 @@ export default function AdminReservationsPage() {
                         {res.customerName}
                       </div>
                     </td>
-                    <td>{res.customerPhone}</td>
+                    <td>{displayPhone}</td>
                     <td>{formatDate(res.reservedAt)}</td>
                     <td>{res.partySize}</td>
                     <td>
@@ -175,9 +187,9 @@ export default function AdminReservationsPage() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
-                        title={res.note || ""}
+                        title={displayNote}
                       >
-                        {res.note || (
+                        {displayNote || (
                           <span style={{ color: "#94a3b8" }}>Không có</span>
                         )}
                       </div>
@@ -199,7 +211,7 @@ export default function AdminReservationsPage() {
         <div className={styles.orderDetails}>
           {selectedOrder?.orderItems.map((item: OrderItemResponse) => (
             <div key={item.orderItemId} className={styles.orderItem}>
-              <div className={styles.itemName}>{item.itemNameSnapshot}</div>
+              <div className={styles.itemName}>{item.menuItemName}</div>
               <div className={styles.itemQty}>x{item.quantity}</div>
               <div className={styles.itemPrice}>
                 {(item.unitPrice * item.quantity).toLocaleString("vi-VN")} đ
@@ -208,7 +220,7 @@ export default function AdminReservationsPage() {
           ))}
           <div className={styles.orderTotal}>
             <span>Tổng cộng (tạm tính):</span>
-            <span>{selectedOrder?.subtotal.toLocaleString("vi-VN")} đ</span>
+            <span>{(selectedOrder?.totalAmount || 0).toLocaleString("vi-VN")} đ</span>
           </div>
         </div>
       </Modal>
