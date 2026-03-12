@@ -390,22 +390,7 @@ public static class DbInitializer
     {
         var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
 
-        // Wipe existing to force full data for manager testing
-        if (context.MenuItems.Any())
-        {
-            context.MenuItems.RemoveRange(context.MenuItems);
-            await context.SaveChangesAsync();
-        }
-        if (context.MenuCategories.Any())
-        {
-            context.MenuCategories.RemoveRange(context.MenuCategories);
-            await context.SaveChangesAsync();
-        }
-        if (context.DiningTables.Any())
-        {
-            context.DiningTables.RemoveRange(context.DiningTables);
-            await context.SaveChangesAsync();
-        }
+        // Initialize tables if empty (temporarily disabled force-wipe to prevent FK constraint crashes)
 
         // 1. Seed Menu Categories
         if (!context.MenuCategories.Any())

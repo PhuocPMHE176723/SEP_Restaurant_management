@@ -33,10 +33,12 @@ public class MappingProfile : Profile
 
         // ── Order ──────────────────────────────────────────────
         CreateMap<Order, OrderDTO>()
+            .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.OrderItems.Sum(i => i.LineTotal)))
             .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.OrderItems));
 
         // ── OrderItem ──────────────────────────────────────────
-        CreateMap<OrderItem, OrderItemDTO>();
+        CreateMap<OrderItem, OrderItemDTO>()
+            .ForMember(dest => dest.MenuItemName, opt => opt.MapFrom(src => src.ItemNameSnapshot));
 
         // ── Blog & Sliders ─────────────────────────────────────
         CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();
