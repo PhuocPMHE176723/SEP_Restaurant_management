@@ -38,6 +38,8 @@ export default function Header() {
   const isManager = user?.roles.includes("Manager");
   const isWarehouse = user?.roles.includes("Warehouse");
   const isStaff = user?.roles.includes("Staff");
+  const isKitchen = user?.roles.includes("Kitchen");
+  const isReceptionist = user?.roles.includes("Receptionist");
   const isCustomer = user?.roles.includes("Customer");
 
   if (!mounted) {
@@ -113,6 +115,26 @@ export default function Header() {
                   className={`btn btn-ghost ${styles.adminBtn}`}
                 >
                   Staff Panel
+                </Link>
+              )}
+
+              {/* Kitchen portal shortcut */}
+              {isKitchen && (
+                <Link
+                  href="/kitchen"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
+                  Bếp
+                </Link>
+              )}
+
+              {/* Receptionist portal shortcut */}
+              {isReceptionist && (
+                <Link
+                  href="/receptionist"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
+                  Lễ tân
                 </Link>
               )}
 
@@ -249,6 +271,47 @@ export default function Header() {
                         <line x1="12" y1="22.08" x2="12" y2="12" />
                       </svg>
                       Quản lý kho
+                    </Link>
+                  )}
+                  {isKitchen && (
+                    <Link
+                      href="/kitchen"
+                      className={styles.dropdownItem}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                      </svg>
+                      Cổng Nhà bếp
+                    </Link>
+                  )}
+                  {isReceptionist && (
+                    <Link
+                      href="/receptionist"
+                      className={styles.dropdownItem}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      Cổng Lễ tân
                     </Link>
                   )}
                   <div className={styles.dropdownDivider} />

@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
+import { orderApi } from "../../../lib/api/order";
+import { showSuccess, showError } from "../../../lib/ui/alerts";
+import { isValidVNPhone } from "../../../lib/validation";
+import Pagination from "../../../components/Pagination";
 import styles from "../../manager/manager.module.css";
 
 interface Table {
@@ -28,6 +32,15 @@ export default function WalkinPage() {
     note: "",
   });
   const [loading, setLoading] = useState(true);
+  
+  // Filters and Search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [capacityFilter, setCapacityFilter] = useState<number | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     fetchTables();
@@ -53,14 +66,23 @@ export default function WalkinPage() {
   };
 
   const handleAssignTable = async (tableId: number) => {
-    if (!customer.name.trim() || !customer.phone.trim()) {
-      alert("Vui lòng nhập tên và số điện thoại khách hàng");
+    if (!customer.name.trim()) {
+      showError("Lỗi", "Vui lòng nhập tên khách hàng");
+      return;
+    }
+
+    if (!isValidVNPhone(customer.phone)) {
+      showError("Lỗi", "Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng Việt Nam (ví dụ: 0912345678)");
       return;
     }
 
     try {
-      await diningTableApi.updateTable(tableId, {
-        status: "OCCUPIED",
+      await orderApi.createWalkinOrder({
+        tableId,
+        name: customer.name,
+        phone: customer.phone,
+        partySize: customer.partySize,
+        note: customer.note
       });
 
       setCustomer({
@@ -71,14 +93,28 @@ export default function WalkinPage() {
       });
 
       await fetchTables();
-      alert("Đã gán bàn thành công!");
+      showSuccess("Thành công", "Đã gán bàn và mở order thành công!");
     } catch (error) {
       console.error("Failed to assign table:", error);
-      alert("Gán bàn thất bại!");
+      showError("Lỗi", "Gán bàn thất bại!");
     }
   };
 
-  const availableTables = tables.filter((t) => t.status === "AVAILABLE");
+  // Filter logic
+  const filteredTables = tables.filter(t => {
+    const matchesSearch = t.tableName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         t.tableCode.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCapacity = capacityFilter === "ALL" || t.capacity >= (capacityFilter as number);
+    const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
+    
+    return matchesSearch && matchesCapacity && matchesStatus;
+  });
+
+  // Pagination logic
+  const totalItems = filteredTables.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentTables = filteredTables.slice(startIndex, startIndex + itemsPerPage);
 
   if (loading) return <div className={styles.spinner} />;
 
@@ -87,13 +123,13 @@ export default function WalkinPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Khách vãng lai</h1>
-          <p className={styles.pageSubtitle}>Gán bàn cho khách đến trực tiếp (không đặt trước)</p>
+          <p className={styles.pageSubtitle}>Quản lý gán bàn và mở order cho khách đến trực tiếp</p>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: "350px 1fr", gap: "2rem" }}>
         {/* Customer form */}
-        <div className={styles.card} style={{ height: 'fit-content' }}>
+        <div className={styles.card} style={{ height: 'fit-content', position: 'sticky', top: '1rem' }}>
           <h3 style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>Thông tin khách hàng</h3>
           <div className={styles.modalBody} style={{ padding: 0 }}>
             <div className={styles.formGroup}>
@@ -137,48 +173,131 @@ export default function WalkinPage() {
                 className={styles.textarea}
                 value={customer.note}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, note: e.target.value }))}
-                placeholder="Ghi chú đặc biệt"
+                placeholder="Yêu cầu đặc biệt..."
                 rows={4}
               />
             </div>
           </div>
         </div>
 
-        {/* Available tables */}
+        {/* Table Selection with Search and Filters */}
         <div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-            Bàn trống hiện có ({availableTables.length})
+          <div className={styles.controlBar} style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className={styles.searchBox} style={{ flex: 1, minWidth: '200px' }}>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Tìm tên bàn hoặc mã bàn..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+            
+            <div className={styles.filterGroup} style={{ display: 'flex', gap: '1rem' }}>
+              <select 
+                className={styles.select}
+                value={capacityFilter}
+                onChange={(e) => {
+                  setCapacityFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">Tất cả sức chứa</option>
+                <option value="2">&ge; 2 người</option>
+                <option value="4">&ge; 4 người</option>
+                <option value="6">&ge; 6 người</option>
+                <option value="10">&ge; 10 người</option>
+              </select>
+
+              <select 
+                className={styles.select}
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="AVAILABLE">Bàn trống</option>
+                <option value="OCCUPIED">Bàn có người</option>
+                <option value="RESERVED">Bàn đã đặt</option>
+              </select>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: '#475569' }}>
+            Danh sách bàn ({filteredTables.length} kết quả)
           </h3>
-          {availableTables.length === 0 ? (
+
+          {currentTables.length === 0 ? (
             <div className={styles.emptyState}>
-              <h3>Hết bàn</h3>
-              <p>Tất cả bàn hiện đang được sử dụng hoặc đã đặt trước.</p>
+              <p>Không tìm thấy bàn nào phù hợp với bộ lọc.</p>
             </div>
           ) : (
-            <div className={styles.tableGrid}>
-              {availableTables.map((table) => (
-                <div
-                  key={table.tableId}
-                  className={`${styles.tableCard} ${styles.available}`}
-                  onClick={() => table.capacity >= customer.partySize && handleAssignTable(table.tableId)}
-                  style={{
-                    opacity: table.capacity >= customer.partySize ? 1 : 0.6,
-                    cursor: table.capacity >= customer.partySize ? 'pointer' : 'not-allowed'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{table.tableName}</h4>
-                    <span className={styles.badgeActive} style={{ fontSize: '0.65rem' }}>Trống</span>
-                  </div>
-                  <p style={{ margin: '0.5rem 0', color: '#64748b', fontWeight: 600 }}>{table.capacity} chỗ ngồi</p>
-                  {table.capacity < customer.partySize ? (
-                    <div style={{ color: '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>⚠️ Không đủ chỗ</div>
-                  ) : (
-                    <div style={{ color: '#f97316', fontSize: '0.85rem', fontWeight: 700, marginTop: '0.5rem' }}>Nhấp để gán bàn →</div>
-                  )}
+            <>
+              <div className={styles.tableGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                {currentTables.map((table) => {
+                  const isAvailable = table.status === "AVAILABLE";
+                  const canFit = table.capacity >= customer.partySize;
+                  const isSelectable = isAvailable && canFit;
+
+                  return (
+                    <div
+                      key={table.tableId}
+                      className={`${styles.tableCard} ${isAvailable ? styles.available : styles.occupied}`}
+                      onClick={() => isSelectable && handleAssignTable(table.tableId)}
+                      style={{
+                        opacity: isSelectable ? 1 : 0.6,
+                        cursor: isSelectable ? 'pointer' : 'not-allowed',
+                        padding: '1.25rem',
+                        borderRadius: '0.75rem',
+                        border: isSelectable ? '2px solid #e2e8f0' : '2px solid transparent',
+                        backgroundColor: isAvailable ? '#f0fdf4' : '#fff1f2',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isAvailable ? '#166534' : '#991b1b' }}>{table.tableName}</h4>
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          padding: '0.15rem 0.5rem', 
+                          borderRadius: '1rem',
+                          backgroundColor: isAvailable ? '#dcfce7' : '#fee2e2',
+                          color: isAvailable ? '#166534' : '#991b1b',
+                          fontWeight: 700
+                        }}>
+                          {table.status === "AVAILABLE" ? "TRỐNG" : table.status === "OCCUPIED" ? "BẬN" : "ĐÃ ĐẶT"}
+                        </span>
+                      </div>
+                      <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> người</p>
+                      
+                      {!isAvailable ? (
+                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang bận</div>
+                      ) : !canFit ? (
+                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>⚠️ Không đủ chỗ</div>
+                      ) : (
+                        <div style={{ color: '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>Nhấp để gán bàn →</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div style={{ marginTop: '2rem' }}>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
