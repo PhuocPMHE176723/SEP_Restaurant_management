@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
 import { orderApi, OrderResponse } from "../../../lib/api/order";
+import { showSuccess, showError } from "../../../lib/ui/alerts";
 import type { DiningTableResponse } from "../../../types/models";
 import styles from "../../manager/manager.module.css";
 
@@ -12,14 +13,11 @@ interface TableWithOrder extends DiningTableResponse {
 
 export default function TableTransferPage() {
   const [tables, setTables] = useState<TableWithOrder[]>([]);
-  const [orders, setOrders] = useState<OrderResponse[]>([]);
-  const [selectedFromTable, setSelectedFromTable] =
-    useState<TableWithOrder | null>(null);
-  const [selectedToTable, setSelectedToTable] = useState<TableWithOrder | null>(
-    null,
-  );
+  const [selectedFromTable, setSelectedFromTable] = useState<TableWithOrder | null>(null);
+  const [selectedToTable, setSelectedToTable] = useState<TableWithOrder | null>(null);
   const [transferReason, setTransferReason] = useState("");
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -27,20 +25,19 @@ export default function TableTransferPage() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [tablesData, ordersData] = await Promise.all([
         diningTableApi.getAllTables(),
         orderApi.getAllOrders(),
       ]);
 
-      // Combine tables with their current orders
       const tablesWithOrders: TableWithOrder[] = (tablesData || []).map(
         (table) => {
           const currentOrder = Array.isArray(ordersData)
             ? ordersData.find(
                 (order) =>
-                  order.tableName === table.tableCode &&
-                  (order.status === "OPEN" ||
-                    order.status === "SENT_TO_KITCHEN"),
+                  order.tableName === (table.tableName || table.tableCode) &&
+                  (order.status === "OPEN" || order.status === "SENT_TO_KITCHEN" || order.status === "SERVED"),
               )
             : undefined;
           return {
@@ -51,41 +48,29 @@ export default function TableTransferPage() {
       );
 
       setTables(tablesWithOrders);
-      setOrders(Array.isArray(ordersData) ? ordersData : []);
       setLoading(false);
     } catch (error) {
       console.error("Failed to fetch data:", error);
+      showError("Lỗi", "Không thể tải dữ liệu bàn.");
       setLoading(false);
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "AVAILABLE":
-        return "Trống";
-      case "OCCUPIED":
-        return "Có khách";
-      case "RESERVED":
-        return "Đã đặt";
-      case "MAINTENANCE":
-        return "Bảo trì";
-      default:
-        return status;
+      case "AVAILABLE": return "Trống";
+      case "OCCUPIED": return "Có khách";
+      case "RESERVED": return "Đã đặt";
+      default: return status;
     }
   };
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "AVAILABLE":
-        return styles.statusAvailable;
-      case "OCCUPIED":
-        return styles.statusOccupied;
-      case "RESERVED":
-        return styles.statusReserved;
-      case "MAINTENANCE":
-        return styles.statusMaintenance;
-      default:
-        return "";
+      case "AVAILABLE": return styles.badgeAvailable;
+      case "OCCUPIED": return styles.badgeOccupied;
+      case "RESERVED": return styles.badgeReserved;
+      default: return styles.badgeInactive;
     }
   };
 
@@ -97,289 +82,244 @@ export default function TableTransferPage() {
   };
 
   const canTransferFrom = (table: TableWithOrder) => {
-    return table.currentOrder && table.status === "OCCUPIED";
+    return table.status === "OCCUPIED" && table.currentOrder;
   };
 
   const canTransferTo = (table: TableWithOrder) => {
-    return (
-      !table.currentOrder && table.status === "AVAILABLE" && table.isActive
-    );
+    return table.status === "AVAILABLE" && !table.currentOrder && table.isActive;
   };
 
-  const handleSelectFromTable = (table: TableWithOrder) => {
-    if (canTransferFrom(table)) {
-      setSelectedFromTable(table);
-      setSelectedToTable(null); // Reset to table selection
-    }
-  };
-
-  const handleSelectToTable = (table: TableWithOrder) => {
-    if (canTransferTo(table)) {
-      setSelectedToTable(table);
+  const handleSelectTable = (table: TableWithOrder) => {
+    if (!selectedFromTable) {
+      if (canTransferFrom(table)) {
+        setSelectedFromTable(table);
+      } else {
+        showError("Lỗi chọn bàn", "Chỉ chọn bàn có khách để chuyển đi.");
+      }
+    } else if (!selectedToTable) {
+      if (table.tableId === selectedFromTable.tableId) {
+        setSelectedFromTable(null);
+      } else if (canTransferTo(table)) {
+        setSelectedToTable(table);
+      } else {
+        showError("Lỗi chọn bàn", "Chỉ chọn bàn trống để chuyển đến.");
+      }
+    } else {
+      if (table.tableId === selectedToTable.tableId) {
+        setSelectedToTable(null);
+      } else if (table.tableId === selectedFromTable.tableId) {
+        setSelectedFromTable(null);
+        setSelectedToTable(null);
+      }
     }
   };
 
   const handleTransfer = async () => {
     if (!selectedFromTable || !selectedToTable || !transferReason.trim()) {
-      alert("Vui lòng chọn bàn nguồn, bàn đích và nhập lý do chuyển bàn");
+      showError("Lỗi", "Vui lòng chọn bàn nguồn, bàn đích và nhập lý do");
       return;
     }
 
     try {
-      // For now, we'll simulate the transfer by updating table statuses
-      // In a real implementation, you'd call a specific API endpoint for table transfer
-
-      // Update the source table to AVAILABLE
-      await diningTableApi.updateTable(selectedFromTable.tableId, {
-        status: "AVAILABLE",
+      await orderApi.transferTable({
+        fromTableId: selectedFromTable.tableId,
+        toTableId: selectedToTable.tableId,
+        reason: transferReason
       });
 
-      // Update the destination table to OCCUPIED
-      await diningTableApi.updateTable(selectedToTable.tableId, {
-        status: "OCCUPIED",
-      });
+      showSuccess("Thành công", `Đã chuyển khách từ bàn ${selectedFromTable.tableName || selectedFromTable.tableCode} sang ${selectedToTable.tableName || selectedToTable.tableCode}`);
 
-      alert("Chuyển bàn thành công!");
-
-      // Reset form and refresh data
       setSelectedFromTable(null);
       setSelectedToTable(null);
       setTransferReason("");
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Transfer failed:", error);
-      alert("Có lỗi khi chuyển bàn. Vui lòng thử lại.");
+      showError("Lỗi chuyển bàn", error.message || "Có lỗi xảy ra khi chuyển bàn.");
     }
   };
 
-  const resetSelection = () => {
-    setSelectedFromTable(null);
-    setSelectedToTable(null);
-    setTransferReason("");
-  };
+  const filteredTables = tables.filter(t => 
+    t.tableName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    t.tableCode.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div>
+    <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Chuyển bàn</h1>
           <p className={styles.pageSubtitle}>
-            Di chuyển khách từ bàn này sang bàn khác
+            Di chuyển thông tin đơn hàng sang bàn trống mới
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="spinner" />
+        <div className={styles.spinner} />
       ) : (
-        <>
-          {/* Transfer Form */}
-          {(selectedFromTable || selectedToTable) && (
-            <div className={styles.card}>
-              <h3>Thông tin chuyển bàn</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "1.5rem", alignItems: "start" }}>
+          <div className={styles.card} style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0 }}>Sơ đồ bàn</h3>
+              <input 
+                type="text" 
+                className={styles.input} 
+                placeholder="Tìm mã bàn..." 
+                style={{ width: '200px' }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-              <div
-                style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}
-              >
-                <div>
-                  <h4>1. Bàn nguồn</h4>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
+              gap: '1rem',
+              maxHeight: 'calc(100vh - 300px)',
+              overflowY: 'auto',
+              padding: '0.5rem'
+            }}>
+              {filteredTables.map((table) => {
+                const isFrom = selectedFromTable?.tableId === table.tableId;
+                const isTo = selectedToTable?.tableId === table.tableId;
+                
+                let opacity = 1;
+                let border = '1px solid #e2e8f0';
+                let bg = 'white';
+                
+                if (!selectedFromTable) {
+                  // Phase 1: Choosing source
+                  if (!canTransferFrom(table)) opacity = 0.4;
+                } else if (!selectedToTable) {
+                  // Phase 2: Choosing target
+                  if (isFrom) {
+                    border = '3px solid #3b82f6';
+                    bg = '#eff6ff';
+                  } else if (!canTransferTo(table)) {
+                    opacity = 0.4;
+                  }
+                } else {
+                  // Phase 3: Both selected
+                  if (isFrom) {
+                    border = '3px solid #3b82f6';
+                    bg = '#eff6ff';
+                  } else if (isTo) {
+                    border = '3px solid #10b981';
+                    bg = '#f0fdf4';
+                  } else {
+                    opacity = 0.4;
+                  }
+                }
+
+                return (
+                  <div
+                    key={table.tableId}
+                    className={styles.tableCard}
+                    style={{
+                      cursor: "pointer",
+                      opacity,
+                      border,
+                      background: bg,
+                      transition: "all 0.2s",
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}
+                    onClick={() => handleSelectTable(table)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{table.tableName || table.tableCode}</span>
+                      <span className={`${styles.badge} ${getStatusClass(table.status)}`} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>
+                        {getStatusText(table.status)}
+                      </span>
+                    </div>
+                    
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      {table.capacity} chỗ • {table.currentOrder ? `Đơn: ${table.currentOrder.orderCode}` : 'Bàn trống'}
+                    </div>
+
+                    {isFrom && <div style={{ background: '#3b82f6', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>NGUỒN</div>}
+                    {isTo && <div style={{ background: '#10b981', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>ĐÍCH</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ position: 'sticky', top: '1.5rem' }}>
+            <div className={styles.card} style={{ padding: '1.5rem' }}>
+              <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>Thông tin chuyển</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ 
+                  padding: '1rem', 
+                  borderRadius: '12px', 
+                  backgroundColor: selectedFromTable ? '#eff6ff' : '#f8fafc',
+                  border: selectedFromTable ? '2px solid #3b82f6' : '2px dashed #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>BÀN NGUỒN (Đang ngồi)</div>
                   {selectedFromTable ? (
-                    <div
-                      style={{
-                        padding: "1rem",
-                        backgroundColor: "#f0f8ff",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      <p>
-                        <strong>
-                          {selectedFromTable.tableName ||
-                            selectedFromTable.tableCode}
-                        </strong>
-                      </p>
-                      <p>
-                        Khách:{" "}
-                        {selectedFromTable.currentOrder?.customerName ||
-                          "Khách lẻ"}
-                      </p>
-                      <p>
-                        Tổng tiền:{" "}
-                        {formatCurrency(
-                          selectedFromTable.currentOrder?.totalAmount || 0,
-                        )}
-                      </p>
-                      <button
-                        className={styles.btnSecondary}
-                        onClick={() => setSelectedFromTable(null)}
-                      >
-                        Đổi bàn
-                      </button>
+                    <div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>{selectedFromTable.tableName}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#3b82f6' }}>{selectedFromTable.currentOrder?.customerName || 'Khách lẻ'}</div>
                     </div>
                   ) : (
-                    <p>Chọn bàn có khách từ danh sách bên dưới</p>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Chạm vào bàn có khách</div>
                   )}
                 </div>
 
-                <div>
-                  <h4>2. Bàn đích</h4>
+                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#cbd5e1' }}>↓</div>
+
+                <div style={{ 
+                  padding: '1rem', 
+                  borderRadius: '12px', 
+                  backgroundColor: selectedToTable ? '#f0fdf4' : '#f8fafc',
+                  border: selectedToTable ? '2px solid #10b981' : '2px dashed #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>BÀN ĐÍCH (Chuyển sang)</div>
                   {selectedToTable ? (
-                    <div
-                      style={{
-                        padding: "1rem",
-                        backgroundColor: "#f0fff0",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      <p>
-                        <strong>
-                          {selectedToTable.tableName ||
-                            selectedToTable.tableCode}
-                        </strong>
-                      </p>
-                      <p>Sức chứa: {selectedToTable.capacity} người</p>
-                      <button
-                        className={styles.btnSecondary}
-                        onClick={() => setSelectedToTable(null)}
-                      >
-                        Đổi bàn
-                      </button>
+                    <div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#065f46' }}>{selectedToTable.tableName}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#10b981' }}>{selectedToTable.capacity} chỗ ngồi</div>
                     </div>
                   ) : (
-                    <p>Chọn bàn trống từ danh sách bên dưới</p>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Chạm vào bàn trống mới</div>
                   )}
                 </div>
 
                 <div>
-                  <h4>3. Lý do chuyển bàn</h4>
+                  <label className={styles.label} style={{ fontSize: '0.85rem' }}>Lý do chuyển bàn</label>
                   <textarea
                     className={styles.textarea}
+                    placeholder="Lý do..."
                     value={transferReason}
                     onChange={(e) => setTransferReason(e.target.value)}
-                    placeholder="Nhập lý do chuyển bàn..."
                     rows={3}
-                    style={{ width: "100%" }}
                   />
                 </div>
 
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button
-                    className={styles.btnPrimary}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button 
+                    className={styles.btnPrimary} 
+                    disabled={!selectedFromTable || !selectedToTable || !transferReason.trim()}
+                    style={{ padding: '0.85rem', fontSize: '0.9rem' }}
                     onClick={handleTransfer}
-                    disabled={
-                      !selectedFromTable ||
-                      !selectedToTable ||
-                      !transferReason.trim()
-                    }
                   >
-                    Xác nhận chuyển bàn
+                    Xác nhận
                   </button>
-                  <button
+                  <button 
                     className={styles.btnSecondary}
-                    onClick={resetSelection}
+                    onClick={() => { setSelectedFromTable(null); setSelectedToTable(null); setTransferReason(""); }}
                   >
-                    Hủy
+                    Làm mới
                   </button>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Tables Grid */}
-          <div className={styles.card}>
-            <h3>Danh sách bàn ({tables.length} bàn)</h3>
-
-            <div className={styles.tableGrid}>
-              {tables.map((table) => (
-                <div
-                  key={table.tableId}
-                  className={`${styles.tableCard} ${styles[table.status.toLowerCase()]}`}
-                  style={{
-                    cursor:
-                      (!selectedFromTable && canTransferFrom(table)) ||
-                      (selectedFromTable &&
-                        !selectedToTable &&
-                        canTransferTo(table))
-                        ? "pointer"
-                        : "default",
-                    opacity:
-                      (!selectedFromTable && canTransferFrom(table)) ||
-                      (selectedFromTable &&
-                        !selectedToTable &&
-                        canTransferTo(table))
-                        ? 1
-                        : selectedFromTable || selectedToTable
-                          ? 0.7
-                          : 1,
-                    border:
-                      selectedFromTable?.tableId === table.tableId
-                        ? "2px solid #007bff"
-                        : selectedToTable?.tableId === table.tableId
-                          ? "2px solid #28a745"
-                          : "1px solid #ddd",
-                  }}
-                  onClick={() => {
-                    if (!selectedFromTable && canTransferFrom(table)) {
-                      handleSelectFromTable(table);
-                    } else if (
-                      selectedFromTable &&
-                      !selectedToTable &&
-                      canTransferTo(table)
-                    ) {
-                      handleSelectToTable(table);
-                    }
-                  }}
-                >
-                  <h4>{table.tableName || table.tableCode}</h4>
-                  <p>{table.capacity} chỗ</p>
-                  <span
-                    className={`${styles.status} ${getStatusClass(table.status)}`}
-                  >
-                    {getStatusText(table.status)}
-                  </span>
-
-                  {table.currentOrder && (
-                    <div style={{ marginTop: "0.5rem", fontSize: "0.9em" }}>
-                      <p>
-                        <strong>Khách:</strong>{" "}
-                        {table.currentOrder.customerName || "Khách lẻ"}
-                      </p>
-                      <p>
-                        <strong>Tổng:</strong>{" "}
-                        {formatCurrency(table.currentOrder.totalAmount)}
-                      </p>
-                    </div>
-                  )}
-
-                  {!selectedFromTable && canTransferFrom(table) && (
-                    <div
-                      style={{
-                        marginTop: "0.5rem",
-                        color: "#007bff",
-                        fontSize: "0.8em",
-                      }}
-                    >
-                      Nhấn để chọn bàn nguồn
-                    </div>
-                  )}
-
-                  {selectedFromTable &&
-                    !selectedToTable &&
-                    canTransferTo(table) && (
-                      <div
-                        style={{
-                          marginTop: "0.5rem",
-                          color: "#28a745",
-                          fontSize: "0.8em",
-                        }}
-                      >
-                        Nhấn để chọn bàn đích
-                      </div>
-                    )}
-                </div>
-              ))}
-            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

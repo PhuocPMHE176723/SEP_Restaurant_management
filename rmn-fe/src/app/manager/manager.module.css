@@ -632,19 +632,71 @@
 }
 
 .btnDanger {
-    padding: 0.5rem 1.25rem;
+    padding: 0.5rem 1rem;
     background: #dc2626;
     border: none;
     border-radius: 8px;
-    font-size: 0.875rem;
+    font-size: 0.825rem;
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btnDanger:hover {
     background: #b91c1c;
+}
+
+.btnPrimary,
+.btnSecondary,
+.btnSuccess {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnPrimary {
+    background: #f97316;
+    color: #fff;
+}
+
+.btnPrimary:hover {
+    background: #ea580c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2);
+}
+
+.btnSecondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.btnSecondary:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.btnSuccess {
+    background: #10b981;
+    color: #fff;
+}
+
+.btnSuccess:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
 }
 
 /* Checkbox row */

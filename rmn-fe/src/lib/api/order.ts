@@ -95,4 +95,34 @@ export const orderApi = {
 
     await handleResponse<void>(response);
   },
+
+  async createWalkinOrder(request: {
+    tableId: number;
+    name: string;
+    phone: string;
+    partySize: number;
+    note?: string;
+  }): Promise<{ orderId: number; orderCode: string }> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/walkin`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(request),
+    });
+
+    return handleResponse<{ orderId: number; orderCode: string }>(response);
+  },
+
+  async transferTable(request: {
+    fromTableId: number;
+    toTableId: number;
+    reason: string;
+  }): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/transfer`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(request),
+    });
+
+    await handleResponse<void>(response);
+  },
 };

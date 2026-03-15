@@ -16,7 +16,6 @@ export default function StaffTablesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   useEffect(() => {
     fetchTables();
@@ -61,8 +60,7 @@ export default function StaffTablesPage() {
   const totalItems = filteredTables.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentTables = filteredTables.slice(startIndex, endIndex);
+  const currentTables = filteredTables.slice(startIndex, startIndex + itemsPerPage);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -93,91 +91,95 @@ export default function StaffTablesPage() {
         return "";
     }
   };
+
   return (
-    <div>
+    <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Danh sách bàn</h1>
           <p className={styles.pageSubtitle}>
-            Xem tình trạng tất cả bàn trong nhà hàng
+            Xem và quản lý tình trạng tất cả bàn trong nhà hàng
           </p>
         </div>
       </div>
 
+      <div className={styles.controlBar} style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className={styles.searchBox} style={{ flex: 1, minWidth: '300px' }}>
+          <input
+            type="text"
+            className={styles.input}
+            placeholder="Tìm kiếm bàn theo tên hoặc mã..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className={styles.filterGroup}>
+          <select 
+            className={styles.select}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="AVAILABLE">Bàn trống</option>
+            <option value="OCCUPIED">Bàn có khách</option>
+            <option value="RESERVED">Bàn đã đặt</option>
+            <option value="MAINTENANCE">Bảo trì</option>
+          </select>
+        </div>
+      </div>
+
       {loading ? (
-        <div className="spinner" />
+        <div className={styles.spinner} />
       ) : (
         <>
-          {/* Table grid view */}
           <div className={styles.card}>
-            <h3>Tổng quan bàn ({totalItems} bàn)</h3>
-            <div className={styles.tableGrid}>
-              {currentTables.map((table) => (
-                <div
-                  key={table.tableId}
-                  className={`${styles.tableCard} ${styles[table.status.toLowerCase()]}`}
-                >
-                  <h4>{table.tableName || table.tableCode}</h4>
-                  <p>{table.capacity} chỗ</p>
-                  <span
-                    className={`${styles.status} ${getStatusClass(table.status)}`}
-                  >
-                    {getStatusText(table.status)}
-                  </span>
-                  {!table.isActive && (
-                    <span className={styles.inactive}>Không hoạt động</span>
-                  )}
-                </div>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0 }}>Sơ đồ bàn ({totalItems})</h3>
+              <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                Trang {currentPage} / {totalPages || 1}
+              </div>
             </div>
-          </div>
+            
+            {filteredTables.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>Không tìm thấy bàn nào phù hợp với bộ lọc.</p>
+              </div>
+            ) : (
+              <div className={styles.tableGrid}>
+                {currentTables.map((table) => (
+                  <div
+                    key={table.tableId}
+                    className={`${styles.tableCard} ${styles[table.status.toLowerCase()]}`}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h4 style={{ margin: 0 }}>{table.tableName || table.tableCode}</h4>
+                      <span className={`${styles.status} ${getStatusClass(table.status)}`}>
+                        {getStatusText(table.status)}
+                      </span>
+                    </div>
+                    <p style={{ margin: '0.5rem 0' }}>Sức chứa: {table.capacity} chỗ</p>
+                    {!table.isActive && (
+                      <span className={styles.inactive} style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                        Tạm dừng hoạt động
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {/* Table list view */}
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.colNarrow}>Mã</th>
-                  <th>Tên bàn</th>
-                  <th className={styles.colNarrow}>Sức chứa</th>
-                  <th className={styles.colNarrow}>Trạng thái</th>
-                  <th className={styles.colCompact}>Hoạt động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentTables.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className={styles.empty}>
-                      Chưa có bàn nào
-                    </td>
-                  </tr>
-                ) : (
-                  currentTables.map((table) => (
-                    <tr key={table.tableId}>
-                      <td>{table.tableCode}</td>
-                      <td>{table.tableName || "-"}</td>
-                      <td>{table.capacity} người</td>
-                      <td>
-                        <span
-                          className={`${styles.statusBadge} ${getStatusClass(table.status)}`}
-                        >
-                          {getStatusText(table.status)}
-                        </span>
-                      </td>
-                      <td>
-                        {table.isActive ? (
-                          <span className={styles.active}>Hoạt động</span>
-                        ) : (
-                          <span className={styles.inactive}>
-                            Không hoạt động
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            {totalPages > 1 && (
+              <div style={{ marginTop: '2rem' }}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
           </div>
         </>
       )}

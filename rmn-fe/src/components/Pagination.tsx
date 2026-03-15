@@ -1,4 +1,4 @@
-import styles from "../manager/manager.module.css";
+import styles from "../app/manager/manager.module.css";
 
 interface PaginationProps {
   currentPage: number;
