@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerApi } from "../../../lib/api/auth";
+import { isValidVNPhone } from "../../../lib/validation";
 import styles from "../login/page.module.css";
 
 export default function RegisterPage() {
@@ -24,9 +25,8 @@ export default function RegisterPage() {
   };
 
   const validatePhone = (phone: string): string | null => {
-    const phoneRegex = /^\d{10}$/;
     if (!phone) return "Số điện thoại không được để trống";
-    if (!phoneRegex.test(phone)) return "Số điện thoại phải là 10 chữ số";
+    if (!isValidVNPhone(phone)) return "SĐT không đúng định dạng VN (ví dụ: 0912345678, +84...)";
     return null;
   };
 

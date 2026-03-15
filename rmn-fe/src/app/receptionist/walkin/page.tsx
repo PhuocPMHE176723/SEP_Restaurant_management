@@ -23,7 +23,7 @@ interface Customer {
   note?: string;
 }
 
-export default function WalkinPage() {
+export default function ReceptionistWalkinPage() {
   const [tables, setTables] = useState<Table[]>([]);
   const [customer, setCustomer] = useState<Customer>({
     name: "",
@@ -93,7 +93,7 @@ export default function WalkinPage() {
       });
 
       await fetchTables();
-      showSuccess("Thành công", "Đã gán bàn và mở order thành công!");
+      showSuccess("Thành công", "Đã gán khách vãng lai và mở order thành công!");
     } catch (error) {
       console.error("Failed to assign table:", error);
       showError("Lỗi", "Gán bàn thất bại!");
@@ -123,14 +123,14 @@ export default function WalkinPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Khách vãng lai</h1>
-          <p className={styles.pageSubtitle}>Quản lý gán bàn và mở order cho khách đến trực tiếp</p>
+          <p className={styles.pageSubtitle}>Dành cho lễ tân quản lý khách đến trực tiếp không đặt trước</p>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: "350px 1fr", gap: "2rem" }}>
         {/* Customer form */}
         <div className={styles.card} style={{ height: 'fit-content', position: 'sticky', top: '1rem' }}>
-          <h3 style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>Thông tin khách hàng</h3>
+          <h3 style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>Tiếp nhận khách hàng</h3>
           <div className={styles.modalBody} style={{ padding: 0 }}>
             <div className={styles.formGroup}>
               <label>Tên khách hàng *</label>
@@ -155,25 +155,25 @@ export default function WalkinPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label>Số khách</label>
+              <label>Số người đi cùng</label>
               <select
                 className={styles.select}
                 value={customer.partySize}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, partySize: parseInt(e.target.value) }))}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                  <option key={num} value={num}>{num} người</option>
+                  <option key={num} value={num}>{num} khách</option>
                 ))}
               </select>
             </div>
 
             <div className={styles.formGroup}>
-              <label>Ghi chú</label>
+              <label>Ghi chú lễ tân</label>
               <textarea
                 className={styles.textarea}
                 value={customer.note}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, note: e.target.value }))}
-                placeholder="Yêu cầu đặc biệt..."
+                placeholder="Ghi chú thêm về yêu cầu của khách..."
                 rows={4}
               />
             </div>
@@ -187,7 +187,7 @@ export default function WalkinPage() {
               <input
                 type="text"
                 className={styles.input}
-                placeholder="Tìm tên bàn hoặc mã bàn..."
+                placeholder="Tìm mã bàn hoặc tên bàn..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -205,7 +205,7 @@ export default function WalkinPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="ALL">Tất cả sức chứa</option>
+                <option value="ALL">Sức chứa (Tất cả)</option>
                 <option value="2">&ge; 2 người</option>
                 <option value="4">&ge; 4 người</option>
                 <option value="6">&ge; 6 người</option>
@@ -220,21 +220,21 @@ export default function WalkinPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="AVAILABLE">Bàn trống</option>
-                <option value="OCCUPIED">Bàn có người</option>
+                <option value="ALL">Trạng thái (Tất cả)</option>
+                <option value="AVAILABLE">Bàn đang trống</option>
+                <option value="OCCUPIED">Bàn đang bận</option>
                 <option value="RESERVED">Bàn đã đặt</option>
               </select>
             </div>
           </div>
 
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: '#475569' }}>
-            Danh sách bàn ({filteredTables.length} kết quả)
+            Sơ đồ bàn hiện tại ({filteredTables.length} kết quả)
           </h3>
 
           {currentTables.length === 0 ? (
             <div className={styles.emptyState}>
-              <p>Không tìm thấy bàn nào phù hợp với bộ lọc.</p>
+              <p>Không có bàn nào phù hợp với yêu cầu tìm kiếm.</p>
             </div>
           ) : (
             <>
@@ -254,32 +254,33 @@ export default function WalkinPage() {
                         cursor: isSelectable ? 'pointer' : 'not-allowed',
                         padding: '1.25rem',
                         borderRadius: '0.75rem',
-                        border: isSelectable ? '2px solid #e2e8f0' : '2px solid transparent',
-                        backgroundColor: isAvailable ? '#f0fdf4' : '#fff1f2',
-                        transition: 'all 0.2s ease'
+                        border: isSelectable ? '2px solid #3b82f6' : '2px solid transparent',
+                        backgroundColor: isAvailable ? '#f8fafc' : '#f1f5f9',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isSelectable ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : 'none'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isAvailable ? '#166534' : '#991b1b' }}>{table.tableName}</h4>
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{table.tableName}</h4>
                         <span style={{ 
                           fontSize: '0.65rem', 
                           padding: '0.15rem 0.5rem', 
                           borderRadius: '1rem',
-                          backgroundColor: isAvailable ? '#dcfce7' : '#fee2e2',
-                          color: isAvailable ? '#166534' : '#991b1b',
+                          backgroundColor: isAvailable ? '#3b82f6' : '#94a3b8',
+                          color: '#fff',
                           fontWeight: 700
                         }}>
-                          {table.status === "AVAILABLE" ? "TRỐNG" : table.status === "OCCUPIED" ? "BẬN" : "ĐÃ ĐẶT"}
+                          {table.status === "AVAILABLE" ? "TRỐNG" : table.status === "OCCUPIED" ? "BẬN" : "ĐẶT"}
                         </span>
                       </div>
-                      <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> người</p>
+                      <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> khách</p>
                       
                       {!isAvailable ? (
-                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang bận</div>
+                        <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>🚫 Hiện không khả dụng</div>
                       ) : !canFit ? (
-                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>⚠️ Không đủ chỗ</div>
+                        <div style={{ color: '#f59e0b', fontSize: '0.75rem', fontWeight: 600 }}>⚠️ Không đủ chỗ cho {customer.partySize} khách</div>
                       ) : (
-                        <div style={{ color: '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>Nhấp để gán bàn →</div>
+                        <div style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700 }}>Chọn bàn này →</div>
                       )}
                     </div>
                   );

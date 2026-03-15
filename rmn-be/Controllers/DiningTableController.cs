@@ -26,7 +26,7 @@ public class DiningTableController : BaseController
 
     
     [HttpGet("with-orders")]
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Receptionist")]
     public async Task<IActionResult> GetAllWithOrders()
     {
         var tables = await _tableService.GetAllWithOrdersAsync();
