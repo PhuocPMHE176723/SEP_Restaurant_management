@@ -5,6 +5,9 @@ using SEP_Restaurant_management.Core.Data;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Exceptions;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Middlewares;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -21,7 +24,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet]
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist")]
     public async Task<IActionResult> GetAllOrders()
     {
         var orders = await _context
@@ -57,7 +60,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen")]
     public async Task<IActionResult> GetOrder(long id)
     {
         var order = await _context
@@ -98,7 +101,7 @@ public class OrderController : BaseController
     }
 
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist")]
     public async Task<IActionResult> UpdateOrderStatus(
         long id,
         UpdateOrderStatusRequest request
@@ -129,7 +132,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("{id}/items")]
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Receptionist")]
     public async Task<IActionResult> AddOrderItem(long id, AddOrderItemRequest request)
     {
         var order = await _context.Orders.FindAsync(id);
@@ -158,6 +161,128 @@ public class OrderController : BaseController
         await _context.SaveChangesAsync();
 
         return Success("Item added to order successfully");
+    }
+
+    [HttpPost("walkin")]
+    [Authorize(Roles = "Staff,Receptionist,Manager,Admin")]
+    public async Task<IActionResult> CreateWalkinOrder(CreateWalkinOrderRequest request)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // 1. Get or Create Customer
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Phone == request.Phone);
+
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    FullName = request.Name,
+                    Phone = request.Phone,
+                    CreatedAt = DateTimeHelper.VietnamNow()
+                };
+                _context.Customers.Add(customer);
+                await _context.SaveChangesAsync();
+            }
+
+            // 2. Validate Table
+            var table = await _context.DiningTables.FindAsync(request.TableId);
+            if (table == null) return NotFoundResponse("Table not found");
+            if (table.Status != "AVAILABLE") return Failure("Table is not available");
+
+            // 3. Get Staff ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+            
+            // 4. Create Order
+            var orderCode = $"WALK-{DateTimeHelper.VietnamNow():yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
+            var order = new Order
+            {
+                OrderCode = orderCode,
+                TableId = request.TableId,
+                CustomerId = customer.CustomerId,
+                OrderType = "DINE_IN",
+                Status = "OPEN",
+                OpenedAt = DateTimeHelper.VietnamNow(),
+                CreatedByStaffId = staff?.StaffId,
+                Note = request.Note
+            };
+
+            _context.Orders.Add(order);
+
+            // 5. Update Table Status
+            table.Status = "OCCUPIED";
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Success(new { order.OrderId, order.OrderCode }, "Walk-in order created successfully");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Failure($"Failed to create walk-in order: {ex.Message}");
+        }
+    }
+
+    [HttpPost("transfer")]
+    [Authorize(Roles = "Staff,Receptionist,Manager,Admin")]
+    public async Task<IActionResult> TransferTable(TransferTableRequest request)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // 1. Get source table and its active order
+            var fromTable = await _context.DiningTables.FindAsync(request.FromTableId);
+            if (fromTable == null) return NotFoundResponse("Source table not found");
+
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(o => o.TableId == request.FromTableId && 
+                                         (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN"));
+            
+            if (order == null) return Failure("No active order found on source table");
+
+            // 2. Get destination table
+            var toTable = await _context.DiningTables.FindAsync(request.ToTableId);
+            if (toTable == null) return NotFoundResponse("Destination table not found");
+            if (toTable.Status != "AVAILABLE") return Failure("Destination table is not available");
+
+            // 3. Update Order
+            order.TableId = request.ToTableId;
+            order.Note = string.IsNullOrEmpty(order.Note) 
+                ? $"Transferred from {fromTable.TableCode}. Reason: {request.Reason}" 
+                : $"{order.Note} | Transferred from {fromTable.TableCode}. Reason: {request.Reason}";
+
+            // 4. Update Tables Status
+            fromTable.Status = "AVAILABLE";
+            toTable.Status = "OCCUPIED";
+
+            // 5. Add status history entry
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+            
+            var history = new OrderStatusHistory
+            {
+                OrderId = order.OrderId,
+                OldStatus = order.Status,
+                NewStatus = order.Status, // Status doesn't change, but we log the transfer
+                ChangedByStaffId = staff?.StaffId,
+                ChangedAt = DateTimeHelper.VietnamNow(),
+                Note = $"Table transfer from {fromTable.TableCode} to {toTable.TableCode}. Reason: {request.Reason}"
+            };
+            _context.OrderStatusHistories.Add(history);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Success(new { order.OrderId, order.OrderCode }, "Table transferred successfully");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Failure($"Failed to transfer table: {ex.Message}");
+        }
     }
 }
 

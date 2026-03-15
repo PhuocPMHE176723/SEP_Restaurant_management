@@ -83,3 +83,30 @@ public class UpdateReservationStatusRequest
     /// <summary>Tuỳ chọn gán/chuyển bàn khi cập nhật trạng thái</summary>
     public int? TableId { get; set; }
 }
+
+public class CreateWalkinOrderRequest
+{
+    [Required]
+    public int TableId { get; set; }
+
+    [Required]
+    [MaxLength(150)]
+    public string Name { get; set; } = default!;
+
+    [Required]
+    [MaxLength(20)]
+    public string Phone { get; set; } = default!;
+
+    [Range(1, 100)]
+    public int PartySize { get; set; }
+
+    [MaxLength(255)]
+    public string? Note { get; set; }
+}
+
+public class TransferTableRequest
+{
+    public int FromTableId { get; set; }
+    public int ToTableId { get; set; }
+    public string? Reason { get; set; }
+}

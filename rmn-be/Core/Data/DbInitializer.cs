@@ -20,6 +20,7 @@ public static class DbInitializer
             "Warehouse",
             "Kitchen",
             "Cashier",
+            "Receptionist",
         };
 
         foreach (var roleName in roleNames)
@@ -58,6 +59,13 @@ public static class DbInitializer
             "Cashier Staff",
             "Cashier"
         );
+        await SeedUser(
+            userManager,
+            "receptionist@restaurant.com",
+            "Receptionist@123",
+            "Receptionist Staff",
+            "Receptionist"
+        );
 
         // Seed default Customer account
         await SeedUser(
@@ -68,6 +76,9 @@ public static class DbInitializer
             "Customer"
         );
 
+        // Ensure all system users have Staff records
+        await EnsureStaffRecords(serviceProvider, userManager);
+
         // Seed sample warehouse data
         await SeedWarehouseData(serviceProvider, userManager);
 
@@ -76,6 +87,9 @@ public static class DbInitializer
 
         // Seed restaurant management data
         await SeedRestaurantData(serviceProvider);
+
+        // Seed testing data (Reservations, Orders)
+        await SeedTestingData(serviceProvider);
     }
 
     private static async Task SeedUser(
@@ -607,6 +621,130 @@ public static class DbInitializer
             }
             context.DiningTables.AddRange(tables);
             await context.SaveChangesAsync();
+        }
+    }
+
+    private static async Task EnsureStaffRecords(IServiceProvider serviceProvider, UserManager<UserIdentity> userManager)
+    {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+        var rolesToStaff = new[] { "Manager", "Staff", "Kitchen", "Receptionist", "Warehouse" };
+
+        foreach (var role in rolesToStaff)
+        {
+            var usersInRole = await userManager.GetUsersInRoleAsync(role);
+            foreach (var user in usersInRole)
+            {
+                if (!context.Staffs.Any(s => s.UserId == user.Id))
+                {
+                    context.Staffs.Add(new Staff
+                    {
+                        UserId = user.Id,
+                        StaffCode = $"{role.Substring(0, 2).ToUpper()}{(new Random().Next(100, 999))}",
+                        FullName = user.FullName ?? "Staff Name",
+                        WorkingStatus = "ACTIVE",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedTestingData(IServiceProvider serviceProvider)
+    {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+        
+        // 1. Seed sample customers
+        if (!context.Customers.Any(c => c.Phone == "0987654321"))
+        {
+            context.Customers.Add(new Customer
+            {
+                FullName = "Nguyễn Văn A",
+                Phone = "0987654321",
+                CreatedAt = DateTime.UtcNow
+            });
+            context.Customers.Add(new Customer
+            {
+                FullName = "Trần Thị B",
+                Phone = "0123456789",
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        // 2. Seed some Reservations for testing Check-in
+        if (!context.Reservations.Any())
+        {
+            var today = DateTime.UtcNow.Date;
+            context.Reservations.AddRange(
+                new Reservation
+                {
+                    CustomerName = "Lê Văn C",
+                    CustomerPhone = "0999888777",
+                    PartySize = 4,
+                    ReservedAt = today.AddHours(19), // 7 PM today
+                    Status = "CONFIRMED",
+                    Note = "Gần cửa sổ"
+                },
+                new Reservation
+                {
+                    CustomerName = "Phạm Quang D",
+                    CustomerPhone = "0888777666",
+                    PartySize = 2,
+                    ReservedAt = today.AddHours(20), // 8 PM today
+                    Status = "PENDING",
+                    Note = "Lãng mạn"
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // 3. Seed some Active Orders for Kitchen Queue / Table Transfer
+        if (!context.Orders.Any(o => o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN"))
+        {
+            var table = context.DiningTables.FirstOrDefault(t => t.TableCode == "T1-01");
+            var staff = context.Staffs.FirstOrDefault();
+            var menuItems = context.MenuItems.Take(3).ToList();
+
+            if (table != null && staff != null && menuItems.Count >= 2)
+            {
+                // Create an order on T1-01
+                var order = new Order
+                {
+                    OrderCode = "TEST-ORD-001",
+                    TableId = table.TableId,
+                    Status = "SENT_TO_KITCHEN",
+                    OrderType = "DINE_IN",
+                    OpenedAt = DateTime.UtcNow,
+                    CreatedByStaffId = staff.StaffId
+                };
+                context.Orders.Add(order);
+                await context.SaveChangesAsync();
+
+                context.OrderItems.AddRange(
+                    new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ItemId = menuItems[0].ItemId,
+                        ItemNameSnapshot = menuItems[0].ItemName,
+                        Quantity = 2,
+                        UnitPrice = menuItems[0].BasePrice,
+                        Status = "PENDING"
+                    },
+                    new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ItemId = menuItems[1].ItemId,
+                        ItemNameSnapshot = menuItems[1].ItemName,
+                        Quantity = 1,
+                        UnitPrice = menuItems[1].BasePrice,
+                        Status = "IN_PROGRESS"
+                    }
+                );
+                
+                table.Status = "OCCUPIED";
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
