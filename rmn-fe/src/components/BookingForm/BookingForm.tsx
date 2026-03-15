@@ -8,6 +8,7 @@ import {
   type MenuItem,
   type OrderItemRequest,
 } from "../../lib/api/reservation";
+import { isValidVNPhone } from "../../lib/validation";
 import Modal from "../Modal/Modal";
 import styles from "./BookingForm.module.css";
 
@@ -201,11 +202,8 @@ export default function BookingForm() {
     if (!form.timeSlot) {
       e.timeSlot = "Vui lòng chọn giờ";
     }
-    if (
-      !form.phone ||
-      !/^((\+?84|0)\d{8,10})$/.test(form.phone.replace(/\D/g, ""))
-    ) {
-      e.phone = "Vui lòng nhập số điện thoại hợp lệ (09xxxxxxxx hoặc +84)";
+    if (!form.phone || !isValidVNPhone(form.phone)) {
+      e.phone = "Vui lòng nhập số điện thoại hợp lệ (ví dụ: 0912345678)";
     }
     if (form.partySize < 1) {
       e.partySize = "Số khách phải từ 1 trở lên";
