@@ -11,11 +11,19 @@ export default function Header() {
   const { user, isLoggedIn, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Chỉ render auth UI sau khi component mounted để tránh hydration error
   useEffect(() => {
     setMounted(true);
+    
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Đóng dropdown khi click ra ngoài
@@ -44,7 +52,7 @@ export default function Header() {
 
   if (!mounted) {
     return (
-      <header className={styles.header} suppressHydrationWarning>
+      <header className={`${styles.header} ${scrolled ? styles.headerScrolled : ""}`} suppressHydrationWarning>
         <div className={`container ${styles.inner}`}>
           <Link href="/" className={styles.logo}>
             <span className={styles.logoText}>
@@ -61,6 +69,9 @@ export default function Header() {
             <Link href="/about" className={styles.navLink}>
               Giới thiệu
             </Link>
+            <Link href="/blog" className={styles.navLink}>
+              Tin tức
+            </Link>
           </nav>
           <div className={styles.actions}>
             <div style={{ width: 200, height: 40 }} />
@@ -71,7 +82,7 @@ export default function Header() {
   }
 
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header} ${scrolled ? styles.headerScrolled : ""}`}>
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>
@@ -90,6 +101,9 @@ export default function Header() {
           </Link>
           <Link href="/about" className={styles.navLink}>
             Giới thiệu
+          </Link>
+          <Link href="/blog" className={styles.navLink}>
+            Tin tức
           </Link>
         </nav>
 

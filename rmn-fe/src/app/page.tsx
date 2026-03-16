@@ -6,19 +6,24 @@ import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
 import MenuCard from "../components/MenuCard/MenuCard";
 import { getFeaturedItems, getCategories } from "../lib/api/client";
+import { sliderApi } from "../lib/api/slider";
 import type { MenuItem, Category } from "../types/models";
+import type { Slider } from "../types/models/content";
 import styles from "./page.module.css";
 
 export default function Home() {
   const [featured, setFeatured] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [sliders, setSliders] = useState<Slider[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
-      const [items, cats] = await Promise.all([
+      const [items, cats, sliderList] = await Promise.all([
         getFeaturedItems(),
         getCategories(),
+        sliderApi.getAllSliders().catch(() => []),
       ]);
       setFeatured(items);
       // Accent-insensitive dedupe by name
@@ -33,9 +38,18 @@ export default function Home() {
         return c.id !== "all";
       });
       setCategories(filteredCats);
+      setSliders(sliderList.filter(s => s.isActive));
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (sliders.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % sliders.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [sliders]);
 
   return (
     <>
@@ -92,12 +106,47 @@ export default function Home() {
             </div>
 
             <div className={styles.heroVisual}>
-              <div className={styles.floatingCard}>
-                <div>
-                  <p className={styles.fcTitle}>Hình ảnh đang cập nhật</p>
-                  <p className={styles.fcSub}>Sẽ sớm có bộ ảnh thực tế</p>
+              {sliders.length > 0 ? (
+                <div className={styles.slider}>
+                  {sliders.map((slider, idx) => (
+                    <div 
+                      key={slider.sliderId} 
+                      className={`${styles.slide} ${idx === activeSlide ? styles.slideActive : ""}`}
+                    >
+                      <img src={slider.imageUrl} alt={slider.title || ""} className={styles.slideImage} />
+                      {(slider.title || slider.link) && (
+                        <div className={styles.slideOverlay}>
+                          {slider.title && <h3 className={styles.slideTitle}>{slider.title}</h3>}
+                          {slider.link && (
+                            <Link href={slider.link} className="btn-link" style={{ color: '#fff', fontSize: '0.9rem', marginTop: '4px', display: 'inline-block' }}>
+                              Xem chi tiết &rarr;
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {sliders.length > 1 && (
+                    <div className={styles.sliderDots}>
+                      {sliders.map((_, idx) => (
+                        <button 
+                          key={idx} 
+                          className={`${styles.dot} ${idx === activeSlide ? styles.dotActive : ""}`}
+                          onClick={() => setActiveSlide(idx)}
+                          aria-label={`Go to slide ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className={styles.floatingCard}>
+                  <div>
+                    <p className={styles.fcTitle}>Hình ảnh đang cập nhật</p>
+                    <p className={styles.fcSub}>Sẽ sớm có bộ ảnh thực tế</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
