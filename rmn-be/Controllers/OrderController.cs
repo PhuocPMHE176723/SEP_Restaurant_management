@@ -38,6 +38,7 @@ public class OrderController : BaseController
                 OrderId = o.OrderId,
                 OrderCode = o.OrderCode,
                 Status = o.Status,
+                TableId = o.TableId,
                 TableName = o.Table != null ? o.Table.TableCode : null,
                 CustomerName = o.Customer != null ? o.Customer.FullName : null,
                 OpenedAt = o.OpenedAt,
@@ -80,6 +81,7 @@ public class OrderController : BaseController
             OrderId = order.OrderId,
             OrderCode = order.OrderCode,
             Status = order.Status,
+            TableId = order.TableId,
             TableName = order.Table?.TableCode,
             CustomerName = order.Customer?.FullName,
             OpenedAt = order.OpenedAt,
@@ -121,9 +123,19 @@ public class OrderController : BaseController
 
         order.Status = request.Status;
 
-        if (request.Status == "CLOSED")
+        if (request.Status == "CLOSED" || request.Status == "CANCELLED")
         {
-            order.ClosedAt = DateTime.UtcNow;
+            if (request.Status == "CLOSED")
+            {
+                order.ClosedAt = DateTimeHelper.VietnamNow();
+            }
+            
+            // Reset table status to AVAILABLE
+            var table = await _context.DiningTables.FindAsync(order.TableId);
+            if (table != null)
+            {
+                table.Status = "AVAILABLE";
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -239,7 +251,7 @@ public class OrderController : BaseController
 
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.TableId == request.FromTableId && 
-                                         (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN"));
+                                         (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED"));
             
             if (order == null) return Failure("No active order found on source table");
 

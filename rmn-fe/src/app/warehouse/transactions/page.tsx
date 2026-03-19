@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getStockMovements, createManualAdjustment, getIngredients } from "../../../lib/api/warehouse";
 import { exportTransactionsPDF } from "../../../lib/exportPDF";
 import styles from "../../manager/manager.module.css";
-import Swal from 'sweetalert2';
+import { showSuccess, showError, showConfirm, showWarning } from "../../../lib/ui/alerts";
 
 import { StockMovementResponse as Movement } from "../../../types/models";
 
@@ -50,26 +50,22 @@ export default function TransactionsPage() {
 
     async function handleAdjust() {
         if (!form.ingredientId || form.quantity <= 0 || !form.note.trim()) {
-            return Swal.fire('Lỗi', 'Vui lòng điền đủ thông tin hợp lệ', 'warning');
+            return showWarning('Lỗi', 'Vui lòng điền đủ thông tin hợp lệ');
         }
         
-        const result = await Swal.fire({
-            title: 'Xác nhận điều chỉnh?',
-            text: `Bạn chuẩn bị ${form.movementType === 'IN' ? 'nhập' : 'xuất'} ${form.quantity} đơn vị. Dữ liệu này sẽ được lưu vào lịch sử giao dịch.`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Đồng ý',
-            cancelButtonText: 'Hủy'
-        });
+        const confirmed = await showConfirm(
+            'Xác nhận điều chỉnh?',
+            `Bạn chuẩn bị ${form.movementType === 'IN' ? 'nhập' : 'xuất'} ${form.quantity} đơn vị. Dữ liệu này sẽ được lưu vào lịch sử giao dịch.`
+        );
 
-        if (!result.isConfirmed) return;
+        if (!confirmed) return;
 
         try {
             await createManualAdjustment(form as any);
-            Swal.fire('Thành công', 'Đã lưu biến động kho', 'success');
+            showSuccess('Thành công', 'Đã lưu biến động kho');
             setModal(false);
             load();
-        } catch (e: any) { Swal.fire('Lỗi', e.message || 'Có lỗi xảy ra', 'error'); }
+        } catch (e: any) { showError('Lỗi', e.message || 'Có lỗi xảy ra'); }
     }
 
     return (

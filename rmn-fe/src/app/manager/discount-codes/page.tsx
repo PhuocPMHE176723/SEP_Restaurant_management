@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DiscountCode, CreateDiscountCode } from "../../../types/models/promotion";
 import { getDiscountCodes, createDiscountCode, updateDiscountCode, deleteDiscountCode, toggleDiscountCode } from "../../../lib/api/promotion";
 import styles from "../manager.module.css";
-import Swal from "sweetalert2";
+import { showSuccess, showError, showConfirm } from "../../../lib/ui/alerts";
 
 export default function DiscountCodesPage() {
     const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
@@ -65,46 +65,39 @@ export default function DiscountCodesPage() {
 
     async function handleSave() {
         if (!form.code.trim()) {
-            Swal.fire("Lỗi", "Vui lòng nhập mã giảm giá", "error");
+            showError("Lỗi", "Vui lòng nhập mã giảm giá");
             return;
         }
         if (form.discountValue <= 0) {
-            Swal.fire("Lỗi", "Giá trị giảm giả phải lớn hơn 0", "error");
+            showError("Lỗi", "Giá trị giảm giả phải lớn hơn 0");
             return;
         }
 
         try {
             if (editingId) {
                 await updateDiscountCode(editingId, form);
-                Swal.fire("Thành công", "Đã cập nhật mã giảm giá", "success");
+                showSuccess("Thành công", "Đã cập nhật mã giảm giá");
             } else {
                 await createDiscountCode(form);
-                Swal.fire("Thành công", "Đã tạo mã giảm giá", "success");
+                showSuccess("Thành công", "Đã tạo mã giảm giá");
             }
             setShowModal(false);
             fetchDiscounts();
         } catch (err: any) {
-            Swal.fire("Lỗi", err.message || "Không thể lưu mã giảm giá", "error");
+            showError("Lỗi", err.message || "Không thể lưu mã giảm giá");
         }
     }
 
     async function handleDelete(id: number) {
-        const result = await Swal.fire({
-            title: "Xác nhận xoá?",
-            text: "Dữ liệu sẽ không thể khôi phục!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Xoá",
-            cancelButtonText: "Huỷ"
-        });
+        const confirmed = await showConfirm("Xác nhận xoá?", "Dữ liệu sẽ không thể khôi phục!");
 
-        if (result.isConfirmed) {
+        if (confirmed) {
             try {
                 await deleteDiscountCode(id);
-                Swal.fire("Đã xoá", "Xoá thành công", "success");
+                showSuccess("Đã xoá", "Xoá thành công");
                 fetchDiscounts();
             } catch (err: any) {
-                Swal.fire("Lỗi", err.message || "Lỗi khi xoá", "error");
+                showError("Lỗi", err.message || "Lỗi khi xoá");
             }
         }
     }
@@ -114,7 +107,7 @@ export default function DiscountCodesPage() {
             await toggleDiscountCode(id);
             fetchDiscounts();
         } catch (err: any) {
-            Swal.fire("Lỗi", err.message || "Lỗi bật/tắt", "error");
+            showError("Lỗi", err.message || "Lỗi bật/tắt");
         }
     }
 
@@ -162,7 +155,7 @@ export default function DiscountCodesPage() {
                                     <td>{d.maxDiscountAmount ? d.maxDiscountAmount.toLocaleString() : '-'}</td>
                                     <td>{d.usedCount} {d.maxUses ? `/ ${d.maxUses}` : '(Vô hạn)'}</td>
                                     <td>
-                                        <button onClick={() => handleToggle(d.discountId)} className={`${styles.badge} ${d.isActive ? styles.badgeAvailable : styles.badgeInactive}`} style={{ cursor: 'pointer', border: 'none' }}>
+                                        <button onClick={() => handleToggle(d.discountId)} className={`${styles.statusBadge} ${d.isActive ? styles.statusPublished : styles.statusClosed}`} style={{ cursor: 'pointer', border: 'none', appearance: 'none' }}>
                                             {d.isActive ? 'Đang bật' : 'Đã tắt'}
                                         </button>
                                     </td>

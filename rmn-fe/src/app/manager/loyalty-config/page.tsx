@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { SystemConfig, UpdateSystemConfig } from "../../../types/models/promotion";
 import { getSystemConfigs, updateSystemConfigs } from "../../../lib/api/promotion";
 import styles from "../manager.module.css";
-import Swal from "sweetalert2";
+import { showSuccess, showError } from "../../../lib/ui/alerts";
 
 export default function LoyaltyConfigPage() {
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
@@ -45,20 +45,10 @@ export default function LoyaltyConfigPage() {
             ];
 
             await updateSystemConfigs(updates);
-            Swal.fire({
-                title: "Thành công",
-                text: "Lưu cấu hình tỷ lệ quy đổi tích điểm thành công",
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false
-            });
+            showSuccess("Thành công", "Lưu cấu hình tỷ lệ quy đổi tích điểm thành công");
             fetchConfigs();
         } catch (err: any) {
-            Swal.fire({
-                title: "Lỗi",
-                text: err.response?.data?.message || err.message || "Lỗi cập nhật cấu hình",
-                icon: "error"
-            });
+            showError("Lỗi", err.response?.data?.message || err.message || "Lỗi cập nhật cấu hình");
         } finally {
             setSaving(false);
         }

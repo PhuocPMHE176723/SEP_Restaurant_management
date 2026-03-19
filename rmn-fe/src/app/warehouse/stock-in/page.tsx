@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getPurchaseReceipts, getIngredients, createPurchaseReceipt, updatePurchaseReceiptStatus } from "../../../lib/api/warehouse";
 import { exportReceiptsPDF } from "../../../lib/exportPDF";
 import styles from "../../manager/manager.module.css";
-import Swal from 'sweetalert2';
+import { showSuccess, showError, showConfirm, showWarning } from "../../../lib/ui/alerts";
 import { PurchaseReceiptResponse as Receipt } from "../../../types/models";
 
 export default function StockInPage() {
@@ -46,33 +46,29 @@ export default function StockInPage() {
 
     async function handleSave() {
         if (form.items.some(i => !i.ingredientId || i.quantity <= 0 || i.unitCost < 0)) {
-            return Swal.fire('Lỗi', 'Vui lòng điền đúng thông tin các mặt hàng', 'warning');
+            return showWarning('Lỗi', 'Vui lòng điền đúng thông tin các mặt hàng');
         }
         try {
             await createPurchaseReceipt(form as any);
-            Swal.fire('Thành công', 'Đã lưu phiếu nhập kho', 'success');
+            showSuccess('Thành công', 'Đã lưu phiếu nhập kho');
             setModal(false);
             load();
-        } catch (e: any) { Swal.fire('Lỗi', e.message || 'Có lỗi xảy ra', 'error'); }
+        } catch (e: any) { showError('Lỗi', e.message || 'Có lỗi xảy ra'); }
     }
 
     async function handleReceive(id: number) {
-        const result = await Swal.fire({
-            title: 'Xác nhận nhập kho?',
-            text: "Xác nhận nhập phiếu này vào kho? Số lượng tồn kho sẽ tăng lên.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Đồng ý',
-            cancelButtonText: 'Hủy'
-        });
+        const confirmed = await showConfirm(
+            'Xác nhận nhập kho?',
+            "Xác nhận nhập phiếu này vào kho? Số lượng tồn kho sẽ tăng lên."
+        );
 
-        if (!result.isConfirmed) return;
+        if (!confirmed) return;
 
         try {
             await updatePurchaseReceiptStatus(id, "RECEIVED");
-            Swal.fire('Thành công', 'Đã nhập kho phiếu này', 'success');
+            showSuccess('Thành công', 'Đã nhập kho phiếu này');
             load();
-        } catch (e: any) { Swal.fire('Lỗi', e.message || 'Có lỗi xảy ra', 'error'); }
+        } catch (e: any) { showError('Lỗi', e.message || 'Có lỗi xảy ra'); }
     }
 
     return (

@@ -27,6 +27,7 @@ public class OrderDTO
     public string OrderCode { get; set; } = default!;
     public string Status { get; set; } = default!;
     public string? TableName { get; set; }
+    public int? TableId { get; set; }
     public string? CustomerName { get; set; }
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }

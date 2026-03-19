@@ -156,11 +156,13 @@ export default function AdminReservationsPage() {
                     <td>{res.partySize}</td>
                     <td>
                       <span
-                        className={styles.statusBadge}
-                        style={{
-                          backgroundColor: `${statusInfo.color}15`,
-                          color: statusInfo.color,
-                        }}
+                        className={`${styles.statusBadge} ${
+                          res.status === "PENDING" ? styles.statusPending :
+                          res.status === "CONFIRMED" ? styles.statusConfirmed :
+                          res.status === "COMPLETED" ? styles.statusServed :
+                          res.status === "CANCELLED" ? styles.statusCancelled :
+                          styles.statusDefault
+                        }`}
                       >
                         {statusInfo.text}
                       </span>

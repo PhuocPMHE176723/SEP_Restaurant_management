@@ -58,7 +58,7 @@ export default function LoyaltyHistoryPage() {
                                     <td>{l.customerName}</td>
                                     <td>{l.customerPhone}</td>
                                     <td>
-                                        <span className={`${styles.badge} ${l.refType === 'INVOICE' ? styles.badgeAvailable : l.refType === 'REDEEM' ? styles.badgeReserved : styles.badgeOccupied}`}>
+                                        <span className={`${styles.statusBadge} ${l.refType === 'INVOICE' ? styles.statusPublished : l.refType === 'REDEEM' ? styles.statusPending : styles.statusCancelled}`}>
                                             {l.refType}
                                         </span>
                                     </td>

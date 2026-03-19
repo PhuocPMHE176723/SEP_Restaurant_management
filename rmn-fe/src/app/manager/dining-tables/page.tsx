@@ -17,23 +17,23 @@ const STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED"];
 function statusBadge(status: string, isActive: boolean) {
   if (!isActive)
     return (
-      <span className={`${styles.badge} ${styles.badgeInactive}`}>
+      <span className={`${styles.statusBadge} ${styles.statusClosed}`}>
         Ngừng hoạt động
       </span>
     );
   const cls =
     status === "AVAILABLE"
-      ? styles.badgeAvailable
+      ? styles.statusPublished
       : status === "OCCUPIED"
-        ? styles.badgeOccupied
-        : styles.badgeReserved;
+        ? styles.statusCancelled
+        : styles.statusPending;
   const label =
     status === "AVAILABLE"
       ? "Trống"
       : status === "OCCUPIED"
         ? "Đang dùng"
         : "Đã đặt";
-  return <span className={`${styles.badge} ${cls}`}>{label}</span>;
+  return <span className={`${styles.statusBadge} ${cls}`}>{label}</span>;
 }
 
 // ── Create Modal ─────────────────────────────────────────────────
