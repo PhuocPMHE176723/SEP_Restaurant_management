@@ -175,10 +175,102 @@
 /* Visual */
 .heroVisual {
   position: relative;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: slideUp var(--t-slow) 0.15s ease both;
+}
+
+.slider {
+  width: 100%;
+  aspect-ratio: 16/10;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  background: var(--bg-soft);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1s ease-in-out, visibility 1s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slideActive {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+
+.slideImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 5s ease;
+}
+
+.slideActive .slideImage {
+  transform: scale(1.05);
+}
+
+.slideOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-10) var(--space-6) var(--space-6);
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  color: #fff;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.6s ease 0.4s;
+}
+
+.slideActive .slideOverlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slideTitle {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.sliderDots {
+  position: absolute;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  gap: var(--space-2);
+  z-index: 3;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  border: none;
+}
+
+.dotActive {
+  background: var(--brand-primary);
+  width: 24px;
+  border-radius: 4px;
 }
 
 .dishGrid {
