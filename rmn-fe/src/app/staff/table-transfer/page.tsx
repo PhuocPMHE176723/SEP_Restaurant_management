@@ -33,13 +33,13 @@ export default function TableTransferPage() {
 
       const tablesWithOrders: TableWithOrder[] = (tablesData || []).map(
         (table) => {
-          const currentOrder = Array.isArray(ordersData)
-            ? ordersData.find(
-                (order) =>
-                  order.tableName === (table.tableName || table.tableCode) &&
-                  (order.status === "OPEN" || order.status === "SENT_TO_KITCHEN" || order.status === "SERVED"),
-              )
-            : undefined;
+            const currentOrder = Array.isArray(ordersData)
+              ? ordersData.find(
+                  (order) =>
+                    (order.tableId === table.tableId || order.tableName === (table.tableName || table.tableCode)) &&
+                    (order.status === "OPEN" || order.status === "SENT_TO_KITCHEN" || order.status === "SERVED"),
+                )
+              : undefined;
           return {
             ...table,
             currentOrder,

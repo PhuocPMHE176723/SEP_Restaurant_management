@@ -122,7 +122,7 @@ export default function StaffReservationsPage() {
       </div>
 
       {loading ? (
-        <div className="spinner" />
+        <div className={styles.spinner} />
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -159,53 +159,61 @@ export default function StaffReservationsPage() {
                     </td>
                     <td>
                       <span
-                        className={`${styles.statusBadge} ${styles[reservation.status.toLowerCase()]}`}
+                        className={`${styles.statusBadge} ${
+                          reservation.status === "PENDING" ? styles.statusPending :
+                          reservation.status === "CONFIRMED" ? styles.statusConfirmed :
+                          reservation.status === "CHECKED_IN" ? styles.statusCheckedIn :
+                          reservation.status === "CANCELLED" ? styles.statusCancelled :
+                          styles.statusDefault
+                        }`}
                       >
                         {reservation.status}
                       </span>
                     </td>
                     <td>{reservation.note || "-"}</td>
                     <td>
-                      {reservation.status === "PENDING" && (
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={() =>
-                            handleStatusUpdate(
-                              reservation.reservationId,
-                              "CONFIRMED",
-                            )
-                          }
-                        >
-                          Xác nhận
-                        </button>
-                      )}
-                      {reservation.status === "CONFIRMED" && (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={() =>
-                            handleStatusUpdate(
-                              reservation.reservationId,
-                              "CHECKED_IN",
-                            )
-                          }
-                        >
-                          Check-in
-                        </button>
-                      )}
-                      {(reservation.status === "PENDING" ||
-                        reservation.status === "CONFIRMED") && (
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() =>
-                            handleStatusUpdate(
-                              reservation.reservationId,
-                              "CANCELLED",
-                            )
-                          }
-                        >
-                          Hủy
-                        </button>
-                      )}
+                      <div className={styles.actionButtons}>
+                        {reservation.status === "PENDING" && (
+                          <button
+                            className={styles.btnSuccess}
+                            onClick={() =>
+                              handleStatusUpdate(
+                                reservation.reservationId,
+                                "CONFIRMED",
+                              )
+                            }
+                          >
+                            Xác nhận
+                          </button>
+                        )}
+                        {reservation.status === "CONFIRMED" && (
+                          <button
+                            className={styles.btnPrimary}
+                            onClick={() =>
+                              handleStatusUpdate(
+                                reservation.reservationId,
+                                "CHECKED_IN",
+                              )
+                            }
+                          >
+                            Check-in
+                          </button>
+                        )}
+                        {(reservation.status === "PENDING" ||
+                          reservation.status === "CONFIRMED") && (
+                          <button
+                            className={styles.btnDanger}
+                            onClick={() =>
+                              handleStatusUpdate(
+                                reservation.reservationId,
+                                "CANCELLED",
+                              )
+                            }
+                          >
+                            Hủy
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

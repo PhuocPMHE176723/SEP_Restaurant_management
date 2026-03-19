@@ -236,7 +236,7 @@ export default function MenuCategoriesPage() {
                                 <td>{c.description ?? "—"}</td>
                                 <td>{c.displayOrder}</td>
                                 <td>
-                                    <span className={`${styles.badge} ${c.isActive ? styles.badgeActive : styles.badgeInactive}`}>
+                                    <span className={`${styles.statusBadge} ${c.isActive ? styles.statusPublished : styles.statusClosed}`}>
                                         {c.isActive ? "Hoạt động" : "Ngừng"}
                                     </span>
                                 </td>

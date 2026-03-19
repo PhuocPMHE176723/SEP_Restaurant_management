@@ -5,6 +5,7 @@ export interface OrderResponse {
   orderId: number;
   orderCode: string;
   status: string;
+  tableId?: number;
   tableName?: string;
   customerName?: string;
   openedAt: string;

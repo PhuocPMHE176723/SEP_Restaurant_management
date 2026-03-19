@@ -79,16 +79,11 @@ export default function StaffTablesPage() {
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "AVAILABLE":
-        return styles.statusAvailable;
-      case "OCCUPIED":
-        return styles.statusOccupied;
-      case "RESERVED":
-        return styles.statusReserved;
-      case "MAINTENANCE":
-        return styles.statusMaintenance;
-      default:
-        return "";
+      case "AVAILABLE": return styles.statusPublished;
+      case "OCCUPIED": return styles.statusCancelled;
+      case "RESERVED": return styles.statusPending;
+      case "MAINTENANCE": return styles.statusClosed;
+      default: return styles.statusDefault;
     }
   };
 

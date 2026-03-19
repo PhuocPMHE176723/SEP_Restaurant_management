@@ -705,7 +705,7 @@ export default function MenuItemsPage() {
                     <td>{formatPrice(item.basePrice)}</td>
                     <td>
                       <span
-                        className={`${styles.badge} ${item.isActive ? styles.badgeActive : styles.badgeInactive}`}
+                        className={`${styles.statusBadge} ${item.isActive ? styles.statusPublished : styles.statusClosed}`}
                       >
                         {item.isActive ? "Hoạt động" : "Ngừng"}
                       </span>

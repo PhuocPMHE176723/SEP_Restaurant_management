@@ -77,11 +77,11 @@ export default function StaffOrdersPage() {
   const getStatusClass = (status: string) => {
     switch (status) {
       case "OPEN": return styles.statusOpen;
-      case "SENT_TO_KITCHEN": return styles.statusInProgress;
-      case "SERVED": return styles.statusCompleted;
+      case "SENT_TO_KITCHEN": return styles.statusSentToKitchen;
+      case "SERVED": return styles.statusServed;
       case "CANCELLED": return styles.statusCancelled;
       case "CLOSED": return styles.statusClosed;
-      default: return "";
+      default: return styles.statusDefault;
     }
   };
 

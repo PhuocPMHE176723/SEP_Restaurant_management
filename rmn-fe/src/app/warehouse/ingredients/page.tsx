@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getIngredients, createIngredient, updateIngredient, deleteIngredient, getIngredientPriceHistory } from "../../../lib/api/warehouse";
 import styles from "../../manager/manager.module.css";
-import Swal from 'sweetalert2';
+import { showSuccess, showError, showInfo } from "../../../lib/ui/alerts";
 
 import { IngredientResponse as Ingredient } from "../../../types/models";
 
@@ -84,7 +84,7 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         setSaving(true); setError(null);
         try { 
             await createIngredient(form); 
-            Swal.fire('Thành công', 'Đã thêm nguyên liệu', 'success');
+            showSuccess('Thành công', 'Đã thêm nguyên liệu');
             onSaved(); 
             onClose(); 
         }
@@ -139,7 +139,7 @@ function EditModal({ i, onClose, onSaved }: { i: Ingredient; onClose: () => void
         setSaving(true); setError(null);
         try { 
             await updateIngredient(i.ingredientId, form); 
-            Swal.fire('Thành công', 'Đã cập nhật nguyên liệu', 'success');
+            showSuccess('Thành công', 'Đã cập nhật nguyên liệu');
             onSaved(); 
             onClose(); 
         }
@@ -194,11 +194,11 @@ function DeleteModal({ i, onClose, onSaved }: { i: Ingredient; onClose: () => vo
         setSaving(true);
         try { 
             await deleteIngredient(i.ingredientId); 
-            Swal.fire('Đã ngừng cung cấp', 'Trạng thái nguyên liệu đã được cập nhật', 'info');
+            showInfo('Đã ngừng cung cấp', 'Trạng thái nguyên liệu đã được cập nhật');
             onSaved(); 
             onClose(); 
         }
-        catch (e: any) { Swal.fire('Lỗi', e.message || 'Có lỗi xảy ra', 'error'); }
+        catch (e: any) { showError('Lỗi', e.message || 'Có lỗi xảy ra'); }
         finally { setSaving(false); }
     }
     return (
