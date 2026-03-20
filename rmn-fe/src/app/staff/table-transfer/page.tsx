@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
 import { orderApi, OrderResponse } from "../../../lib/api/order";
-import { showSuccess, showError } from "../../../lib/ui/alerts";
+import { showSuccess, showError, showWarning } from "../../../lib/ui/alerts";
 import type { DiningTableResponse } from "../../../types/models";
 import styles from "../../manager/manager.module.css";
 
@@ -115,8 +115,16 @@ export default function TableTransferPage() {
   };
 
   const handleTransfer = async () => {
-    if (!selectedFromTable || !selectedToTable || !transferReason.trim()) {
-      showError("Lỗi", "Vui lòng chọn bàn nguồn, bàn đích và nhập lý do");
+    if (!selectedFromTable) {
+      showError("Chưa chọn bàn nguồn", "Vui lòng chọn một bàn đang có khách để chuyển.");
+      return;
+    }
+    if (!selectedToTable) {
+      showError("Chưa chọn bàn đích", "Vui lòng chọn một bàn trống để chuyển đến.");
+      return;
+    }
+    if (!transferReason.trim()) {
+      showWarning("Chưa nhập lý do", "Vui lòng nhập lý do chuyển bàn trước khi xác nhận.");
       return;
     }
 
@@ -303,7 +311,6 @@ export default function TableTransferPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <button 
                     className={styles.btnPrimary} 
-                    disabled={!selectedFromTable || !selectedToTable || !transferReason.trim()}
                     style={{ padding: '0.85rem', fontSize: '0.9rem' }}
                     onClick={handleTransfer}
                   >
