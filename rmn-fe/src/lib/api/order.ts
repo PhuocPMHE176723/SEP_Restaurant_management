@@ -19,6 +19,7 @@ export interface OrderItemResponse {
   menuItemName: string;
   quantity: number;
   unitPrice: number;
+  status?: string;
   note?: string;
 }
 
@@ -122,6 +123,19 @@ export const orderApi = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(request),
+    });
+
+    await handleResponse<void>(response);
+  },
+
+  async updateOrderItemStatus(
+    orderItemId: number,
+    status: string
+  ): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/items/${orderItemId}/status`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
     });
 
     await handleResponse<void>(response);

@@ -48,8 +48,9 @@ public class PromotionService : IPromotionService
         if (config == null)
             throw new Exception($"Không tìm thấy cấu hình với mã {request.ConfigKey}");
 
+        config.ConfigKey = request.ConfigKey;
         config.ConfigValue = request.ConfigValue;
-        config.UpdatedAt = DateTime.UtcNow;
+        config.UpdatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
 
         await _context.SaveChangesAsync();
 
@@ -73,7 +74,7 @@ public class PromotionService : IPromotionService
             if (config != null)
             {
                 config.ConfigValue = req.ConfigValue;
-                config.UpdatedAt = DateTime.UtcNow;
+                config.UpdatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
             }
         }
 
@@ -151,7 +152,7 @@ public class PromotionService : IPromotionService
         };
     }
 
-    public async Task<DiscountCodeDTO> CreateDiscountCodeAsync(CreateDiscountCodeDTO request)
+    public async Task<DiscountCodeDTO?> CreateDiscountCodeAsync(CreateDiscountCodeDTO request)
     {
         if (await _context.DiscountCodes.AnyAsync(c => c.Code.ToUpper() == request.Code.ToUpper()))
             throw new Exception("Mã giảm giá này đã tồn tại.");
@@ -176,7 +177,7 @@ public class PromotionService : IPromotionService
         return await GetDiscountCodeAsync(discount.DiscountId);
     }
 
-    public async Task<DiscountCodeDTO> UpdateDiscountCodeAsync(int id, UpdateDiscountCodeDTO request)
+    public async Task<DiscountCodeDTO?> UpdateDiscountCodeAsync(int id, UpdateDiscountCodeDTO request)
     {
         var discount = await _context.DiscountCodes.FindAsync(id);
         if (discount == null) throw new Exception("Không tìm thấy mã giảm giá.");
@@ -212,7 +213,7 @@ public class PromotionService : IPromotionService
         }
     }
 
-    public async Task<DiscountCodeDTO> ToggleDiscountCodeAsync(int id)
+    public async Task<DiscountCodeDTO?> ToggleDiscountCodeAsync(int id)
     {
         var discount = await _context.DiscountCodes.FindAsync(id);
         if (discount == null) throw new Exception("Không tìm thấy mã giảm giá.");
@@ -280,8 +281,8 @@ public class PromotionService : IPromotionService
             {
                 LedgerId = l.LedgerId,
                 CustomerId = l.CustomerId,
-                CustomerName = l.Customer.FullName,
-                CustomerPhone = l.Customer.Phone,
+                CustomerName = l.Customer != null ? l.Customer.FullName : "N/A",
+                CustomerPhone = l.Customer != null ? l.Customer.Phone : "N/A",
                 RefType = l.RefType,
                 RefId = l.RefId,
                 PointsChange = l.PointsChange,
@@ -290,5 +291,55 @@ public class PromotionService : IPromotionService
                 CreatedByStaffName = l.CreatedByStaff != null ? l.CreatedByStaff.FullName : null
             })
             .ToListAsync();
+    }
+
+    // ── Checkout Helpers ─────────────────────────────────────────────
+    public async Task<DiscountCodeDTO?> ValidateDiscountCodeAsync(string code, decimal orderValue)
+    {
+        var d = await _context.DiscountCodes
+            .FirstOrDefaultAsync(x => x.Code == code && x.IsActive);
+
+        if (d == null) return null;
+
+        var now = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
+        if (now < d.ValidFrom || now > d.ValidTo) return null;
+        if (d.MaxUses.HasValue && d.UsedCount >= d.MaxUses.Value) return null;
+        if (orderValue < d.MinOrderValue) return null;
+
+        return await GetDiscountCodeAsync(d.DiscountId);
+    }
+
+    public async Task<int> CalculateLoyaltyPointsAsync(long customerId, decimal amount)
+    {
+        // Giả sử 1% tổng tiền thành điểm. Thực tế nên lấy từ SystemConfig
+        var config = await GetConfigByKeyAsync("LOYALTY_POINT_RATE");
+        decimal rate = 0.01m; // Default 1%
+        if (config != null && decimal.TryParse(config.ConfigValue, out var parsedRate))
+        {
+            rate = parsedRate / 100;
+        }
+
+        return (int)Math.Floor(amount * rate);
+    }
+
+    public async Task AwardPointsAsync(long customerId, int points, string refType, long refId)
+    {
+        var customer = await _context.Customers.FindAsync(customerId);
+        if (customer == null) return;
+
+        customer.TotalPoints += points;
+
+        var ledger = new CustomerPointsLedger
+        {
+            CustomerId = customerId,
+            PointsChange = points,
+            RefType = refType,
+            RefId = refId,
+            Note = $"Tích điểm từ đơn hàng #{refId}",
+            CreatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow()
+        };
+
+        _context.CustomerPointsLedgers.Add(ledger);
+        await _context.SaveChangesAsync();
     }
 }
