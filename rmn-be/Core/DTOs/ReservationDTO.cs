@@ -18,6 +18,9 @@ public class ReservationDTO
     public string? Note { get; set; }
     public DateTime CreatedAt { get; set; }
     public long? CreatedByStaffId { get; set; }
+    public decimal DepositAmount { get; set; }
+    public bool IsDepositPaid { get; set; }
+    public DateTime? DepositPaidAt { get; set; }
     public OrderDTO? Order { get; set; }
 }
 

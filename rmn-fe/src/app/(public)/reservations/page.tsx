@@ -11,6 +11,7 @@ import {
   type ReservationDTO,
 } from "../../../lib/api/reservation";
 import Modal from "../../../components/Modal/Modal";
+import EditPreorderModal from "../../../components/EditPreorderModal/EditPreorderModal";
 import styles from "./page.module.css";
 
 export default function ReservationsPage() {
@@ -23,6 +24,9 @@ export default function ReservationsPage() {
   // Cancel modal
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
+
+  // Edit preorder modal
+  const [editReservation, setEditReservation] = useState<ReservationDTO | null>(null);
 
   // Result modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -167,13 +171,22 @@ export default function ReservationsPage() {
                       {getStatusLabel(reservation.status)}
                     </span>
                     {reservation.status === "PENDING" && (
-                      <button
-                        className={`btn btn-ghost ${styles.cancelBtn}`}
-                        onClick={() => setCancelId(reservation.reservationId)}
-                        disabled={cancelling}
-                      >
-                        Hủy đặt bàn
-                      </button>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button
+                          className={`btn btn-ghost ${styles.cancelBtn}`}
+                          style={{ borderColor: "#d1d5db", color: "#374151" }}
+                          onClick={() => setEditReservation(reservation)}
+                        >
+                          Sửa món ăn
+                        </button>
+                        <button
+                          className={`btn btn-ghost ${styles.cancelBtn}`}
+                          onClick={() => setCancelId(reservation.reservationId)}
+                          disabled={cancelling}
+                        >
+                          Hủy đặt bàn
+                        </button>
+                      </div>
                     )}
                     <div className={styles.cardDate}>
                       Đặt lúc: {formatDate(reservation.createdAt)}{" "}
@@ -291,6 +304,22 @@ export default function ReservationsPage() {
       >
         <p>{modalMessage}</p>
       </Modal>
+
+      {/* Edit Preorder Modal */}
+      {editReservation && (
+        <EditPreorderModal
+          reservation={editReservation}
+          onClose={() => setEditReservation(null)}
+          onSuccess={() => {
+            setEditReservation(null);
+            setModalType("success");
+            setModalTitle("Cập nhật thành công");
+            setModalMessage("Danh sách món ăn của bạn đã được cập nhật.");
+            setModalOpen(true);
+            loadReservations();
+          }}
+        />
+      )}
     </>
   );
 }

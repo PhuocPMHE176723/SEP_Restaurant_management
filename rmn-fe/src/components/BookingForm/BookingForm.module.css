@@ -221,6 +221,28 @@
     margin-top: -0.5rem;
 }
 
+.depositNote {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    border-radius: var(--radius-md);
+    color: #873800;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    margin-top: var(--space-2);
+}
+
+.depositNote svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.depositNote strong {
+    color: #d46b08;
+}
+
 /* Menu list - compact horizontal layout */
 .menuList {
     display: flex;
@@ -595,4 +617,146 @@
         font-size: 0.82rem;
         padding: var(--space-1) var(--space-3);
     }
+}
+
+/* SePay QR Modal Enhancements */
+.qrContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-1) 0;
+    gap: var(--space-3);
+}
+
+.qrTitle {
+    margin-bottom: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    max-width: 280px;
+    line-height: 1.4;
+}
+
+.qrTimer {
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    color: var(--brand-primary);
+    padding: var(--space-1-5) var(--space-4);
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    animation: qrPulse 2s infinite;
+}
+
+@keyframes qrPulse {
+    0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3); }
+    70% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+.qrCodeWrapper {
+    position: relative;
+    padding: var(--space-2);
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 2px 5px rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border);
+    transition: transform var(--t-normal), box-shadow var(--t-normal);
+}
+
+.qrCodeWrapper:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.qrCode {
+    max-width: 180px;
+    display: block;
+    border-radius: var(--radius-md);
+}
+
+.qrScannerLine {
+    position: absolute;
+    top: 0;
+    left: var(--space-3);
+    right: var(--space-3);
+    height: 2px;
+    background: var(--brand-primary);
+    box-shadow: 0 0 12px var(--brand-primary);
+    animation: qrScan 3s ease-in-out infinite;
+    z-index: 1;
+    opacity: 0.6;
+}
+
+@keyframes qrScan {
+    0% { top: var(--space-3); }
+    50% { top: calc(100% - var(--space-3) - 2px); }
+    100% { top: var(--space-3); }
+}
+
+.qrAmountWrapper {
+    text-align: center;
+}
+
+.qrAmountLabel {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-1);
+    display: block;
+}
+
+.qrAmountValue {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #e11d48; /* Premium Ruby Red */
+    letter-spacing: -0.5px;
+}
+
+.qrStatus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: var(--space-1-5) var(--space-3);
+    background: var(--bg-muted);
+    border-radius: var(--radius-full);
+}
+
+.qrNote {
+    margin-top: var(--space-1);
+    padding: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    max-width: 280px;
+    line-height: 1.4;
+    border-top: 1px dashed var(--border);
+}
+.qrCancelBtn {
+    margin-top: var(--space-3);
+    width: 100%;
+    padding: var(--space-2);
+    background: #fff;
+    border: 1px solid #ffccc7;
+    border-radius: var(--radius-lg);
+    color: #ff4d4f;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: 0.9rem;
+}
+
+.qrCancelBtn:hover {
+    background: #ff4d4f;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(255, 77, 79, 0.15);
 }

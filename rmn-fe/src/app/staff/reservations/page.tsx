@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { adminReservationApi } from "../../../lib/api/admin-reservation";
 import type { ReservationResponse } from "../../../types/models";
 import Pagination from "../../../components/Pagination";
@@ -78,10 +79,20 @@ export default function StaffReservationsPage() {
         tableId,
       });
       await fetchReservations(); // Refresh data
-      alert("Cập nhật trạng thái thành công!");
+      Swal.fire({
+        title: "Thành công",
+        text: "Cập nhật trạng thái thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("Cập nhật thất bại!");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Cập nhật thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 

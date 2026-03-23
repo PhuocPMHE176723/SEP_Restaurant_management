@@ -192,6 +192,44 @@ public class ReservationService : IReservationService
         return true;
     }
 
+    public async Task<bool> CancelUnpaidReservationAsync(long reservationId)
+    {
+        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
+            r.ReservationId == reservationId
+        );
+
+        if (reservation == null || reservation.Status != "PENDING")
+        {
+            return false;
+        }
+
+        // Optional: Ensure it has been at least 4.5 minutes since creation to prevent abuse
+        // But since the user wants automatic cancellation on frontend timeout, we can allow it
+        // Or we can rigorously check the time. We'll just allow it if status is still PENDING.
+
+        reservation.Status = "CANCELLED";
+        reservation.Note = (reservation.Note + " - Hủy tự động do quá thời gian thanh toán cọc").Trim();
+
+        // Cancel associated order and order items if exists
+        var order = await _context
+            .Orders.Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.ReservationId == reservationId);
+
+        if (order != null)
+        {
+            order.Status = "CANCELLED";
+            order.ClosedAt = DateTimeHelper.VietnamNow();
+
+            foreach (var orderItem in order.OrderItems)
+            {
+                orderItem.Status = "CANCELLED";
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<bool> UpdateReservationStatusAsync(
         long id,
         string status,
@@ -242,9 +280,125 @@ public class ReservationService : IReservationService
             }
         }
 
+        // Handle associated Order based on new status
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.ReservationId == id);
+
+        if (order != null)
+        {
+            if (status.ToUpper() == "CHECKED_IN")
+            {
+                order.Status = "OPEN";
+                if (tableId.HasValue)
+                {
+                    order.TableId = tableId;
+                }
+            }
+            else if (status.ToUpper() == "CANCELLED" || status.ToUpper() == "NO_SHOW")
+            {
+                order.Status = "CANCELLED";
+                order.ClosedAt = DateTimeHelper.VietnamNow();
+                foreach (var orderItem in order.OrderItems)
+                {
+                    orderItem.Status = "CANCELLED";
+                }
+            }
+        }
+
         _context.Reservations.Update(reservation);
         await _context.SaveChangesAsync();
 
+        return true;
+    }
+
+    public async Task<bool> UpdateReservationItemsAsync(long reservationId, long customerId, List<OrderItemRequest> newItems)
+    {
+        var reservation = await _context.Reservations
+            .Include(r => r.Order)
+            .ThenInclude(o => o.OrderItems)
+            .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerId == customerId);
+
+        if (reservation == null || reservation.Status != "PENDING")
+        {
+            return false;
+        }
+
+        var order = reservation.Order;
+        
+        // If no existing order, create one if newItems is not empty
+        if (order == null)
+        {
+            if (newItems != null && newItems.Any())
+            {
+                var code = $"OD-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}";
+                order = new Order
+                {
+                    OrderCode = code,
+                    CustomerId = customerId,
+                    ReservationId = reservationId,
+                    Status = "PENDING",
+                    OpenedAt = DateTimeHelper.VietnamNow(),
+                    OrderItems = new List<OrderItem>()
+                };
+                _context.Orders.Add(order);
+                reservation.Order = order;
+            }
+            else
+            {
+                return true; // No order, no items, nothing to do
+            }
+        }
+        
+        // Clear existing items
+        if (order.OrderItems != null && order.OrderItems.Any())
+        {
+            _context.OrderItems.RemoveRange(order.OrderItems);
+            order.OrderItems.Clear();
+        }
+
+        // Add new items
+        decimal total = 0;
+        if (newItems != null && newItems.Any())
+        {
+            foreach (var req in newItems)
+            {
+                var menu = await _context.MenuItems.FindAsync(req.ItemId);
+                if (menu != null && menu.IsActive)
+                {
+                    var price = menu.BasePrice;
+                    var itemTotal = price * req.Quantity;
+                    total += itemTotal;
+                    order.OrderItems.Add(new OrderItem
+                    {
+                        ItemId = req.ItemId,
+                        ItemNameSnapshot = menu.ItemName,
+                        Quantity = req.Quantity,
+                        UnitPrice = price,
+                        Note = req.Note,
+                        Status = "PENDING",
+                        CreatedAt = DateTimeHelper.VietnamNow()
+                    });
+                }
+            }
+        }
+        
+        if (total == 0)
+        {
+            // If no items left, remove the order
+            _context.Orders.Remove(order);
+            reservation.Order = null;
+        }
+
+        // Update reservation note to indicate items were changed
+        string editNote = "(Đã cập nhật món)";
+        if (string.IsNullOrEmpty(reservation.Note)) {
+            reservation.Note = editNote;
+        } else if (!reservation.Note.Contains(editNote)) {
+            reservation.Note = reservation.Note.Trim() + " " + editNote;
+        }
+        
+        await _context.SaveChangesAsync();
         return true;
     }
 }

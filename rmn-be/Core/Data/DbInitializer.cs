@@ -7,6 +7,7 @@ public static class DbInitializer
 {
     public static async Task Initialize(IServiceProvider serviceProvider)
     {
+        await System.IO.File.WriteAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", "--- Seeding Started at " + DateTime.UtcNow + " ---\n");
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
 
@@ -75,6 +76,13 @@ public static class DbInitializer
             "Customer",
             "Customer"
         );
+        await SeedUser(
+            userManager,
+            "trongytb2@gmail.com",
+            "123456",
+            "Test Customer",
+            "Customer"
+        );
 
         // Ensure all system users have Staff records
         await EnsureStaffRecords(serviceProvider, userManager);
@@ -115,7 +123,17 @@ public static class DbInitializer
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(user, role);
+                await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] Successfully created user: {email} with role: {role}");
             }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] Failed to create user {email}: {errors}");
+            }
+        }
+        else
+        {
+            await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] User already exists: {email}. Skipping creation.");
         }
     }
 
@@ -667,6 +685,22 @@ public static class DbInitializer
             {
                 FullName = "Trần Thị B",
                 Phone = "0123456789",
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        // 1.5 Seed profile for the test customer user
+        var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
+        var targetUser = await userManager.FindByEmailAsync("trongytb2@gmail.com");
+        if (targetUser != null && !context.Customers.Any(c => c.UserId == targetUser.Id))
+        {
+            context.Customers.Add(new Customer
+            {
+                UserId = targetUser.Id,
+                FullName = targetUser.FullName ?? "Test Customer",
+                Email = targetUser.Email,
+                Phone = "0999999999", // Dummy phone
                 CreatedAt = DateTime.UtcNow
             });
             await context.SaveChangesAsync();

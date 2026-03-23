@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { useParams, useRouter } from 'next/navigation';
 import styles from '../Checkout.module.css';
 import { invoiceApi, InvoicePreview } from '@/lib/api/invoice';
@@ -68,9 +69,20 @@ export default function CheckoutPage() {
         amount = data.discountValue;
       }
       setDiscountAmount(amount);
-      alert(`Áp dụng mã thành công! Giảm ${amount.toLocaleString()}đ`);
+      setDiscountAmount(amount);
+      Swal.fire({
+        title: "Áp dụng thành công",
+        text: `Giảm ${amount.toLocaleString()}đ`,
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (err: any) {
-      alert(err.message || "Mã giảm giá không hợp lệ.");
+      Swal.fire({
+        title: "Lỗi",
+        text: err.message || "Mã giảm giá không hợp lệ.",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
       setDiscountInfo(null);
       setDiscountAmount(0);
     }
@@ -99,9 +111,19 @@ export default function CheckoutPage() {
         note
       });
       setIsSuccess(true);
-      alert("Thanh toán thành công! Bạn có thể in hóa đơn bây giờ.");
+      Swal.fire({
+        title: "Thành công",
+        text: "Thanh toán thành công! Bạn có thể in hóa đơn bây giờ.",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (err: any) {
-      alert(err.message || "Thanh toán thất bại.");
+      Swal.fire({
+        title: "Thanh toán thất bại",
+        text: err.message || "Vui lòng thử lại sau.",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     } finally {
       setIsProcessing(false);
     }

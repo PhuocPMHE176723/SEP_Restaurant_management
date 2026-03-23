@@ -9,9 +9,10 @@ interface ModalProps {
   title: string;
   type?: "success" | "error" | "info";
   children?: React.ReactNode;
+  showFooter?: boolean;
 }
 
-export default function Modal({ isOpen, onClose, title, type = "success", children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, type = "success", children, showFooter = true }: ModalProps) {
   const handleEscape = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       onClose();
@@ -50,11 +51,13 @@ export default function Modal({ isOpen, onClose, title, type = "success", childr
         <div className={styles.body}>
           {children}
         </div>
-        <div className={styles.footer}>
-          <button onClick={onClose} className={styles.button}>
-            OK
-          </button>
-        </div>
+        {showFooter && (
+          <div className={styles.footer}>
+            <button onClick={onClose} className={styles.button}>
+              OK
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

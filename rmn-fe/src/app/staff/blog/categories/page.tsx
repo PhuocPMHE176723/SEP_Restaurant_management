@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { blogApi } from "../../../../lib/api/blog";
 import { BlogCategory } from "../../../../types/models/content";
 import styles from "../../../manager/manager.module.css";
@@ -36,17 +37,45 @@ export default function BlogCategoriesPage() {
             setNewCategory({ categoryName: "", description: "", isActive: true });
             fetchCategories();
         } catch (err: any) {
-            alert(err.message || "Failed to create category");
+            Swal.fire({
+                title: "Lỗi",
+                text: err.message || "Failed to create category",
+                icon: "error",
+                confirmButtonColor: "var(--error)"
+            });
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
+        const result = await Swal.fire({
+            title: "Xác nhận xóa?",
+            text: "Bạn có chắc chắn muốn xóa danh mục này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Xóa",
+            cancelButtonText: "Hủy"
+        });
+        
+        if (!result.isConfirmed) return;
+        
         try {
             await blogApi.deleteCategory(id);
             fetchCategories();
+            Swal.fire({
+                title: "Thành công",
+                text: "Xóa danh mục thành công!",
+                icon: "success",
+                confirmButtonColor: "var(--brand-primary)"
+            });
         } catch (err: any) {
-            alert(err.message || "Failed to delete category");
+            Swal.fire({
+                title: "Lỗi",
+                text: err.message || "Failed to delete category",
+                icon: "error",
+                confirmButtonColor: "var(--error)"
+            });
         }
     };
 

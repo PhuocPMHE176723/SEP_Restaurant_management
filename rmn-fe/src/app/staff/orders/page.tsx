@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { orderApi, OrderResponse } from "../../../lib/api/order";
 import Pagination from "../../../components/Pagination";
 import OrderDetailModal from "../../../components/OrderDetailModal";
@@ -105,9 +106,20 @@ export default function StaffOrdersPage() {
     try {
       await orderApi.updateOrderStatus(orderId, { status: newStatus });
       await fetchOrders();
+      Swal.fire({
+        title: "Thành công",
+        text: "Cập nhật trạng thái thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (error) {
       console.error("Failed to update order status:", error);
-      alert("Có lỗi khi cập nhật trạng thái order");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Có lỗi khi cập nhật trạng thái order",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 

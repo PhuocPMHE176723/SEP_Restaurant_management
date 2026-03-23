@@ -26,8 +26,8 @@ builder
     {
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 6;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
 
         options.User.RequireUniqueEmail = true;
         options.SignIn.RequireConfirmedEmail = false;
@@ -148,6 +148,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 // ─────────────────────────────────────────────────────────────
 //  BUILD
