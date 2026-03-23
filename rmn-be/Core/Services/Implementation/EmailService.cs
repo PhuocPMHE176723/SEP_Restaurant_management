@@ -42,12 +42,12 @@ public class EmailService : IEmailService
         
         var htmlMessage = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
-                <div style='background-color: #f7a048; padding: 20px; text-align: center; color: white;'>
-                    <h2 style='margin: 0;'>Xác Nhận Đặt Bàn</h2>
+                <div style='background-color: #2e7d32; padding: 20px; text-align: center; color: white;'>
+                    <h2 style='margin: 0;'>Xác Nhận Đặt Bàn Thành Công</h2>
                 </div>
                 <div style='padding: 20px; color: #333; line-height: 1.6;'>
                     <p>Chào anh/chị <strong>{customerName}</strong>,</p>
-                    <p>Cảm ơn anh/chị đã đặt bàn tại Nhà Hàng Khói Quê. Dưới đây là thông tin chi tiết:</p>
+                    <p>Cảm ơn anh/chị đã hoàn tất thanh toán cọc. Đơn đặt bàn của anh/chị hiện đã được <strong>XÁC NHẬN</strong>. Dưới đây là thông tin chi tiết:</p>
                     <table style='width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px;'>
                         <tr>
                             <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Mã đặt bàn:</strong></td>
@@ -62,11 +62,51 @@ public class EmailService : IEmailService
                             <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;'>{partySize} người</td>
                         </tr>
                         <tr>
-                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Tuỳ chọn Đặt trước:</strong></td>
-                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; color: #2e7d32;'>Đã hoàn tất cọc {depositAmount:N0}đ</td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Số tiền đã cọc:</strong></td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; color: #2e7d32;'>{depositAmount:N0}đ (Đã thanh toán)</td>
                         </tr>
                     </table>
-                    <p>Chúc anh/chị ngon miệng và có trải nghiệm tuyệt vời tại Nhà Hàng Khói Quê!</p>
+                    <p>Hẹn gặp lại anh/chị tại Nhà Hàng Khói Quê!</p>
+                </div>
+                <div style='background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #888;'>
+                    <p style='margin: 0;'>Nhà Hàng Khói Quê - 123 Đống Đa, Hà Nội<br>Hotline: 0900 123 456</p>
+                </div>
+            </div>";
+
+        await SendEmailAsync(email, subject, htmlMessage);
+    }
+
+    public async Task SendReservationReceivedEmailAsync(string email, string customerName, long reservationId, DateTime reservedAt, int partySize, decimal depositAmount)
+    {
+        var subject = $"[Nhà Hàng Khói Quê] Thông tin đơn đặt bàn #{reservationId}";
+        
+        var htmlMessage = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+                <div style='background-color: #f7a048; padding: 20px; text-align: center; color: white;'>
+                    <h2 style='margin: 0;'>Chúng Tôi Đã Tiếp Nhận Đơn Đặt Bàn</h2>
+                </div>
+                <div style='padding: 20px; color: #333; line-height: 1.6;'>
+                    <p>Chào anh/chị <strong>{customerName}</strong>,</p>
+                    <p>Hệ thống đã ghi nhận đơn đặt bàn của anh/chị. Vui lòng thanh toán tiền cọc (50%) để hoàn tất xác thực đơn đặt bàn này. Dưới đây là thông tin chi tiết:</p>
+                    <table style='width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px;'>
+                        <tr>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Mã đặt bàn:</strong></td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;'>#{reservationId}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Thời gian:</strong></td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;'>{reservedAt:dd/MM/yyyy HH:mm}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Số khách:</strong></td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;'>{partySize} người</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Tiền cọc cần thanh toán:</strong></td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; color: #d32f2f;'>{depositAmount:N0}đ</td>
+                        </tr>
+                    </table>
+                    <p><strong>Lưu ý:</strong> Đơn đặt bàn sẽ được tự động giữ trong vòng 5 phút để chờ thanh toán cọc.</p>
                 </div>
                 <div style='background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #888;'>
                     <p style='margin: 0;'>Nhà Hàng Khói Quê - 123 Đống Đa, Hà Nội<br>Hotline: 0900 123 456</p>
