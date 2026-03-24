@@ -57,7 +57,8 @@ public class ReservationService : IReservationService
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
 
-            // Create order if menu items are selected
+            // Calculate and set DepositAmount (Min 50,000 VND, otherwise 50% of total order)
+            decimal totalOrderAmount = 0;
             if (request.MenuItems != null && request.MenuItems.Count > 0)
             {
                 // Generate order code
@@ -103,12 +104,10 @@ public class ReservationService : IReservationService
                     {
                         OrderId = order.OrderId,
                         ItemId = item.ItemId,
-                        ItemNameSnapshot = menuItem.ItemName,
-                        UnitPrice = unitPrice,
                         Quantity = item.Quantity,
-                        DiscountAmount = 0,
-                        Status = "PENDING",
-                        Note = item.Note,
+                        UnitPrice = unitPrice,
+                        DiscountAmount = 0, // Simplified for now
+                        ItemNameSnapshot = menuItem.ItemName,
                         CreatedAt = DateTimeHelper.VietnamNow(),
                     };
 
@@ -116,8 +115,23 @@ public class ReservationService : IReservationService
                 }
 
                 await _context.SaveChangesAsync();
+
+                // Calculate total
+                var orderItems = await _context.OrderItems
+                    .Where(oi => oi.OrderId == order.OrderId)
+                    .ToListAsync();
+                
+                foreach (var oi in orderItems)
+                {
+                    totalOrderAmount += (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount;
+                }
             }
 
+            // Minimum deposit is 200,000 VND to ensure booking quality
+            const decimal minDeposit = 200000;
+            reservation.DepositAmount = Math.Max(minDeposit, totalOrderAmount * 0.5m);
+            
+            await _context.SaveChangesAsync();
             return _mapper.Map<ReservationDTO>(reservation);
         }
         catch (Exception ex)
@@ -397,6 +411,7 @@ public class ReservationService : IReservationService
         } else if (!reservation.Note.Contains(editNote)) {
             reservation.Note = reservation.Note.Trim() + " " + editNote;
         }
+        reservation.DepositAmount = total * 0.5m;
         
         await _context.SaveChangesAsync();
         return true;

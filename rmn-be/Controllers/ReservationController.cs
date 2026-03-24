@@ -133,7 +133,8 @@ public class ReservationController : BaseController
                         reservation.ReservationId,
                         reservation.ReservedAt,
                         reservation.PartySize,
-                        reservation.DepositAmount
+                        reservation.DepositAmount,
+                        reservation.Order?.OrderItems ?? new List<OrderItemDTO>()
                     );
                 }
             }

@@ -7,7 +7,10 @@ public static class DbInitializer
 {
     public static async Task Initialize(IServiceProvider serviceProvider)
     {
-        await System.IO.File.WriteAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", "--- Seeding Started at " + DateTime.UtcNow + " ---\n");
+        await System.IO.File.WriteAllTextAsync(
+            "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
+            "--- Seeding Started at " + DateTime.UtcNow + " ---\n"
+        );
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
 
@@ -76,13 +79,7 @@ public static class DbInitializer
             "Customer",
             "Customer"
         );
-        await SeedUser(
-            userManager,
-            "trongytb2@gmail.com",
-            "123456",
-            "Test Customer",
-            "Customer"
-        );
+        await SeedUser(userManager, "trongytb2@gmail.com", "123456", "Test Customer", "Customer");
 
         // Ensure all system users have Staff records
         await EnsureStaffRecords(serviceProvider, userManager);
@@ -123,17 +120,26 @@ public static class DbInitializer
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(user, role);
-                await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] Successfully created user: {email} with role: {role}");
+                await System.IO.File.AppendAllTextAsync(
+                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
+                    $"\n[DbInitializer] Successfully created user: {email} with role: {role}"
+                );
             }
             else
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] Failed to create user {email}: {errors}");
+                await System.IO.File.AppendAllTextAsync(
+                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
+                    $"\n[DbInitializer] Failed to create user {email}: {errors}"
+                );
             }
         }
         else
         {
-            await System.IO.File.AppendAllTextAsync("/Users/dotritrong/Desktop/G26/rmn-be/canary.txt", $"\n[DbInitializer] User already exists: {email}. Skipping creation.");
+            await System.IO.File.AppendAllTextAsync(
+                "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
+                $"\n[DbInitializer] User already exists: {email}. Skipping creation."
+            );
         }
     }
 
@@ -642,7 +648,10 @@ public static class DbInitializer
         }
     }
 
-    private static async Task EnsureStaffRecords(IServiceProvider serviceProvider, UserManager<UserIdentity> userManager)
+    private static async Task EnsureStaffRecords(
+        IServiceProvider serviceProvider,
+        UserManager<UserIdentity> userManager
+    )
     {
         var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
         var rolesToStaff = new[] { "Manager", "Staff", "Kitchen", "Receptionist", "Warehouse" };
@@ -654,14 +663,17 @@ public static class DbInitializer
             {
                 if (!context.Staffs.Any(s => s.UserId == user.Id))
                 {
-                    context.Staffs.Add(new Staff
-                    {
-                        UserId = user.Id,
-                        StaffCode = $"{role.Substring(0, 2).ToUpper()}{(new Random().Next(100, 999))}",
-                        FullName = user.FullName ?? "Staff Name",
-                        WorkingStatus = "ACTIVE",
-                        CreatedAt = DateTime.UtcNow
-                    });
+                    context.Staffs.Add(
+                        new Staff
+                        {
+                            UserId = user.Id,
+                            StaffCode =
+                                $"{role.Substring(0, 2).ToUpper()}{(new Random().Next(100, 999))}",
+                            FullName = user.FullName ?? "Staff Name",
+                            WorkingStatus = "ACTIVE",
+                            CreatedAt = DateTime.UtcNow,
+                        }
+                    );
                 }
             }
         }
@@ -671,22 +683,26 @@ public static class DbInitializer
     private static async Task SeedTestingData(IServiceProvider serviceProvider)
     {
         var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
-        
+
         // 1. Seed sample customers
         if (!context.Customers.Any(c => c.Phone == "0987654321"))
         {
-            context.Customers.Add(new Customer
-            {
-                FullName = "Nguyễn Văn A",
-                Phone = "0987654321",
-                CreatedAt = DateTime.UtcNow
-            });
-            context.Customers.Add(new Customer
-            {
-                FullName = "Trần Thị B",
-                Phone = "0123456789",
-                CreatedAt = DateTime.UtcNow
-            });
+            context.Customers.Add(
+                new Customer
+                {
+                    FullName = "Nguyễn Văn A",
+                    Phone = "0987654321",
+                    CreatedAt = DateTime.UtcNow,
+                }
+            );
+            context.Customers.Add(
+                new Customer
+                {
+                    FullName = "Trần Thị B",
+                    Phone = "0123456789",
+                    CreatedAt = DateTime.UtcNow,
+                }
+            );
             await context.SaveChangesAsync();
         }
 
@@ -695,14 +711,16 @@ public static class DbInitializer
         var targetUser = await userManager.FindByEmailAsync("trongytb2@gmail.com");
         if (targetUser != null && !context.Customers.Any(c => c.UserId == targetUser.Id))
         {
-            context.Customers.Add(new Customer
-            {
-                UserId = targetUser.Id,
-                FullName = targetUser.FullName ?? "Test Customer",
-                Email = targetUser.Email,
-                Phone = "0999999999", // Dummy phone
-                CreatedAt = DateTime.UtcNow
-            });
+            context.Customers.Add(
+                new Customer
+                {
+                    UserId = targetUser.Id,
+                    FullName = targetUser.FullName ?? "Test Customer",
+                    Email = targetUser.Email,
+                    Phone = "0999999999", // Dummy phone
+                    CreatedAt = DateTime.UtcNow,
+                }
+            );
             await context.SaveChangesAsync();
         }
 
@@ -718,7 +736,7 @@ public static class DbInitializer
                     PartySize = 4,
                     ReservedAt = today.AddHours(19), // 7 PM today
                     Status = "CONFIRMED",
-                    Note = "Gần cửa sổ"
+                    Note = "Gần cửa sổ",
                 },
                 new Reservation
                 {
@@ -727,7 +745,7 @@ public static class DbInitializer
                     PartySize = 2,
                     ReservedAt = today.AddHours(20), // 8 PM today
                     Status = "PENDING",
-                    Note = "Lãng mạn"
+                    Note = "Lãng mạn",
                 }
             );
             await context.SaveChangesAsync();
@@ -750,7 +768,7 @@ public static class DbInitializer
                     Status = "SENT_TO_KITCHEN",
                     OrderType = "DINE_IN",
                     OpenedAt = DateTime.UtcNow,
-                    CreatedByStaffId = staff.StaffId
+                    CreatedByStaffId = staff.StaffId,
                 };
                 context.Orders.Add(order);
                 await context.SaveChangesAsync();
@@ -763,7 +781,7 @@ public static class DbInitializer
                         ItemNameSnapshot = menuItems[0].ItemName,
                         Quantity = 2,
                         UnitPrice = menuItems[0].BasePrice,
-                        Status = "PENDING"
+                        Status = "PENDING",
                     },
                     new OrderItem
                     {
@@ -772,10 +790,10 @@ public static class DbInitializer
                         ItemNameSnapshot = menuItems[1].ItemName,
                         Quantity = 1,
                         UnitPrice = menuItems[1].BasePrice,
-                        Status = "IN_PROGRESS"
+                        Status = "IN_PROGRESS",
                     }
                 );
-                
+
                 table.Status = "OCCUPIED";
                 await context.SaveChangesAsync();
             }

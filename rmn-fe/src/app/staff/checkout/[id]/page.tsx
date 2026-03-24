@@ -7,6 +7,7 @@ import styles from '../Checkout.module.css';
 import { invoiceApi, InvoicePreview } from '@/lib/api/invoice';
 import { CustomerLookupResponse } from '@/lib/api/customer';
 import CustomerLookupModal from '@/components/CustomerLookupModal';
+import { getSepayConfig } from '@/lib/api/payment';
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -26,12 +27,26 @@ export default function CheckoutPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [discountInfo, setDiscountInfo] = useState<{ type: string; value: number; max?: number } | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     if (orderId) {
       fetchPreview();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const cfg = await getSepayConfig();
+        setSepayConfig(cfg);
+      } catch (e) {
+        console.error("Failed to load SePay config:", e);
+      }
+    }
+    loadConfig();
+  }, []);
 
   const fetchPreview = async () => {
     try {
@@ -263,6 +278,18 @@ export default function CheckoutPage() {
           >
             {isProcessing ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
           </button>
+
+          {paymentMethod === 'QR' && sepayConfig && (
+            <div style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '1rem' }}>Mã QR Thanh Toán (Tổng tiền)</p>
+              <img 
+                src={`https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${calculateFinalTotal()}&des=${encodeURIComponent(`Thanh toan hoa don ${preview.orderCode}`)}`}
+                alt="QR Code"
+                style={{ width: '100%', maxWidth: '200px', margin: '0 auto', display: 'block' }}
+              />
+              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '0.5rem' }}>Dành cho nhân viên quét cho khách</p>
+            </div>
+          )}
         </div>
       </div>
 

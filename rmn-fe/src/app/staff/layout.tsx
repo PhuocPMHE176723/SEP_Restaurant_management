@@ -85,7 +85,12 @@ export default function StaffLayout({
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Nghiệp vụ chính</p>
             {NAV_ITEMS.slice(0, 3).map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navItem} data-active={router === item.href as any}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.navItem}
+                data-active={router === (item.href as any)}
+              >
                 {item.label}
               </Link>
             ))}
@@ -94,7 +99,12 @@ export default function StaffLayout({
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Phục vụ tại bàn</p>
             {NAV_ITEMS.slice(3, 6).map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navItem} data-active={router === item.href as any}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.navItem}
+                data-active={router === (item.href as any)}
+              >
                 {item.label}
               </Link>
             ))}
@@ -103,7 +113,12 @@ export default function StaffLayout({
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Nội dung Website</p>
             {NAV_ITEMS.slice(6).map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navItem} data-active={router === item.href as any}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.navItem}
+                data-active={router === (item.href as any)}
+              >
                 {item.label}
               </Link>
             ))}
@@ -136,13 +151,18 @@ export default function StaffLayout({
         <header className={styles.topbar}>
           <div className={styles.topbarLeft}>
             <Link href="/" className={styles.backHome}>
-              <span style={{ fontSize: "1.2rem", marginRight: "0.5rem" }}>←</span> 
+              <span style={{ fontSize: "1.2rem", marginRight: "0.5rem" }}>
+                ←
+              </span>
               Về trang chủ
             </Link>
           </div>
         </header>
 
-        <div className={styles.content} style={{ animation: "fadeIn 0.4s ease-out" }}>
+        <div
+          className={styles.content}
+          style={{ animation: "fadeIn 0.4s ease-out" }}
+        >
           {children}
         </div>
       </div>

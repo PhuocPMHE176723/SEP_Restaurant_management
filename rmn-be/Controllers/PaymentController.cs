@@ -4,6 +4,9 @@ using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Interface;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using SEP_Restaurant_management.Core.DTOs;
+using AutoMapper;
+using System.Globalization;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -15,17 +18,20 @@ public class PaymentController : ControllerBase
     private readonly SepDatabaseContext _context;
     private readonly IEmailService _emailService;
     private readonly IHttpClientFactory _httpClientFactory;
-
+    private readonly IMapper _mapper;
+ 
     public PaymentController(
         IConfiguration configuration,
         SepDatabaseContext context,
         IEmailService emailService,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IMapper mapper)
     {
         _configuration = configuration;
         _context = context;
         _emailService = emailService;
         _httpClientFactory = httpClientFactory;
+        _mapper = mapper;
     }
 
     [HttpGet("sepay-config")]
@@ -76,7 +82,7 @@ public class PaymentController : ControllerBase
                 // Incoming: amount_in > 0
                 decimal amountIn = 0;
                 if (tran.TryGetProperty("amount_in", out var amtInProp))
-                    decimal.TryParse(amtInProp.GetString(), out amountIn);
+                    decimal.TryParse(amtInProp.GetString(), CultureInfo.InvariantCulture, out amountIn);
                 if (amountIn <= 0) continue;
 
                 var content = tran.TryGetProperty("transaction_content", out var cp) ? cp.GetString() ?? "" : "";
@@ -86,7 +92,9 @@ public class PaymentController : ControllerBase
                 // Match found — update reservation
                 var reservation = await _context.Reservations
                     .Include(r => r.Customer)
-                    .ThenInclude(c => c.User)
+                        .ThenInclude(c => c!.User)
+                    .Include(r => r.Order)
+                        .ThenInclude(o => o!.OrderItems)
                     .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
 
                 if (reservation != null && reservation.Status == "PENDING")
@@ -106,8 +114,8 @@ public class PaymentController : ControllerBase
                                 reservation.ReservationId,
                                 reservation.ReservedAt,
                                 reservation.PartySize,
-                                amountIn
-                            );
+                                amountIn,
+                                _mapper.Map<List<OrderItemDTO>>(reservation.Order?.OrderItems ?? new List<OrderItem>()));
                         }
                     } catch (Exception ex) {
                         Console.WriteLine($"[PaymentController] Email error: {ex.Message}");
