@@ -98,7 +98,7 @@ public class InvoiceService
             Items = order.OrderItems.Select(oi => new OrderItemDTO
             {
                 OrderItemId = oi.OrderItemId,
-                MenuItemName = oi.ItemNameSnapshot,
+                ItemNameSnapshot = oi.ItemNameSnapshot,
                 Quantity = oi.Quantity,
                 UnitPrice = oi.UnitPrice,
                 Status = oi.Status,

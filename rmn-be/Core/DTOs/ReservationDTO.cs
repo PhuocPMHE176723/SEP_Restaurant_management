@@ -11,6 +11,7 @@ public class ReservationDTO
     public int? TableId { get; set; }
     public string CustomerName { get; set; } = default!;
     public string CustomerPhone { get; set; } = default!;
+    public string? ContactEmail { get; set; }
     public int PartySize { get; set; }
     public DateTime ReservedAt { get; set; }
     public int DurationMinutes { get; set; }
@@ -41,7 +42,7 @@ public class OrderDTO
 public class OrderItemDTO
 {
     public long OrderItemId { get; set; }
-    public string MenuItemName { get; set; } = default!;
+    public string ItemNameSnapshot { get; set; } = default!;
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public string? Status { get; set; }
@@ -62,6 +63,10 @@ public class CreateReservationRequest
 
     [MaxLength(255)]
     public string? Note { get; set; }
+
+    [EmailAddress]
+    [MaxLength(150)]
+    public string? ContactEmail { get; set; }
 
     public List<OrderItemRequest> MenuItems { get; set; } = new();
 }

@@ -49,11 +49,18 @@ namespace SEP_Restaurant_management.Core.Services.Implementation
             return inventory.Where(i => i.CurrentStock <= threshold).ToList();
         }
 
-        public async Task<IEnumerable<StockMovementResponse>> GetMovementsAsync()
+        public async Task<IEnumerable<StockMovementResponse>> GetMovementsAsync(DateTime? startDate = null, DateTime? endDate = null, long? ingredientId = null)
         {
-            return await _context.StockMovements
+            var query = _context.StockMovements
                 .Include(m => m.Ingredient)
                 .Include(m => m.CreatedByStaff)
+                .AsQueryable();
+
+            if (startDate.HasValue) query = query.Where(m => m.MovedAt >= startDate.Value);
+            if (endDate.HasValue) query = query.Where(m => m.MovedAt <= endDate.Value);
+            if (ingredientId.HasValue) query = query.Where(m => m.IngredientId == ingredientId.Value);
+
+            return await query
                 .OrderByDescending(m => m.MovedAt)
                 .Select(m => new StockMovementResponse
                 {
@@ -118,6 +125,30 @@ namespace SEP_Restaurant_management.Core.Services.Implementation
                 CreatedByStaffId = stockMovement.CreatedByStaffId,
                 Note = stockMovement.Note
             };
+        }
+        public async Task<IEnumerable<ConsumptionReportResponse>> GetConsumptionReportAsync(DateTime startDate, DateTime endDate)
+        {
+            var movements = await _context.StockMovements
+                .Include(m => m.Ingredient)
+                .Where(m => m.MovedAt >= startDate && m.MovedAt <= endDate)
+                .Where(m => m.RefType == "ORDER_ITEM" || m.RefType == "AUDIT")
+                .ToListAsync();
+
+            var report = movements
+                .GroupBy(m => m.IngredientId)
+                .Select(g => new ConsumptionReportResponse
+                {
+                    IngredientId = g.Key,
+                    IngredientName = g.First().Ingredient.IngredientName,
+                    Unit = g.First().Ingredient.Unit,
+                    OrderConsumption = g.Where(m => m.RefType == "ORDER_ITEM" && m.MovementType == "OUT").Sum(m => m.Quantity),
+                    AuditLoss = g.Where(m => m.RefType == "AUDIT" && m.MovementType == "OUT").Sum(m => m.Quantity),
+                    AuditGain = g.Where(m => m.RefType == "AUDIT" && m.MovementType == "IN").Sum(m => m.Quantity)
+                })
+                .OrderBy(r => r.IngredientName)
+                .ToList();
+
+            return report;
         }
     }
 }

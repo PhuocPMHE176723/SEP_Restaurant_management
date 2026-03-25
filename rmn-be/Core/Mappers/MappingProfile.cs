@@ -37,8 +37,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.OrderItems));
 
         // ── OrderItem ──────────────────────────────────────────
-        CreateMap<OrderItem, OrderItemDTO>()
-            .ForMember(dest => dest.MenuItemName, opt => opt.MapFrom(src => src.ItemNameSnapshot));
+        CreateMap<OrderItem, OrderItemDTO>();
 
         // ── Blog & Sliders ─────────────────────────────────────
         CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();

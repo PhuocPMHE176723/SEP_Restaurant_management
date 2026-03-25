@@ -104,4 +104,15 @@ namespace SEP_Restaurant_management.Core.DTOs
         [MaxLength(255)]
         public string Note { get; set; } = default!;
     }
+
+    public class ConsumptionReportResponse
+    {
+        public long IngredientId { get; set; }
+        public string IngredientName { get; set; } = default!;
+        public string Unit { get; set; } = default!;
+        public decimal OrderConsumption { get; set; } // Quantity from ORDER_ITEM movements
+        public decimal AuditLoss { get; set; }       // OUT during AUDIT
+        public decimal AuditGain { get; set; }       // IN during AUDIT
+        public decimal TotalUsage => OrderConsumption + AuditLoss - AuditGain;
+    }
 }

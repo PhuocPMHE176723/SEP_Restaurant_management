@@ -37,4 +37,5 @@ public class MenuItem
     public virtual ICollection<MenuItemPrice> MenuItemPrices { get; set; } = new List<MenuItemPrice>();
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     public virtual ICollection<InvoiceLine> InvoiceLines { get; set; } = new List<InvoiceLine>();
+    public virtual ICollection<MenuItemIngredient> MenuItemIngredients { get; set; } = new List<MenuItemIngredient>();
 }

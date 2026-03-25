@@ -21,6 +21,9 @@ public class Reservation
     [MaxLength(20)]
     public string CustomerPhone { get; set; } = default!;
 
+    [MaxLength(150)]
+    public string? ContactEmail { get; set; }
+
     public int PartySize { get; set; }
 
     public DateTime ReservedAt { get; set; }
