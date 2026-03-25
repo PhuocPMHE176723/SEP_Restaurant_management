@@ -11,11 +11,48 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* Top Bar */
+.topBar {
+    background: var(--brand-dark);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topBarInner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.branchList {
+    display: flex;
+    gap: var(--space-6);
+}
+
+.branchItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: color var(--t-fast);
+}
+
+.branchItem:hover {
+    color: #fff;
+}
+
+.branchIcon {
+    opacity: 0.6;
+}
+
 .inner {
     display: flex;
     align-items: center;
     gap: var(--space-6);
-    height: 64px;
+    height: 70px;
 }
 
 /* Logo */
@@ -275,6 +312,14 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .branchList {
+        display: none;
+    }
+
+    .topBarInner {
+        justify-content: center;
+    }
+
     .nav {
         display: none;
     }

@@ -102,6 +102,7 @@ export default function BookingForm() {
   const [loading, setLoading] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -194,17 +195,31 @@ export default function BookingForm() {
     return cats;
   }, [menuItems]);
 
-  // Filter menu items by active category
+  // Filter menu items by active category and search term
   const filteredMenu = useMemo(() => {
-    if (activeCategory === "all") return menuItems;
-    return menuItems.filter((item) => item.categoryName === activeCategory);
-  }, [menuItems, activeCategory]);
+    let filtered = menuItems;
+    if (activeCategory !== "all") {
+      filtered = filtered.filter((item) => item.categoryName === activeCategory);
+    }
+    if (searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.itemName.toLowerCase().includes(term) ||
+          item.description?.toLowerCase().includes(term),
+      );
+    }
+    return filtered;
+  }, [menuItems, activeCategory, searchTerm]);
 
   function addMenuItem(itemId: number) {
     setSelectedItems((prev) => {
       const newMap = new Map(prev);
       if (!newMap.has(itemId)) {
-        newMap.set(itemId, numberOfTables); // Default: 1 per table
+        // Clamp quantity to something reasonable (max tables for 100 people is ~25)
+        const initialQty = Math.min(numberOfTables, 50); 
+        console.log(`[BookingForm] Adding MenuItem ${itemId} with quantity ${initialQty} (numberOfTables: ${numberOfTables})`);
+        newMap.set(itemId, initialQty); 
       }
       return newMap;
     });
@@ -285,19 +300,26 @@ export default function BookingForm() {
       // SePay Deposit Logic
       const _totalAmount = Array.from(selectedItems.entries()).reduce((sum, [id, qty]) => {
         const item = menuItems.find((m) => m.itemId === id);
-        return sum + (item ? item.basePrice * qty : 0);
+        // Defensive clamp: quantity should not exceed 50 for a single item in a reservation
+        const safeQty = Math.min(qty, 50); 
+        console.log(`[BookingForm] Item ID: ${id}, Qty: ${qty} (safe: ${safeQty}), BasePrice: ${item?.basePrice}`);
+        return sum + (item ? item.basePrice * safeQty : 0);
       }, 0);
 
-      if (_totalAmount > 0 && sepayConfig?.account) {
-        const depositAmount = Math.round(_totalAmount * 0.5); // 50%
+      console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
+
+      if (sepayConfig?.account) {
+        const depositAmount = Math.max(200000, Math.round(_totalAmount * 0.5)); // Min 200k or 50%
+        console.log(`[BookingForm] Calculated depositAmount: ${depositAmount}`);
         setQrAmount(depositAmount);
         setCurrentReservationId(result.reservationId);
         const paymentCode = String(Math.floor(100000 + Math.random() * 900000));
         const transferContent = `RMNRES${paymentCode}`;
         setTransferCode(transferContent);
-        setQrCodeUrl(
-          `https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${depositAmount}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${depositAmount}`)}`
-        );
+
+        const qrUrl = `https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${depositAmount}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${depositAmount}`)}`;
+        console.log(`[BookingForm] Generated QR URL: ${qrUrl}`);
+        setQrCodeUrl(qrUrl);
         setQrModalOpen(true);
         setTimeLeft(300); // 5 minutes
         startPaymentCheck(result.reservationId, depositAmount, paymentCode);
@@ -619,7 +641,7 @@ export default function BookingForm() {
           </svg>
           <div>
             <strong>Quy tắc đặt trước:</strong> Để đảm bảo giữ chỗ và chuẩn bị món ăn chu đáo, 
-            quý khách vui lòng <strong>thanh toán cọc 50%</strong> tổng giá trị món ăn đã chọn. 
+            quý khách vui lòng <strong>thanh toán cọc tối thiểu 200.000đ</strong> (hoặc 50% tổng giá trị món ăn). 
             Tiền cọc sẽ được trừ trực tiếp vào hoá đơn khi quý khách thanh toán tại nhà hàng.
           </div>
         </div>
@@ -628,7 +650,17 @@ export default function BookingForm() {
           <p className={styles.loadingText}>Đang tải thực đơn...</p>
         ) : (
           <>
-            {/* Category tabs */}
+            {/* Search box and Category tabs */}
+            <div className={styles.searchWrapper}>
+              <input
+                type="text"
+                placeholder="Tìm kiếm tên món ăn hoặc mô tả..."
+                className={styles.searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
             <div className={styles.categoryTabs}>
               {categories.map((cat) => (
                 <button
@@ -776,9 +808,31 @@ export default function BookingForm() {
                 {/* Pricing summary */}
                 <div className={styles.pricingSummary}>
                   <div className={styles.pricingRow}>
+                    <span>Số món đã chọn:</span>
+                    <span>
+                      {Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} món
+                    </span>
+                  </div>
+                  <div className={styles.pricingRow}>
                     <span>Tổng tạm tính:</span>
                     <span className={styles.pricingTotal}>
                       {totalAmount.toLocaleString("vi-VN")} đ
+                    </span>
+                  </div>
+                  <div className={styles.pricingRow}>
+                    <span className={styles.depositLabel}>
+                      Tiền cọc (50%):
+                      {totalAmount < 400000 && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          (Áp dụng mức cọc tối thiểu 200.000đ)
+                        </div>
+                      )}
+                    </span>
+                    <span
+                      className={styles.pricingDeposit}
+                      style={{ color: "var(--brand-primary)", fontWeight: "bold" }}
+                    >
+                      {Math.max(200000, Math.round(totalAmount * 0.5)).toLocaleString("vi-VN")} đ
                     </span>
                   </div>
                   <div

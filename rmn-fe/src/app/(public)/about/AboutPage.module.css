@@ -1,0 +1,268 @@
+.main {
+  background-color: #fafafa;
+}
+
+.hero {
+  height: 40vh;
+  min-height: 350px;
+  background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.2));
+  display: flex;
+  align-items: center;
+  padding: 60px 0;
+  color: white;
+}
+
+.heroTitle {
+  font-size: 5rem;
+  font-weight: 900;
+  margin-bottom: 20px;
+  background: linear-gradient(to right, #ffffff, #e2e8f0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+  line-height: 1;
+}
+
+.heroSubtitle {
+  font-size: 1.4rem;
+  opacity: 0.95;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.storySection {
+  padding: 60px 0;
+  background: white;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.textContent {
+  max-width: 600px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 8px 18px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+.sectionTitle {
+  font-family: var(--font-playfair), serif;
+  font-size: 3.2rem;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.text {
+  font-size: 1.2rem;
+  line-height: 2;
+  color: #475569;
+  margin-bottom: 20px;
+  text-align: justify;
+}
+
+.imageContent {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.imageCircle {
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.2);
+  border: 15px solid white;
+}
+
+.imageCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pressSection {
+  padding: 70px 0;
+  background: #f1f5f9;
+}
+
+.sectionHead {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.sectionTitleCenter {
+  font-size: 3rem;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+}
+
+.sectionSubCenter {
+  color: #64748b;
+  font-size: 1.2rem;
+}
+
+.quoteGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.quoteCard {
+  background: white;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.3s ease;
+}
+
+.quoteCard:hover {
+  transform: translateY(-10px);
+}
+
+.quoteText {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #334155;
+  margin-bottom: 24px;
+  position: relative;
+  padding-top: 20px;
+}
+
+.quoteText::before {
+  content: '“';
+  font-size: 5rem;
+  color: #16a34a;
+  opacity: 0.15;
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  z-index: 0;
+  font-family: serif;
+}
+
+.author {
+  font-weight: 700;
+  color: #16a34a;
+  font-size: 0.9rem;
+}
+
+.philosophySection {
+  padding: 70px 0;
+}
+
+.philWrapper {
+  background: #0f172a;
+  color: white;
+  padding: 50px;
+  border-radius: 40px;
+  text-align: center;
+}
+
+.philBadge {
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.philTitle {
+  font-size: 3rem;
+  margin-bottom: 40px;
+}
+
+.philGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.philItem h3 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #16a34a;
+}
+
+.philItem p {
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+.cta {
+  padding: 60px 0;
+  text-align: center;
+  background: white;
+}
+
+.cta h2 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.cta p {
+  color: #64748b;
+  margin-bottom: 40px;
+  font-size: 1.2rem;
+}
+
+.ctaBtn {
+  display: inline-block;
+  padding: 18px 45px;
+  background: #16a34a;
+  color: white;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 15px 30px rgba(22, 163, 74, 0.3);
+  transition: all 0.3s ease;
+}
+
+.ctaBtn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(22, 163, 74, 0.4);
+}
+
+@media (max-width: 991px) {
+  .heroTitle { font-size: 3rem; }
+  .grid { grid-template-columns: 1fr; gap: 50px; }
+  .quoteGrid { grid-template-columns: 1fr; }
+  .philGrid { grid-template-columns: 1fr; }
+  .imageCircle { width: 350px; height: 350px; }
+}

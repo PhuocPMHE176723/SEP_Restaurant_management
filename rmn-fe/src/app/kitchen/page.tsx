@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { orderApi, OrderResponse, OrderItemResponse } from "../../lib/api/order";
+import { kitchenApi } from "../../lib/api/kitchen";
 import { getIngredients, createManualAdjustment } from "../../lib/api/warehouse";
 import styles from "./Kitchen.module.css";
 import { showSuccess, showError, showWarning } from "../../lib/ui/alerts";
@@ -16,19 +17,22 @@ export default function KitchenPage() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
 
   useEffect(() => {
-    fetchOrders();
+    fetchQueue();
     fetchIngredients();
-    const interval = setInterval(fetchOrders, 10000); // Làm mới mỗi 10 giây cho nhà bếp
+    const interval = setInterval(fetchQueue, 5000); // 5s refresh
     return () => clearInterval(interval);
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchQueue = async () => {
     try {
-      const data = await orderApi.getAllOrders();
-      setOrders(data);
+      const data = await kitchenApi.getQueue();
+      // data from getQueue is current items, we need to adapt to the existing display if needed 
+      // or we can just fetch all orders for the summary view
+      const allOrders = await orderApi.getAllOrders();
+      setOrders(allOrders);
       setLoading(false);
     } catch (error) {
-      console.error("Failed to fetch orders:", error);
+      console.error("Failed to fetch kitchen queue:", error);
       setLoading(false);
     }
   };
@@ -62,16 +66,21 @@ export default function KitchenPage() {
 
   const handleUpdateItemStatus = async (orderItemId: number, status: string, item?: OrderItemResponse) => {
     try {
-      await orderApi.updateOrderItemStatus(orderItemId, status);
+      if (status === "COOKING") {
+        await kitchenApi.startCooking(orderItemId);
+      } else if (status === "SERVED") {
+        await kitchenApi.serveItem(orderItemId);
+      } else {
+        await orderApi.updateOrderItemStatus(orderItemId, status);
+      }
       
-      // Nếu là hoàn tất món (SERVED), mở modal trừ nguyên liệu
       if (status === "SERVED" && item) {
         setCurrentItem(item);
         setShowIngredientModal(true);
-        setSelectedIngredients([]); // Reset
+        setSelectedIngredients([]);
       }
       
-      await fetchOrders();
+      await fetchQueue();
     } catch (error) {
       showError("Cập nhật trạng thái thất bại");
     }
@@ -80,7 +89,7 @@ export default function KitchenPage() {
   const handleUpdateOrderStatus = async (orderId: number, status: string) => {
     try {
       await orderApi.updateOrderStatus(orderId, { status });
-      await fetchOrders();
+      await fetchQueue();
       showSuccess("Đã cập nhật trạng thái đơn hàng");
     } catch (error) {
       showError("Cập nhật thất bại");

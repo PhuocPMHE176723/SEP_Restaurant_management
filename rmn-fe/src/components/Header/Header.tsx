@@ -45,6 +45,15 @@ export default function Header() {
   if (!mounted) {
     return (
       <header className={styles.header} suppressHydrationWarning>
+        <div className={styles.topBar}>
+          <div className={`container ${styles.topBarInner}`}>
+            <div className={styles.branchList}>
+              <div className={styles.branchItem}><div style={{ width: 150, height: 14, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }} /></div>
+              <div className={styles.branchItem}><div style={{ width: 150, height: 14, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }} /></div>
+              <div className={styles.branchItem}><div style={{ width: 150, height: 14, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }} /></div>
+            </div>
+          </div>
+        </div>
         <div className={`container ${styles.inner}`}>
           <Link href="/" className={styles.logo}>
             <span className={styles.logoText}>
@@ -72,6 +81,29 @@ export default function Header() {
 
   return (
     <header className={styles.header}>
+      {/* Top Bar - Addresses */}
+      <div className={styles.topBar}>
+        <div className={`container ${styles.topBarInner}`}>
+          <div className={styles.branchList}>
+            <div className={styles.branchItem}>
+              <svg className={styles.branchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span><strong>Hà Nội:</strong> 123 Phố Huế, Hai Bà Trưng</span>
+            </div>
+            <div className={styles.branchItem}>
+              <svg className={styles.branchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span><strong>Đà Nẵng:</strong> 456 Võ Nguyên Giáp</span>
+            </div>
+            <div className={styles.branchItem}>
+              <svg className={styles.branchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span><strong>TP. HCM:</strong> 789 Nguyễn Huệ, Quận 1</span>
+            </div>
+          </div>
+          <div className={styles.contactInfo}>
+            <span>Hotline: <strong>1900 6789</strong></span>
+          </div>
+        </div>
+      </div>
+
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>

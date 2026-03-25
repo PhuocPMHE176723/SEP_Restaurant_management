@@ -20,16 +20,19 @@ public class ReservationController : BaseController
     private readonly IReservationService _reservationService;
     private readonly SepDatabaseContext _context;
     private readonly UserManager<UserIdentity> _userManager;
+    private readonly IEmailService _emailService;
 
     public ReservationController(
         IReservationService reservationService,
         SepDatabaseContext context,
-        UserManager<UserIdentity> userManager
+        UserManager<UserIdentity> userManager,
+        IEmailService emailService
     )
     {
         _reservationService = reservationService;
         _context = context;
         _userManager = userManager;
+        _emailService = emailService;
     }
 
     private async Task<long> GetCustomerIdAsync()
@@ -117,6 +120,30 @@ public class ReservationController : BaseController
             }
 
             var reservation = await _reservationService.CreateReservationAsync(customerId, request);
+
+            // Send Email Notification
+            try
+            {
+                var customer = await _context.Customers.FindAsync(customerId);
+                if (customer != null && !string.IsNullOrEmpty(customer.Email))
+                {
+                    await _emailService.SendReservationReceivedEmailAsync(
+                        customer.Email,
+                        customer.FullName ?? request.MenuItems.FirstOrDefault()?.Note ?? "Quý khách",
+                        reservation.ReservationId,
+                        reservation.ReservedAt,
+                        reservation.PartySize,
+                        reservation.DepositAmount,
+                        reservation.Order?.OrderItems ?? new List<OrderItemDTO>()
+                    );
+                }
+            }
+            catch (Exception emailEx)
+            {
+                // Log email error but don't fail the reservation creation
+                Console.WriteLine($"[ReservationController] Failed to send booking email: {emailEx.Message}");
+            }
+
             return Success(reservation, "Reservation created successfully");
         }
         catch (UnauthorizedAccessException ex)

@@ -1,31 +1,6 @@
 import { apiBaseUrl } from "../config";
 import { getToken } from "../auth";
 
-export interface InvoicePreview {
-  orderId: number;
-  orderCode: string;
-  customerName?: string;
-  customerId?: number;
-  subtotal: number;
-  vatRate: number;
-  vatAmount: number;
-  totalAmount: number;
-  items: {
-    menuItemName: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-  }[];
-}
-
-export interface CheckoutRequest {
-  orderId: number;
-  customerId?: number;
-  discountCode?: string;
-  paymentMethod: string;
-  note?: string;
-}
-
 function authHeaders(): Record<string, string> {
   const token = getToken();
   return {
@@ -34,30 +9,59 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+async function handleResponse<T>(res: Response): Promise<T> {
+  const json = (await res.json()) as {
+    data?: T;
+    message?: string;
+    success?: boolean;
+    Success?: boolean;
+    Data?: T;
+  };
+  const success = json.success ?? json.Success ?? res.ok;
+
+  if (!success) {
+    throw new Error(json.message ?? `Request failed (${res.status})`);
+  }
+
+  return (json.data ?? json.Data) as T;
+}
+
+export interface InvoicePreview {
+  orderId: number;
+  orderCode: string;
+  subtotal: number;
+  discountAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  depositDeducted: number;
+  amountToPay: number;
+  pointsEarned: number;
+  items: any[];
+}
+
 export const invoiceApi = {
-  async previewInvoice(orderId: number): Promise<InvoicePreview> {
-    const response = await fetch(`${apiBaseUrl}/api/Invoice/preview/${orderId}`, {
+  async getPreview(orderId: number, discountCode?: string, pointsToUse: number = 0): Promise<InvoicePreview> {
+    const params = new URLSearchParams();
+    if (discountCode) params.append("discountCode", discountCode);
+    if (pointsToUse) params.append("pointsToUse", pointsToUse.toString());
+
+    const response = await fetch(`${apiBaseUrl}/api/Invoice/preview/${orderId}?${params.toString()}`, {
       headers: authHeaders(),
     });
-
-    const json = await response.json();
-    if (!json.success && !json.Success) {
-      throw new Error(json.message || "Lỗi khi tải thông tin hóa đơn");
-    }
-    return json.data || json.Data;
+    return handleResponse<InvoicePreview>(response);
   },
 
-  async checkout(request: CheckoutRequest): Promise<{ invoiceId: number; invoiceCode: string }> {
+  async checkout(request: {
+    orderId: number;
+    discountCode?: string;
+    pointsToUse: number;
+    paidAmount: number;
+  }): Promise<{ invoiceId: number; invoiceCode: string }> {
     const response = await fetch(`${apiBaseUrl}/api/Invoice/checkout`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(request),
     });
-
-    const json = await response.json();
-    if (!json.success && !json.Success) {
-      throw new Error(json.message || "Thanh toán thất bại");
-    }
-    return json.data || json.Data;
-  }
+    return handleResponse<{ invoiceId: number; invoiceCode: string }>(response);
+  },
 };

@@ -1,6 +1,6 @@
 .hero {
     background: linear-gradient(135deg, var(--brand-dark), var(--brand-navy));
-    padding-block: var(--space-16);
+    padding-block: var(--space-24) var(--space-16);
 }
 
 .heroInner {
@@ -8,33 +8,36 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-6);
 }
 
 .eyebrow {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--brand-primary);
-    background: rgba(249, 115, 22, 0.15);
-    padding: var(--space-2) var(--space-5);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--brand-primary);
+    padding: var(--space-2) var(--space-6);
     border-radius: var(--radius-full);
-    border: 1px solid rgba(249, 115, 22, 0.3);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    margin-bottom: var(--space-2);
 }
 
 .heroTitle {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.8rem, 5vw, 2.8rem);
-    font-weight: 800;
+    font-family: var(--font-playfair), serif;
+    font-size: clamp(2.2rem, 7vw, 3.8rem);
+    font-weight: 900;
     color: #fff;
+    line-height: 1;
+    letter-spacing: -1px;
 }
 
 .heroSub {
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 1rem;
-    max-width: 480px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.15rem;
+    max-width: 600px;
     line-height: 1.6;
 }
 
