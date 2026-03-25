@@ -119,7 +119,7 @@ public class InvoiceService
         // Create Invoice
         var invoice = new Invoice
         {
-            InvoiceCode = $"INV-{DateTime.NowHours()}:{DateTime.NowMinutes()}-{orderId}",
+            InvoiceCode = $"INV-{DateTime.Now.NowHours()}:{DateTime.Now.NowMinutes()}-{orderId}",
             OrderId = orderId,
             CustomerId = order.CustomerId,
             Subtotal = preview.Subtotal,
