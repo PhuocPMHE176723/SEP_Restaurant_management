@@ -23,6 +23,8 @@ public static class Huy
         services.AddScoped<IMenuCategoryService, MenuCategoryService>();
         services.AddScoped<IMenuItemService, MenuItemService>();
         services.AddScoped<IReservationService, ReservationService>();
+        services.AddScoped<KitchenService>();
+        services.AddScoped<InvoiceService>();
 
         // Register Auth Service (JWT login / register)
         services.AddScoped<IAuthService, AuthService>();

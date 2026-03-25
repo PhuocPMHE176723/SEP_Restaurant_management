@@ -6,6 +6,7 @@ import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
 import MenuCard from "../components/MenuCard/MenuCard";
 import HomeSlider from "../components/HomeSlider/HomeSlider";
+import AboutSection from "../components/AboutSection/AboutSection";
 import { getFeaturedItems, getCategories } from "../lib/api/client";
 import type { MenuItem, Category } from "../types/models";
 import styles from "./page.module.css";
@@ -41,7 +42,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main style={{ paddingTop: '64px' }}>
+      <main>
         {/* ── HERO ── */}
         <section className={styles.hero}>
           <div className={styles.heroBg}>
@@ -124,6 +125,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <AboutSection />
 
         {/* ── FEATURED ── */}
         <section className={styles.featuredSection}>
