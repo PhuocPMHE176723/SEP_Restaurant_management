@@ -384,6 +384,7 @@ public class ReservationService : IReservationService
                     var price = menu.BasePrice;
                     var itemTotal = price * req.Quantity;
                     total += itemTotal;
+                    order.OrderItems ??= new List<OrderItem>();
                     order.OrderItems.Add(new OrderItem
                     {
                         ItemId = req.ItemId,

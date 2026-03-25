@@ -281,8 +281,8 @@ public class PromotionService : IPromotionService
             {
                 LedgerId = l.LedgerId,
                 CustomerId = l.CustomerId,
-                CustomerName = l.Customer != null ? l.Customer.FullName : "N/A",
-                CustomerPhone = l.Customer != null ? l.Customer.Phone : "N/A",
+                CustomerName = l.Customer != null ? (l.Customer.FullName ?? "N/A") : "N/A",
+                CustomerPhone = l.Customer != null ? (l.Customer.Phone ?? "N/A") : "N/A",
                 RefType = l.RefType,
                 RefId = l.RefId,
                 PointsChange = l.PointsChange,

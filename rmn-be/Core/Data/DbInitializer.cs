@@ -23,8 +23,8 @@ public static class DbInitializer
             "Customer",
             "Warehouse",
             "Kitchen",
-            "Cashier",
-            "Receptionist",
+           "Cashier",
+          
         };
 
         foreach (var roleName in roleNames)
@@ -72,14 +72,15 @@ public static class DbInitializer
         );
 
         // Seed default Customer account
+        await SeedUser(userManager, "customer@restaurant.com", "Customer@123", "Customer", "Customer");
+        await SeedUser(userManager, "trongytb2@gmail.com", "123456", "Test Customer", "Customer");
         await SeedUser(
             userManager,
-            "customer@restaurant.com",
-            "Customer@123",
-            "Customer",
+            "phamphuocatc123@gmail.com",
+            "123456",
+            "Phuoc Pham",
             "Customer"
         );
-        await SeedUser(userManager, "trongytb2@gmail.com", "123456", "Test Customer", "Customer");
 
         // Ensure all system users have Staff records
         await EnsureStaffRecords(serviceProvider, userManager);
@@ -136,9 +137,17 @@ public static class DbInitializer
         }
         else
         {
+            if (!await userManager.IsInRoleAsync(existingUser, role))
+            {
+                await userManager.AddToRoleAsync(existingUser, role);
+                await System.IO.File.AppendAllTextAsync(
+                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
+                    $"\n[DbInitializer] Successfully added role: {role} to existing user: {email}"
+                );
+            }
             await System.IO.File.AppendAllTextAsync(
                 "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-                $"\n[DbInitializer] User already exists: {email}. Skipping creation."
+                $"\n[DbInitializer] User already exists: {email}. Role check completed."
             );
         }
     }
@@ -300,8 +309,12 @@ public static class DbInitializer
         if (!context.PurchaseReceipts.Any() && context.Ingredients.Any() && context.Suppliers.Any())
         {
             var warehouseUser = await userManager.FindByEmailAsync("warehouse@restaurant.com");
+            if (warehouseUser == null)
+            {
+                return;
+            }
             var staff = context.Staffs.FirstOrDefault(s => s.UserId == warehouseUser.Id);
-            if (staff == null && warehouseUser != null)
+            if (staff == null)
             {
                 staff = new Staff
                 {
