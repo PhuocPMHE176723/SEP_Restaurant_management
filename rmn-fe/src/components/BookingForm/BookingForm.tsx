@@ -91,6 +91,7 @@ export default function BookingForm() {
     timeSlot: "",
     partySize: 8,
     phone: "",
+    email: "",
     note: "",
   });
 
@@ -168,6 +169,12 @@ export default function BookingForm() {
     }
     loadMenu();
   }, []);
+
+  useEffect(() => {
+    if (user?.email && !form.email) {
+      set("email", user.email);
+    }
+  }, [user, form.email]);
 
   function set(field: keyof typeof form, value: string | number) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -264,6 +271,9 @@ export default function BookingForm() {
     if (!form.phone || !isValidVNPhone(form.phone)) {
       e.phone = "Vui lòng nhập số điện thoại hợp lệ (ví dụ: 0912345678)";
     }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      e.email = "Email không hợp lệ";
+    }
     if (form.partySize < 1) {
       e.partySize = "Số khách phải từ 1 trở lên";
     } else if (form.partySize > MAX_PARTY_SIZE) {
@@ -294,6 +304,7 @@ export default function BookingForm() {
         partySize: form.partySize,
         durationMinutes: 90,
         note: noteCombined || undefined,
+        contactEmail: form.email || undefined,
         menuItems: orderItems,
       });
 
@@ -330,7 +341,7 @@ export default function BookingForm() {
           icon: "success",
           confirmButtonColor: "var(--brand-primary)"
         });
-        setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
+        setForm({ date: "", timeSlot: "", partySize: 8, phone: "", email: "", note: "" });
         setSelectedItems(new Map());
       }
     } catch (error: any) {
@@ -382,7 +393,7 @@ export default function BookingForm() {
         if (checkRes.success) {
           localStorage.removeItem("sepay_session");
           stopPaymentCheck(true, "Thanh toán cọc thành công! Email xác nhận chi tiết đã được gửi đến bạn.");
-          setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
+          setForm({ date: "", timeSlot: "", partySize: 8, phone: "", email: "", note: "" });
           setSelectedItems(new Map());
         }
       } catch (err: any) {
@@ -574,6 +585,24 @@ export default function BookingForm() {
           {errors.phone && <p className={styles.error}>{errors.phone}</p>}
           <p className={styles.hint}>
             Nhân viên sẽ gọi lại để xác nhận/nhắc lịch
+          </p>
+        </div>
+
+        {/* Email for confirmation */}
+        <div className={`${styles.field} ${styles.fieldNarrow}`}>
+          <label className={styles.label}>
+            Email để nhận thông báo cọc (tuỳ chọn)
+          </label>
+          <input
+            type="email"
+            placeholder="Ví dụ: name@example.com"
+            className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
+          />
+          {errors.email && <p className={styles.error}>{errors.email}</p>}
+          <p className={styles.hint}>
+            Hệ thống sẽ gửi email xác nhận đặt bàn thành công về địa chỉ này
           </p>
         </div>
 

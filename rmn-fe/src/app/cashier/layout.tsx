@@ -6,10 +6,13 @@ import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "../manager/manager.module.css";
 
-const RECEPTION_NAV = [
-  { href: "/receptionist/reservations", label: "Danh sách đặt bàn" },
-  { href: "/receptionist/checkin", label: "Check-in & Gán bàn" },
-  { href: "/receptionist/walkin", label: "Khách vãng lai" },
+const CASHIER_NAV = [
+  { href: "/cashier/reservations", label: "Danh sách đặt bàn", icon: "📅" },
+  { href: "/cashier/checkin", label: "Check-in & Gán bàn", icon: "🔑" },
+  { href: "/cashier/walkin", label: "Khách vãng lai", icon: "🚶" },
+  { href: "/cashier/orders", label: "Quản lý Order", icon: "📝" },
+  { href: "/cashier/dining-tables", label: "Sơ đồ bàn", icon: "🪑" },
+  { href: "/cashier/table-transfer", label: "Chuyển bàn", icon: "🔄" },
 ];
 
 export default function ReceptionistLayout({
@@ -28,10 +31,11 @@ export default function ReceptionistLayout({
   useEffect(() => {
     if (!mounted) return;
     if (!isLoggedIn) {
-      router.replace("/login?redirect=/receptionist");
+      router.replace("/login?redirect=/cashier");
       return;
     }
     const allowed =
+      user?.roles.includes("Cashier") ||
       user?.roles.includes("Receptionist") ||
       user?.roles.includes("Manager") ||
       user?.roles.includes("Admin");
@@ -41,6 +45,7 @@ export default function ReceptionistLayout({
   }, [mounted, isLoggedIn, user, router]);
 
   const allowed =
+    user?.roles.includes("Cashier") ||
     user?.roles.includes("Receptionist") ||
     user?.roles.includes("Manager") ||
     user?.roles.includes("Admin");
@@ -66,16 +71,17 @@ export default function ReceptionistLayout({
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarTop}>
-          <Link href="/receptionist" className={styles.brand}>
-            <span className={styles.brandLabel}>Reception Portal</span>
+          <Link href="/cashier" className={styles.brand}>
+            <span className={styles.brandLabel}>Cashier Portal</span>
           </Link>
         </div>
 
         <nav className={styles.sideNav}>
           <div className={styles.navSection}>
-            <p className={styles.navGroup}>Nghiệp vụ lễ tân</p>
-            {RECEPTION_NAV.map((item) => (
+            <p className={styles.navGroup}>Nghiệp vụ thu ngân</p>
+            {CASHIER_NAV.map((item) => (
               <Link key={item.href} href={item.href} className={styles.navItem}>
+                <span className={styles.navIcon}>{item.icon}</span>
                 {item.label}
               </Link>
             ))}
@@ -89,7 +95,7 @@ export default function ReceptionistLayout({
             </div>
             <div className={styles.userMeta}>
               <span className={styles.userName}>{user?.fullName}</span>
-              <span className={styles.userRole}>Cổng lễ tân</span>
+              <span className={styles.userRole}>Cổng thu ngân</span>
             </div>
           </div>
           <button

@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   description: "Đặt bàn tại Nhà Hàng Khói Quê dễ dàng, nhanh chóng. Thực đơn phong phú, không gian sang trọng.",
 };
 
+import { Toaster } from "react-hot-toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -23,6 +25,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable}`}>
         <AuthProvider>
           {children}
+          <Toaster position="top-right" />
         </AuthProvider>
       </body>
     </html>

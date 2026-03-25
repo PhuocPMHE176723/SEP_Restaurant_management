@@ -29,7 +29,7 @@ interface Table {
   status: string;
 }
 
-export default function ReceptionistCheckinPage() {
+export default function CashierCheckinPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);

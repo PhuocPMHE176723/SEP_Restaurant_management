@@ -409,30 +409,51 @@ export default function DiningTablesPage() {
 
         <div className={styles.cardBody}>
           <div className={styles.filterBar}>
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="Tìm theo mã bàn, tên bàn..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
-            <select
-              className={styles.input}
-              style={{ width: "auto" }}
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="AVAILABLE">Trống</option>
-              <option value="OCCUPIED">Đang dùng</option>
-              <option value="RESERVED">Đã đặt</option>
-            </select>
+            <div className={styles.searchGroup}>
+              <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder="Tìm theo mã bàn, tên bàn..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <select
+                className={styles.selectFilter}
+                value={filterStatus}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="AVAILABLE">Trống</option>
+                <option value="OCCUPIED">Đang dùng</option>
+                <option value="RESERVED">Đã đặt</option>
+              </select>
+
+              {(searchTerm || filterStatus !== "ALL") && (
+                <button 
+                  className={styles.btnSecondary}
+                  style={{ padding: '0.625rem 1rem', fontSize: '0.85rem' }}
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterStatus("ALL");
+                  }}
+                >
+                  Xoá lọc
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={styles.tableWrap}>
@@ -504,27 +525,35 @@ export default function DiningTablesPage() {
           </div>
           {totalPages > 1 && (
             <div className={styles.pagination}>
-              <div className={styles.pageInfo}>
-                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến{" "}
-                {Math.min(currentPage * itemsPerPage, filteredItems.length)}{" "}
-                trong {filteredItems.length} bàn ăn
+              <div className={styles.paginationInfo}>
+                Hiển thị <b>{Math.min(filteredItems.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(filteredItems.length, currentPage * itemsPerPage)}</b> trên tổng số <b>{filteredItems.length}</b> bàn
               </div>
-              <div className={styles.paginationControls}>
+              
+              <button
+                className={styles.pageBtn}
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                &laquo;
+              </button>
+              
+              {[...Array(totalPages)].map((_, i) => (
                 <button
-                  className={styles.pageBtn}
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
+                  key={i + 1}
+                  className={`${styles.pageBtn} ${currentPage === i + 1 ? styles.activePage : ""}`}
+                  onClick={() => setCurrentPage(i + 1)}
                 >
-                  Trước
+                  {i + 1}
                 </button>
-                <button
-                  className={styles.pageBtn}
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  Sau
-                </button>
-              </div>
+              ))}
+
+              <button
+                className={styles.pageBtn}
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                &raquo;
+              </button>
             </div>
           )}
         </div>

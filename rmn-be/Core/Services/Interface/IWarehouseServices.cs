@@ -16,7 +16,8 @@ namespace SEP_Restaurant_management.Core.Services.Interface
     {
         Task<IEnumerable<InventoryOnHandResponse>> GetInventoryOnHandAsync();
         Task<IEnumerable<InventoryOnHandResponse>> GetLowStockAsync(decimal threshold = 10);
-        Task<IEnumerable<StockMovementResponse>> GetMovementsAsync();
+        Task<IEnumerable<StockMovementResponse>> GetMovementsAsync(DateTime? startDate = null, DateTime? endDate = null, long? ingredientId = null);
         Task<StockMovementResponse> CreateManualAdjustmentAsync(ManualAdjustmentRequest dto, long? staffId);
+        Task<IEnumerable<ConsumptionReportResponse>> GetConsumptionReportAsync(DateTime startDate, DateTime endDate);
     }
 }

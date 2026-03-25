@@ -115,13 +115,14 @@ export default function OrderDetailModal({
                         <th className={styles.colNarrow}>SL</th>
                         <th className={styles.colNarrow}>Trạng thái</th>
                         <th style={{ textAlign: 'right' }}>Thành tiền</th>
+                        <th style={{ textAlign: 'center' }}>Xác nhận</th>
                       </tr>
                     </thead>
                     <tbody>
                       {order?.orderItems.map((item) => (
                         <tr key={item.orderItemId}>
                           <td>
-                            <div>{item.menuItemName || "Món không tên"}</div>
+                            <div>{item.itemNameSnapshot || "Món không tên"}</div>
                             {item.note && <div style={{ fontSize: '0.75rem', color: '#f97316' }}>{item.note}</div>}
                           </td>
                           <td style={{ textAlign: 'center' }}>{item.quantity}</td>
@@ -130,14 +131,35 @@ export default function OrderDetailModal({
                                 fontSize: '0.7rem', 
                                 padding: '2px 6px', 
                                 borderRadius: '4px',
-                                backgroundColor: item.status === 'SERVED' ? '#dcfce7' : item.status === 'COOKING' ? '#e0f2fe' : '#fef3c7',
-                                color: item.status === 'SERVED' ? '#166534' : item.status === 'COOKING' ? '#0369a1' : '#92400e'
+                                backgroundColor: item.status === 'SERVED' ? '#dcfce7' : item.status === 'COOKING' ? '#e0f2fe' : item.status === 'WAIT_CONFIRM' ? '#ffe4e6' : '#fef3c7',
+                                color: item.status === 'SERVED' ? '#166534' : item.status === 'COOKING' ? '#0369a1' : item.status === 'WAIT_CONFIRM' ? '#9f1239' : '#92400e'
                             }}>
-                                {item.status === 'SERVED' ? 'Xong' : item.status === 'COOKING' ? 'Đang nấu' : 'Chờ'}
+                                {item.status === 'SERVED' ? 'Xong' : item.status === 'COOKING' ? 'Đang nấu' : item.status === 'WAIT_CONFIRM' ? 'Khách chọn' : 'Chờ'}
                             </span>
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             {(item.quantity * item.unitPrice).toLocaleString('vi-VN')}đ
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {item.status === 'WAIT_CONFIRM' && (
+                              <button 
+                                className="btn btn-success btn-sm"
+                                style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                onClick={async () => {
+                                  if (!orderId) return;
+                                  try {
+                                    await orderApi.confirmItems(orderId, [item.orderItemId]);
+                                    showSuccess("Đã xác nhận món");
+                                    fetchOrderDetails();
+                                    if (onOrderUpdate) onOrderUpdate();
+                                  } catch (e) {
+                                    showError("Xác nhận thất bại");
+                                  }
+                                }}
+                              >
+                                Duyệt
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -148,10 +170,33 @@ export default function OrderDetailModal({
                         <td style={{ fontWeight: 700, textAlign: 'right', color: '#f97316', fontSize: '1.1rem' }}>
                           {order?.totalAmount.toLocaleString('vi-VN')}đ
                         </td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
+
+                {order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                  <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                    <button 
+                      className="btn btn-success"
+                      onClick={async () => {
+                        if (!orderId || !order) return;
+                        const ids = order.orderItems.filter(i => i.status === 'WAIT_CONFIRM').map(i => i.orderItemId);
+                        try {
+                          await orderApi.confirmItems(orderId, ids);
+                          showSuccess(`Đã xác nhận ${ids.length} món`);
+                          fetchOrderDetails();
+                          if (onOrderUpdate) onOrderUpdate();
+                        } catch (e) {
+                          showError("Xác nhận thất bại");
+                        }
+                      }}
+                    >
+                      Duyệt tất cả món khách chọn
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Menu Selection Side Panel */}

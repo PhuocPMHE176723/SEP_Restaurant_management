@@ -27,7 +27,7 @@ public class PromotionController : ControllerBase
     }
 
     [HttpGet("configs/{key}")]
-    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff,Cashier")]
     public async Task<ActionResult<SystemConfigDTO>> GetConfigByKey(string key)
     {
         var config = await _promotionService.GetConfigByKeyAsync(key);
@@ -53,7 +53,7 @@ public class PromotionController : ControllerBase
 
     // ── Discount Codes ───────────────────────────────────────────
     [HttpGet("discounts")]
-    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff,Cashier")]
     public async Task<ActionResult<List<DiscountCodeDTO>>> GetAllDiscountCodes([FromQuery] bool? isActive)
     {
         var discounts = await _promotionService.GetAllDiscountCodesAsync(isActive);
@@ -61,7 +61,7 @@ public class PromotionController : ControllerBase
     }
 
     [HttpGet("discounts/validate")]
-    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff,Cashier")]
     public async Task<ActionResult<DiscountCodeDTO>> ValidateDiscountCode([FromQuery] string code, [FromQuery] decimal orderValue)
     {
         var result = await _promotionService.ValidateDiscountCodeAsync(code, orderValue);
@@ -70,7 +70,7 @@ public class PromotionController : ControllerBase
     }
 
     [HttpGet("discounts/{id}")]
-    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff,Cashier")]
     public async Task<ActionResult<DiscountCodeDTO>> GetDiscountCode(int id)
     {
         var discount = await _promotionService.GetDiscountCodeAsync(id);

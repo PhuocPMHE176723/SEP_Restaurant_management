@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Services.Interface;
+using SEP_Restaurant_management.Core.Data;
+using Microsoft.EntityFrameworkCore;
+using SEP_Restaurant_management.Core.Models;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -11,11 +14,13 @@ public class MenuItemController : BaseController
 {
     private readonly IMenuItemService _menuItemService;
     private readonly ICloudinaryService _cloudinaryService;
+    private readonly SepDatabaseContext _context;
 
-    public MenuItemController(IMenuItemService menuItemService, ICloudinaryService cloudinaryService)
+    public MenuItemController(IMenuItemService menuItemService, ICloudinaryService cloudinaryService, SepDatabaseContext context)
     {
         _menuItemService = menuItemService;
         _cloudinaryService = cloudinaryService;
+        _context = context;
     }
 
     /// <summary>Get all menu items (optionally filter by categoryId)</summary>
@@ -119,4 +124,67 @@ public class MenuItemController : BaseController
             return Failure($"Upload failed: {ex.Message}");
         }
     }
+
+    [HttpGet("{id}/ingredients")]
+    public async Task<IActionResult> GetIngredients(long id)
+    {
+        var item = await _menuItemService.GetByIdAsync(id);
+        if (item == null) return NotFoundResponse("Menu item not found");
+
+        var ingredients = await _context.MenuItemIngredients
+            .Where(mi => mi.ItemId == id)
+            .Include(mi => mi.Ingredient)
+            .Select(mi => new
+            {
+                mi.IngredientId,
+                mi.Ingredient.IngredientName,
+                mi.Ingredient.Unit,
+                mi.Quantity
+            })
+            .ToListAsync();
+
+        return Success(ingredients);
+    }
+
+    [HttpPost("{id}/ingredients")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> UpdateIngredients(long id, [FromBody] List<MenuItemIngredientInput> ingredients)
+    {
+        var item = await _menuItemService.GetByIdAsync(id);
+        if (item == null) return NotFoundResponse("Menu item not found");
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Remove old ingredients
+            var old = _context.MenuItemIngredients.Where(mi => mi.ItemId == id);
+            _context.MenuItemIngredients.RemoveRange(old);
+
+            // Add new ones
+            foreach (var input in ingredients)
+            {
+                _context.MenuItemIngredients.Add(new MenuItemIngredient
+                {
+                    ItemId = id,
+                    IngredientId = input.IngredientId,
+                    Quantity = input.Quantity
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return Success("Recipe updated successfully");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Failure($"Failed to update recipe: {ex.Message}");
+        }
+    }
+}
+
+public class MenuItemIngredientInput
+{
+    public long IngredientId { get; set; }
+    public decimal Quantity { get; set; }
 }

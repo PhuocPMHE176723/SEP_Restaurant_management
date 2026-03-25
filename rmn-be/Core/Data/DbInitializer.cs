@@ -58,17 +58,17 @@ public static class DbInitializer
         );
         await SeedUser(
             userManager,
-            "cashier@restaurant.com",
-            "Cashier@123",
-            "Cashier Staff",
-            "Cashier"
-        );
-        await SeedUser(
-            userManager,
             "receptionist@restaurant.com",
             "Receptionist@123",
             "Receptionist Staff",
             "Receptionist"
+        );
+        await SeedUser(
+            userManager,
+            "cashier@restaurant.com",
+            "Cashier@123",
+            "Cashier Staff",
+            "Cashier"
         );
 
         // Seed default Customer account

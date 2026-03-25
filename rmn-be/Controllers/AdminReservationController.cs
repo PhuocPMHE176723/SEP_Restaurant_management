@@ -8,7 +8,7 @@ using SEP_Restaurant_management.Core.Services.Interface;
 namespace SEP_Restaurant_management.Controllers;
 
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Manager,Staff,Receptionist")]
+[Authorize(Roles = "Admin,Manager,Staff,Receptionist,Cashier")]
 public class AdminReservationController : BaseController
 {
     private readonly IReservationService _reservationService;

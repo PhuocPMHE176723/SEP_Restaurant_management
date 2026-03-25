@@ -123,7 +123,7 @@ export default function ReceptionistWalkinPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Khách vãng lai</h1>
-          <p className={styles.pageSubtitle}>Dành cho lễ tân quản lý khách đến trực tiếp không đặt trước</p>
+          <p className={styles.pageSubtitle}>Dành cho thu ngân quản lý khách đến trực tiếp không đặt trước</p>
         </div>
       </div>
 
@@ -168,7 +168,7 @@ export default function ReceptionistWalkinPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label>Ghi chú lễ tân</label>
+              <label>Ghi chú thu ngân</label>
               <textarea
                 className={styles.textarea}
                 value={customer.note}

@@ -50,6 +50,7 @@ public class ReservationService : IReservationService
                 DurationMinutes = request.DurationMinutes,
                 Status = "PENDING",
                 Note = request.Note,
+                ContactEmail = request.ContactEmail ?? customer.User?.Email,
                 CreatedAt = DateTimeHelper.VietnamNow(),
                 CreatedByStaffId = null,
             };

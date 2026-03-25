@@ -8,12 +8,17 @@ import {
   updateMenuItem,
   deleteMenuItem,
   uploadMenuImage,
+  getMenuItemIngredients,
+  updateMenuItemIngredients,
   type MenuItem,
   type MenuCategory,
   type CreateMenuItemRequest,
   type UpdateMenuItemRequest,
 } from "../../../lib/api/admin";
+import { getIngredients } from "../../../lib/api/warehouse";
 import styles from "../manager.module.css";
+import { toast } from "react-hot-toast";
+import { BookOpen } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -462,7 +467,139 @@ function EditModal({
   );
 }
 
-// ── Delete Modal ──────────────────────────────────────────────────
+// ── Recipe (MenuItemIngredient) Modal ───────────────────────────
+function RecipeModal({
+  item,
+  onClose,
+}: {
+  item: MenuItem;
+  onClose: () => void;
+}) {
+  const [recipe, setRecipe] = useState<{ ingredientId: number; quantity: number; ingredientName: string; unit: string }[]>([]);
+  const [allIngredients, setAllIngredients] = useState<{ ingredientId: number; ingredientName: string; unit: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [selectedIngredient, setSelectedIngredient] = useState<number>(0);
+  const [qty, setQty] = useState<number>(0);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [recipeData, ingredientsData] = await Promise.all([
+          getMenuItemIngredients(item.itemId),
+          getIngredients(),
+        ]);
+        setRecipe(recipeData);
+        setAllIngredients(ingredientsData);
+      } catch (e: any) {
+        toast.error("Lỗi khi tải dữ liệu công thức");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [item.itemId]);
+
+  function handleAdd() {
+    if (selectedIngredient === 0 || qty <= 0) return;
+    const ing = allIngredients.find(i => i.ingredientId === selectedIngredient);
+    if (!ing) return;
+
+    if (recipe.some(r => r.ingredientId === selectedIngredient)) {
+      toast.error("Nguyên liệu này đã có trong danh sách");
+      return;
+    }
+
+    setRecipe([...recipe, { ingredientId: selectedIngredient, quantity: qty, ingredientName: ing.ingredientName, unit: ing.unit }]);
+    setSelectedIngredient(0);
+    setQty(0);
+  }
+
+  function handleRemove(id: number) {
+    setRecipe(recipe.filter(r => r.ingredientId !== id));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateMenuItemIngredients(item.itemId, recipe.map(r => ({ ingredientId: r.ingredientId, quantity: r.quantity })));
+      toast.success("Cập nhật định mức nguyên liệu thành công!");
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi khi lưu công thức");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={styles.modal} style={{ maxWidth: '600px' }}>
+        <div className={styles.modalHead}>
+          <span className={styles.modalTitle}>Định mức nguyên liệu — {item.itemName}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.modalBody}>
+          {loading ? <p>Đang tải...</p> : (
+            <>
+              <div className={styles.field} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label className={styles.label}>Chọn nguyên liệu</label>
+                  <select className={styles.input} value={selectedIngredient} onChange={(e) => setSelectedIngredient(Number(e.target.value))}>
+                    <option value={0}>-- Chọn --</option>
+                    {allIngredients.map(i => (
+                      <option key={i.ingredientId} value={i.ingredientId}>{i.ingredientName} ({i.unit})</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ width: '120px' }}>
+                  <label className={styles.label}>Số lượng</label>
+                  <input type="number" step="0.001" className={styles.input} value={qty} onChange={(e) => setQty(parseFloat(e.target.value))} />
+                </div>
+                <button type="button" className={styles.btnAdd} onClick={handleAdd} style={{ marginBottom: '5px' }}>Thêm</button>
+              </div>
+
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Nguyên liệu</th>
+                      <th>Định mức</th>
+                      <th>Đơn vị</th>
+                      <th>Xoá</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recipe.length === 0 ? (
+                      <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>Chưa có định mức nào</td></tr>
+                    ) : (
+                      recipe.map(r => (
+                        <tr key={r.ingredientId}>
+                          <td>{r.ingredientName}</td>
+                          <td>{r.quantity}</td>
+                          <td>{r.unit}</td>
+                          <td>
+                            <button className={styles.btnDelete} onClick={() => handleRemove(r.ingredientId)}>Xoá</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+        <div className={styles.modalFoot}>
+          <button className={styles.btnCancel} onClick={onClose}>Thoát</button>
+          <button className={styles.btnSave} onClick={handleSave} disabled={saving || loading}>
+            {saving ? "Đang lưu..." : "Lưu định mức"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function DeleteModal({
   item,
   onClose,
@@ -528,7 +665,7 @@ export default function MenuItemsPage() {
     undefined,
   );
   const [modal, setModal] = useState<{
-    type: "create" | "edit" | "delete";
+    type: "create" | "edit" | "delete" | "recipe";
     item?: MenuItem;
   } | null>(null);
 
@@ -607,22 +744,26 @@ export default function MenuItemsPage() {
 
       <div className={styles.cardBody}>
         <div className={styles.filterBar}>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Tìm theo tên món, mô tả..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-          <div
-            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
-          >
+          <div className={styles.searchGroup}>
+            <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Tìm theo tên món, mô tả..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+
+          <div className={styles.filterGroup}>
             <select
-              className={styles.input}
-              style={{ width: "auto" }}
+              className={styles.selectFilter}
               value={filterStatus}
               onChange={(e) => {
                 setFilterStatus(e.target.value);
@@ -634,7 +775,7 @@ export default function MenuItemsPage() {
               <option value="INACTIVE">Ngừng hoạt động</option>
             </select>
             <select
-              className={styles.filterSelect}
+              className={styles.selectFilter}
               value={filterCategoryId ?? ""}
               onChange={(e) => {
                 setFilterCategoryId(
@@ -650,6 +791,20 @@ export default function MenuItemsPage() {
                 </option>
               ))}
             </select>
+
+            {(searchTerm || filterStatus !== "ALL" || filterCategoryId) && (
+              <button 
+                className={styles.btnSecondary}
+                style={{ padding: '0.625rem 1rem', fontSize: '0.85rem' }}
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("ALL");
+                  setFilterCategoryId(undefined);
+                }}
+              >
+                Xoá lọc
+              </button>
+            )}
           </div>
         </div>
 
@@ -713,6 +868,13 @@ export default function MenuItemsPage() {
                     <td>
                       <div className={styles.btnRow}>
                         <button
+                          className={styles.btnSecondary}
+                          style={{ color: '#6366f1', borderColor: '#6366f1' }}
+                          onClick={() => setModal({ type: "recipe", item })}
+                        >
+                          Công thức
+                        </button>
+                        <button
                           className={styles.btnEdit}
                           onClick={() => setModal({ type: "edit", item })}
                         >
@@ -734,27 +896,35 @@ export default function MenuItemsPage() {
         </div>
         {totalPages > 1 && (
           <div className={styles.pagination}>
-            <div className={styles.pageInfo}>
-              Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến{" "}
-              {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong{" "}
-              {filteredItems.length} món ăn
+            <div className={styles.paginationInfo}>
+              Hiển thị <b>{Math.min(filteredItems.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(filteredItems.length, currentPage * itemsPerPage)}</b> trên tổng số <b>{filteredItems.length}</b> món
             </div>
-            <div className={styles.paginationControls}>
+            
+            <button
+              className={styles.pageBtn}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              &laquo;
+            </button>
+            
+            {[...Array(totalPages)].map((_, i) => (
               <button
-                className={styles.pageBtn}
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
+                key={i + 1}
+                className={`${styles.pageBtn} ${currentPage === i + 1 ? styles.activePage : ""}`}
+                onClick={() => setCurrentPage(i + 1)}
               >
-                Trước
+                {i + 1}
               </button>
-              <button
-                className={styles.pageBtn}
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
-                Sau
-              </button>
-            </div>
+            ))}
+
+            <button
+              className={styles.pageBtn}
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              &raquo;
+            </button>
           </div>
         )}
       </div>
@@ -779,6 +949,12 @@ export default function MenuItemsPage() {
           item={modal.item}
           onClose={() => setModal(null)}
           onSaved={load}
+        />
+      )}
+      {modal?.type === "recipe" && modal.item && (
+        <RecipeModal
+          item={modal.item}
+          onClose={() => setModal(null)}
         />
       )}
     </>

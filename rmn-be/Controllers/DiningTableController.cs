@@ -17,6 +17,7 @@ public class DiningTableController : BaseController
     }
 
     
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -26,7 +27,7 @@ public class DiningTableController : BaseController
 
     
     [HttpGet("with-orders")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist")]
+    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
     public async Task<IActionResult> GetAllWithOrders()
     {
         var tables = await _tableService.GetAllWithOrdersAsync();
@@ -34,6 +35,7 @@ public class DiningTableController : BaseController
     }
 
  
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

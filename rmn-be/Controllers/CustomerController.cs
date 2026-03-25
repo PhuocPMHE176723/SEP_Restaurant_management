@@ -20,7 +20,7 @@ public class CustomerController : BaseController
     }
 
     [HttpGet("lookup")]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin")]
+    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> LookupByPhone([FromQuery] string phone)
     {
         var customer = await _context.Customers
@@ -39,7 +39,7 @@ public class CustomerController : BaseController
     }
 
     [HttpPost]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin")]
+    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
         if (await _context.Customers.AnyAsync(c => c.Phone == request.Phone))

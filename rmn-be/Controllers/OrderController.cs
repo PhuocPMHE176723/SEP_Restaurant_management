@@ -24,7 +24,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
     public async Task<IActionResult> GetAllOrders()
     {
         var orders = await _context
@@ -48,7 +48,7 @@ public class OrderController : BaseController
                     .OrderItems.Select(oi => new OrderItemDTO
                     {
                         OrderItemId = oi.OrderItemId,
-                        MenuItemName = oi.ItemNameSnapshot,
+                        ItemNameSnapshot = oi.ItemNameSnapshot,
                         Quantity = oi.Quantity,
                         UnitPrice = oi.UnitPrice,
                         Status = oi.Status,
@@ -62,7 +62,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> GetOrder(long id)
     {
         var order = await _context
@@ -92,7 +92,7 @@ public class OrderController : BaseController
                 .OrderItems.Select(oi => new OrderItemDTO
                 {
                     OrderItemId = oi.OrderItemId,
-                    MenuItemName = oi.ItemNameSnapshot,
+                    ItemNameSnapshot = oi.ItemNameSnapshot,
                     Quantity = oi.Quantity,
                     UnitPrice = oi.UnitPrice,
                     Note = oi.Note,
@@ -104,7 +104,7 @@ public class OrderController : BaseController
     }
 
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
     public async Task<IActionResult> UpdateOrderStatus(
         long id,
         UpdateOrderStatusRequest request
@@ -145,7 +145,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("{id}/items")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist")]
+    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
     public async Task<IActionResult> AddOrderItem(long id, AddOrderItemRequest request)
     {
         var order = await _context.Orders.FindAsync(id);
@@ -177,7 +177,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("walkin")]
-    [Authorize(Roles = "Staff,Receptionist,Manager,Admin")]
+    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
     public async Task<IActionResult> CreateWalkinOrder(CreateWalkinOrderRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -240,7 +240,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("transfer")]
-    [Authorize(Roles = "Staff,Receptionist,Manager,Admin")]
+    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
     public async Task<IActionResult> TransferTable(TransferTableRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -298,7 +298,7 @@ public class OrderController : BaseController
         }
     }
     [HttpPatch("items/{orderItemId}/status")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> UpdateOrderItemStatus(
         long orderItemId,
         UpdateOrderStatusRequest request
@@ -319,12 +319,36 @@ public class OrderController : BaseController
             return Failure("Invalid status");
         }
 
-        orderItem.Status = request.Status;
-        
-        // Cập nhật lịch sử trạng thái (tùy chọn)
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+
+        orderItem.Status = request.Status;
         
+        // 1. Tự động trừ kho nếu món ăn được phục vụ (SERVED)
+        if (request.Status == "SERVED")
+        {
+            var ingredients = await _context.MenuItemIngredients
+                .Where(mi => mi.ItemId == orderItem.ItemId)
+                .ToListAsync();
+
+            foreach (var ing in ingredients)
+            {
+                var movement = new StockMovement
+                {
+                    IngredientId = ing.IngredientId,
+                    MovementType = "OUT",
+                    Quantity = ing.Quantity * orderItem.Quantity,
+                    RefType = "ORDER_ITEM",
+                    RefId = orderItem.OrderItemId,
+                    MovedAt = DateTimeHelper.VietnamNow(),
+                    CreatedByStaffId = staff?.StaffId,
+                    Note = $"Xuất kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})"
+                };
+                _context.StockMovements.Add(movement);
+            }
+        }
+
+        // 2. Cập nhật lịch sử trạng thái
         var history = new OrderStatusHistory
         {
             OrderId = orderItem.OrderId,
@@ -340,6 +364,86 @@ public class OrderController : BaseController
 
         return Success("Order item status updated successfully");
     }
+
+    [HttpPost("guest-add-items")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GuestAddItems([FromBody] GuestAddItemsRequest request)
+    {
+        var table = await _context.DiningTables.FindAsync(request.TableId);
+        if (table == null || table.Status != "OCCUPIED") return Failure("Bàn không ở trạng thái đang sử dụng");
+
+        var order = await _context.Orders
+            .FirstOrDefaultAsync(o => o.TableId == request.TableId && (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED"));
+        
+        if (order == null) return Failure("Không tìm thấy đơn hàng đang hoạt động cho bàn này");
+
+        foreach (var item in request.Items)
+        {
+            var menuItem = await _context.MenuItems.FindAsync(item.MenuItemId);
+            if (menuItem == null) continue;
+
+            var orderItem = new OrderItem
+            {
+                OrderId = order.OrderId,
+                ItemId = item.MenuItemId,
+                Quantity = item.Quantity,
+                UnitPrice = menuItem.BasePrice,
+                ItemNameSnapshot = menuItem.ItemName,
+                Note = item.Note,
+                Status = "WAIT_CONFIRM",
+                CreatedAt = DateTimeHelper.VietnamNow()
+            };
+            _context.OrderItems.Add(orderItem);
+        }
+
+        await _context.SaveChangesAsync();
+        return Success("Yêu cầu chọn món đã được gửi. Vui lòng đợi nhân viên xác nhận.");
+    }
+
+    [HttpPost("{id}/confirm-items")]
+    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
+    public async Task<IActionResult> ConfirmGuestItems(long id, [FromBody] ConfirmItemsRequest request)
+    {
+        var orderItems = await _context.OrderItems
+            .Where(oi => oi.OrderId == id && request.OrderItemIds.Contains(oi.OrderItemId) && oi.Status == "WAIT_CONFIRM")
+            .ToListAsync();
+
+        if (orderItems.Count == 0) return Failure("Không có món nào cần xác nhận");
+
+        foreach (var item in orderItems)
+        {
+            item.Status = "PENDING";
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = id,
+                OldStatus = "WAIT_CONFIRM",
+                NewStatus = "PENDING",
+                ChangedAt = DateTimeHelper.VietnamNow(),
+                Note = "Staff confirmed guest selection"
+            });
+        }
+
+        await _context.SaveChangesAsync();
+        return Success($"Đã xác nhận {orderItems.Count} món và đẩy xuống bếp.");
+    }
+}
+
+public class GuestAddItemsRequest
+{
+    public long TableId { get; set; }
+    public List<GuestItemInput> Items { get; set; } = new();
+}
+
+public class GuestItemInput
+{
+    public long MenuItemId { get; set; }
+    public int Quantity { get; set; }
+    public string? Note { get; set; }
+}
+
+public class ConfirmItemsRequest
+{
+    public List<long> OrderItemIds { get; set; } = new();
 }
 
 public class UpdateOrderStatusRequest

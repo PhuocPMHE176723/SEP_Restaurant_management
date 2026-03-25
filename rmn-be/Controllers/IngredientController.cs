@@ -22,6 +22,7 @@ namespace SEP_Restaurant_management.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Warehouse,Cashier")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

@@ -56,7 +56,7 @@ public class EmailService : IEmailService
                         "<tr style='background-color: #f9f9f9;'><th style='padding: 8px; border: 1px solid #eee; text-align: left;'>Món</th><th style='padding: 8px; border: 1px solid #eee; text-align: center;'>Số lượng</th><th style='padding: 8px; border: 1px solid #eee; text-align: right;'>Đơn giá</th></tr>";
             foreach (var item in items)
             {
-                itemsHtml += $"<tr><td style='padding: 8px; border: 1px solid #eee;'>{item.MenuItemName}</td><td style='padding: 8px; border: 1px solid #eee; text-align: center;'>{item.Quantity}</td><td style='padding: 8px; border: 1px solid #eee; text-align: right;'>{item.UnitPrice:N0}đ</td></tr>";
+                itemsHtml += $"<tr><td style='padding: 8px; border: 1px solid #eee;'>{item.ItemNameSnapshot}</td><td style='padding: 8px; border: 1px solid #eee; text-align: center;'>{item.Quantity}</td><td style='padding: 8px; border: 1px solid #eee; text-align: right;'>{item.UnitPrice:N0}đ</td></tr>";
             }
             itemsHtml += "</table></div>";
         }
@@ -133,7 +133,7 @@ public class EmailService : IEmailService
                         "<tr style='background-color: #f9f9f9;'><th style='padding: 8px; border: 1px solid #eee; text-align: left;'>Món</th><th style='padding: 8px; border: 1px solid #eee; text-align: center;'>Số lượng</th><th style='padding: 8px; border: 1px solid #eee; text-align: right;'>Đơn giá</th></tr>";
             foreach (var item in items)
             {
-                itemsHtml += $"<tr><td style='padding: 8px; border: 1px solid #eee;'>{item.MenuItemName}</td><td style='padding: 8px; border: 1px solid #eee; text-align: center;'>{item.Quantity}</td><td style='padding: 8px; border: 1px solid #eee; text-align: right;'>{item.UnitPrice:N0}đ</td></tr>";
+                itemsHtml += $"<tr><td style='padding: 8px; border: 1px solid #eee;'>{item.ItemNameSnapshot}</td><td style='padding: 8px; border: 1px solid #eee; text-align: center;'>{item.Quantity}</td><td style='padding: 8px; border: 1px solid #eee; text-align: right;'>{item.UnitPrice:N0}đ</td></tr>";
             }
             itemsHtml += "</table></div>";
         }

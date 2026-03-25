@@ -98,7 +98,7 @@ public class InvoiceService
             Items = order.OrderItems.Select(oi => new OrderItemDTO
             {
                 OrderItemId = oi.OrderItemId,
-                MenuItemName = oi.ItemNameSnapshot,
+                ItemNameSnapshot = oi.ItemNameSnapshot,
                 Quantity = oi.Quantity,
                 UnitPrice = oi.UnitPrice,
                 Status = oi.Status,
@@ -119,7 +119,7 @@ public class InvoiceService
         // Create Invoice
         var invoice = new Invoice
         {
-            InvoiceCode = $"INV-{DateTime.NowHours()}:{DateTime.NowMinutes()}-{orderId}",
+            InvoiceCode = $"INV-{DateTime.Now.NowHours()}:{DateTime.Now.NowMinutes()}-{orderId}",
             OrderId = orderId,
             CustomerId = order.CustomerId,
             Subtotal = preview.Subtotal,

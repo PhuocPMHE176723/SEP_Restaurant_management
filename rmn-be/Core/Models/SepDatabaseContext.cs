@@ -35,6 +35,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<MenuCategory> MenuCategories { get; set; }
     public virtual DbSet<MenuItem> MenuItems { get; set; }
     public virtual DbSet<MenuItemPrice> MenuItemPrices { get; set; }
+    public virtual DbSet<MenuItemIngredient> MenuItemIngredients { get; set; }
 
     // ── Orders ─────────────────────────────────────────────
     public virtual DbSet<Order> Orders { get; set; }
@@ -52,6 +53,8 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<PurchaseReceipt> PurchaseReceipts { get; set; }
     public virtual DbSet<PurchaseReceiptItem> PurchaseReceiptItems { get; set; }
     public virtual DbSet<StockMovement> StockMovements { get; set; }
+    public virtual DbSet<InventoryAudit> InventoryAudits { get; set; }
+    public virtual DbSet<InventoryAuditItem> InventoryAuditItems { get; set; }
 
     // ── Content Management ─────────────────────────────────
     public virtual DbSet<BlogCategory> BlogCategories { get; set; }
@@ -589,6 +592,57 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.ImageUrl).HasMaxLength(255).IsRequired();
             entity.Property(e => e.Title).HasMaxLength(150);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+        });
+
+        // ── MenuItemIngredients ───────────────────────────
+        modelBuilder.Entity<MenuItemIngredient>(entity =>
+        {
+            entity.ToTable("MenuItemIngredients");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).UseIdentityColumn();
+
+            entity.HasOne(e => e.MenuItem)
+                  .WithMany(m => m.MenuItemIngredients)
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Ingredient)
+                  .WithMany()
+                  .HasForeignKey(e => e.IngredientId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── InventoryAudits ───────────────────────────────
+        modelBuilder.Entity<InventoryAudit>(entity =>
+        {
+            entity.ToTable("InventoryAudits");
+            entity.HasKey(e => e.AuditId);
+            entity.HasIndex(e => e.AuditCode).IsUnique();
+
+            entity.Property(e => e.AuditCode).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.AuditDate).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(e => e.Staff)
+                  .WithMany()
+                  .HasForeignKey(e => e.StaffId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── InventoryAuditItems ───────────────────────────
+        modelBuilder.Entity<InventoryAuditItem>(entity =>
+        {
+            entity.ToTable("InventoryAuditItems");
+            entity.HasKey(e => e.AuditItemId);
+
+            entity.HasOne(e => e.Audit)
+                  .WithMany(a => a.AuditItems)
+                  .HasForeignKey(e => e.AuditId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Ingredient)
+                  .WithMany()
+                  .HasForeignKey(e => e.IngredientId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         OnModelCreatingPartial(modelBuilder);

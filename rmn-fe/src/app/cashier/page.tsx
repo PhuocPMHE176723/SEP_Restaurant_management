@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ReceptionistPage() {
+export default function CashierPage() {
   const router = useRouter();
   
   useEffect(() => {
-    router.replace("/receptionist/reservations");
+    router.replace("/cashier/reservations");
   }, [router]);
 
   return null;

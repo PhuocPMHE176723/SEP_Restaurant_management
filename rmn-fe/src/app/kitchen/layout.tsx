@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "../manager/manager.module.css";
 
 const KITCHEN_NAV = [
-  { href: "/kitchen", label: "Hàng chờ chế biến" },
+  { href: "/kitchen", label: "Bảng điều hành" },
+  { href: "/kitchen/history", label: "Lịch sử thực hiện" },
+  { href: "/kitchen/stock-history", label: "Biến động kho" },
+  { href: "/kitchen/reports/ingredient-usage", label: "Tiêu hao NL" },
 ];
 
 export default function KitchenLayout({
@@ -17,6 +21,7 @@ export default function KitchenLayout({
 }) {
   const { user, isLoggedIn, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -73,7 +78,11 @@ export default function KitchenLayout({
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Nghiệp vụ bếp</p>
             {KITCHEN_NAV.map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navItem} data-active={true}>
+              <Link 
+                key={item.href} 
+                href={item.href} 
+                className={`${styles.navItem} ${pathname === item.href ? styles.active : ""}`}
+              >
                 {item.label}
               </Link>
             ))}

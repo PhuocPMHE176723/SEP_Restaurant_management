@@ -8,7 +8,7 @@ import Pagination from "../../../components/Pagination";
 import TableSelectModal from "../../../components/TableSelectModal/TableSelectModal";
 import styles from "../../manager/manager.module.css";
 
-export default function ReceptionistReservationsPage() {
+export default function CashierReservationsPage() {
   const [reservations, setReservations] = useState<ReservationResponse[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<
     ReservationResponse[]

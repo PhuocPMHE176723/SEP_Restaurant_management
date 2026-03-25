@@ -7,6 +7,7 @@ using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Services.Interface;
 using System.Security.Claims;
 using SEP_Restaurant_management.Core.Middlewares;
+using SEP_Restaurant_management.Core.Services.Implementation;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -74,8 +75,9 @@ public class InvoiceController : BaseController
 public class CheckoutRequest
 {
     public long OrderId { get; set; }
-    public long? CustomerId { get; set; }
     public string? DiscountCode { get; set; }
+    public int PointsToUse { get; set; }
+    public decimal PaidAmount { get; set; }
     public string PaymentMethod { get; set; } = "CASH";
     public string? Note { get; set; }
 }
