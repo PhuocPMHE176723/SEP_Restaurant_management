@@ -9,7 +9,7 @@ namespace SEP_Restaurant_management.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Kitchen,Admin,Staff")]
+[Authorize(Roles = "Kitchen,Admin,Staff,Cashier")]
 public class KitchenController : BaseController
 {
     private readonly KitchenService _kitchenService;

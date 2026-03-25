@@ -18,7 +18,7 @@ namespace SEP_Restaurant_management.Controllers
             _stockService = stockService;
         }
 
-        [Authorize(Roles = "Admin,Warehouse")]
+        [Authorize(Roles = "Admin,Warehouse,Manager,Staff,Kitchen")]
         [HttpGet("inventory")]
         public async Task<IActionResult> GetInventoryOnHand()
         {
@@ -26,7 +26,7 @@ namespace SEP_Restaurant_management.Controllers
             return Success(inventory);
         }
 
-        [Authorize(Roles = "Admin,Warehouse")]
+        [Authorize(Roles = "Admin,Warehouse,Manager,Staff,Kitchen")]
         [HttpGet("low-stock")]
         public async Task<IActionResult> GetLowStock([FromQuery] decimal threshold = 10)
         {
@@ -34,15 +34,15 @@ namespace SEP_Restaurant_management.Controllers
             return Success(lowStock);
         }
 
-        [Authorize(Roles = "Admin,Warehouse")]
+        [Authorize(Roles = "Admin,Warehouse,Manager,Staff,Kitchen")]
         [HttpGet("movements")]
-        public async Task<IActionResult> GetMovements()
+        public async Task<IActionResult> GetMovements([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate, [FromQuery] long? ingredientId)
         {
-            var movements = await _stockService.GetMovementsAsync();
+            var movements = await _stockService.GetMovementsAsync(startDate, endDate, ingredientId);
             return Success(movements);
         }
 
-        [Authorize(Roles = "Admin,Warehouse")]
+        [Authorize(Roles = "Admin,Warehouse,Manager,Staff,Kitchen")]
         [HttpPost("adjust")]
         public async Task<IActionResult> AdjustStock([FromBody] ManualAdjustmentRequest dto)
         {
@@ -62,6 +62,14 @@ namespace SEP_Restaurant_management.Controllers
             {
                 return Failure(ex.Message);
             }
+        }
+
+        [Authorize(Roles = "Admin,Manager,Kitchen")]
+        [HttpGet("consumption-report")]
+        public async Task<IActionResult> GetConsumptionReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            var report = await _stockService.GetConsumptionReportAsync(startDate, endDate);
+            return Success(report);
         }
     }
 }
