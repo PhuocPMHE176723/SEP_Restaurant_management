@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { adminReservationApi } from "../../../lib/api/admin-reservation";
 import type { ReservationResponse } from "../../../types/models";
 import Pagination from "../../../components/Pagination";
+import TableSelectModal from "../../../components/TableSelectModal/TableSelectModal";
 import styles from "../../manager/manager.module.css";
 
 export default function ReceptionistReservationsPage() {
@@ -18,6 +19,8 @@ export default function ReceptionistReservationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedRes, setSelectedRes] = useState<ReservationResponse | null>(null);
+  const [showTableModal, setShowTableModal] = useState(false);
   const [search, setSearch] = useState<string>("");
 
   useEffect(() => {
@@ -94,6 +97,18 @@ export default function ReceptionistReservationsPage() {
         confirmButtonColor: "var(--error)"
       });
     }
+  };
+
+  const handleCheckInClick = (reservation: ReservationResponse) => {
+    setSelectedRes(reservation);
+    setShowTableModal(true);
+  };
+
+  const onTableSelect = async (tableId: number) => {
+    if (!selectedRes) return;
+    setShowTableModal(false);
+    await handleStatusUpdate(selectedRes.reservationId, "CHECKED_IN", tableId);
+    setSelectedRes(null);
   };
 
   return (
@@ -193,12 +208,7 @@ export default function ReceptionistReservationsPage() {
                       {reservation.status === "CONFIRMED" && (
                         <button
                           className="btn btn-sm btn-primary"
-                          onClick={() =>
-                            handleStatusUpdate(
-                              reservation.reservationId,
-                              "CHECKED_IN",
-                            )
-                          }
+                          onClick={() => handleCheckInClick(reservation)}
                         >
                           Check-in
                         </button>
@@ -233,6 +243,14 @@ export default function ReceptionistReservationsPage() {
             />
           )}
         </div>
+      )}
+
+      {showTableModal && selectedRes && (
+        <TableSelectModal 
+          partySize={selectedRes.partySize} 
+          onSelect={onTableSelect} 
+          onClose={() => setShowTableModal(false)} 
+        />
       )}
     </div>
   );
