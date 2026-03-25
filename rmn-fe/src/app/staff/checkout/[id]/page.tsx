@@ -8,6 +8,7 @@ import { invoiceApi, InvoicePreview } from '@/lib/api/invoice';
 import { CustomerLookupResponse } from '@/lib/api/customer';
 import CustomerLookupModal from '@/components/CustomerLookupModal';
 import { getSepayConfig } from '@/lib/api/payment';
+import { showSuccess, showError } from '@/lib/ui/alerts';
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -28,6 +29,7 @@ export default function CheckoutPage() {
   const [discountInfo, setDiscountInfo] = useState<{ type: string; value: number; max?: number } | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
+  const [pointsToUse, setPointsToUse] = useState(0);
   const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
@@ -48,18 +50,11 @@ export default function CheckoutPage() {
     loadConfig();
   }, []);
 
-  const fetchPreview = async () => {
+  const fetchPreview = async (code?: string, points?: number) => {
     try {
-      const data = await invoiceApi.previewInvoice(orderId);
+      setLoading(true);
+      const data = await invoiceApi.getPreview(orderId, code || discountCode, points ?? pointsToUse);
       setPreview(data);
-      if (data.customerId) {
-        setCustomer({
-          customerId: data.customerId,
-          fullName: data.customerName || "Khách hàng",
-          phone: "",
-          totalPoints: 0
-        });
-      }
     } catch (err: any) {
       setError(err.message || "Không thể tải thông tin đơn hàng.");
     } finally {
@@ -67,40 +62,16 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleValidateDiscount = async () => {
-    if (!discountCode || !preview) return;
-    try {
-      const { promotionApi } = await import('@/lib/api/promotion-helper');
-      const data = await promotionApi.validateDiscount(discountCode, preview.subtotal);
-      setDiscountInfo({ type: data.discountType, value: data.discountValue, max: data.maxDiscountAmount });
-      
-      let amount = 0;
-      if (data.discountType === 'PERCENTAGE' || data.discountType === 'PERCENT') {
-        amount = preview.subtotal * (data.discountValue / 100);
-        if (data.maxDiscountAmount && amount > data.maxDiscountAmount) {
-          amount = data.maxDiscountAmount;
-        }
-      } else {
-        amount = data.discountValue;
-      }
-      setDiscountAmount(amount);
-      setDiscountAmount(amount);
-      Swal.fire({
-        title: "Áp dụng thành công",
-        text: `Giảm ${amount.toLocaleString()}đ`,
-        icon: "success",
-        confirmButtonColor: "var(--brand-primary)"
-      });
-    } catch (err: any) {
-      Swal.fire({
-        title: "Lỗi",
-        text: err.message || "Mã giảm giá không hợp lệ.",
-        icon: "error",
-        confirmButtonColor: "var(--error)"
-      });
-      setDiscountInfo(null);
-      setDiscountAmount(0);
-    }
+  const handleApplyDiscount = async () => {
+    if (!discountCode) return;
+    await fetchPreview(discountCode);
+    showSuccess("Đã cập nhật mã giảm giá");
+  };
+
+  const handleApplyPoints = async () => {
+    if (pointsToUse < 0) return;
+    await fetchPreview(undefined, pointsToUse);
+    showSuccess("Đã cập nhật điểm thưởng");
   };
 
   const calculateFinalTotal = () => {
@@ -120,10 +91,9 @@ export default function CheckoutPage() {
     try {
       await invoiceApi.checkout({
         orderId,
-        customerId: customer?.customerId,
         discountCode: discountCode || undefined,
-        paymentMethod,
-        note
+        pointsToUse,
+        paidAmount: preview?.amountToPay ?? 0
       });
       setIsSuccess(true);
       Swal.fire({
@@ -174,12 +144,12 @@ export default function CheckoutPage() {
               </tr>
             </thead>
             <tbody>
-              {preview.items.map((item, idx) => (
+              {preview.items?.map((item: any, idx: number) => (
                 <tr key={idx}>
                   <td className={styles.itemName}>{item.menuItemName}</td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                  <td style={{ textAlign: 'right' }}>{item.unitPrice.toLocaleString()}đ</td>
-                  <td style={{ textAlign: 'right' }}>{item.total.toLocaleString()}đ</td>
+                  <td style={{ textAlign: 'right' }}>{item.unitPrice?.toLocaleString()}đ</td>
+                  <td style={{ textAlign: 'right' }}>{(item.quantity * item.unitPrice).toLocaleString()}đ</td>
                 </tr>
               ))}
             </tbody>
@@ -227,13 +197,34 @@ export default function CheckoutPage() {
               />
               <button 
                 className={styles.applyBtn} 
-                onClick={handleValidateDiscount}
+                onClick={handleApplyDiscount}
                 disabled={!discountCode}
               >
                 Áp dụng
               </button>
             </div>
           </div>
+
+          {customer && (
+            <div className={styles.discountSection} style={{ marginTop: '1rem' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Dùng điểm tích lũy (Có {customer.totalPoints} điểm)</label>
+              <div className={styles.discountInputWrapper}>
+                <input 
+                  className={styles.input} 
+                  type="number" 
+                  placeholder="Số điểm muốn dùng..." 
+                  value={pointsToUse}
+                  onChange={e => setPointsToUse(Number(e.target.value))}
+                />
+                <button 
+                  className={styles.applyBtn} 
+                  onClick={handleApplyPoints}
+                >
+                  Dùng điểm
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Phương thức thanh toán</label>
@@ -255,19 +246,33 @@ export default function CheckoutPage() {
               <span>Tạm tính</span>
               <span>{preview.subtotal.toLocaleString()}đ</span>
             </div>
+            {preview.discountAmount > 0 && (
+              <div className={styles.summaryRow} style={{ color: '#10b981' }}>
+                <span>Giảm giá/Ưu đãi</span>
+                <span>-{preview.discountAmount.toLocaleString()}đ</span>
+              </div>
+            )}
             <div className={styles.summaryRow}>
               <span>Thuế VAT (8%)</span>
-              <span>{calculateVAT().toLocaleString()}đ</span>
+              <span>{preview.vatAmount.toLocaleString()}đ</span>
             </div>
-            {discountAmount > 0 && (
-              <div className={styles.summaryRow} style={{ color: '#10b981' }}>
-                <span>Giảm giá</span>
-                <span>-{discountAmount.toLocaleString()}đ</span>
+            <div className={styles.summaryRow} style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.5rem', fontWeight: 600 }}>
+              <span>Tổng cộng hóa đơn</span>
+              <span>{preview.totalAmount.toLocaleString()}đ</span>
+            </div>
+            {preview.depositDeducted > 0 && (
+              <div className={styles.summaryRow} style={{ color: '#0ea5e9' }}>
+                <span>Đã trừ tiền cọc</span>
+                <span>-{preview.depositDeducted.toLocaleString()}đ</span>
               </div>
             )}
             <div className={`${styles.summaryRow} ${styles.total}`}>
-              <span>Tổng cộng</span>
-              <span>{calculateFinalTotal().toLocaleString()}đ</span>
+              <span>Số tiền cần thu</span>
+              <span>{preview.amountToPay.toLocaleString()}đ</span>
+            </div>
+            <div className={styles.summaryRow} style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              <span>Điểm thưởng tích lũy thêm</span>
+              <span>+{preview.pointsEarned} điểm</span>
             </div>
           </div>
 
