@@ -203,6 +203,20 @@ export default function StaffOrdersPage() {
                         <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
                           {getStatusText(order.status)}
                         </span>
+                        {order.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                          <span style={{ 
+                            marginLeft: '5px', 
+                            fontSize: '0.65rem', 
+                            backgroundColor: '#fb7185', 
+                            color: 'white', 
+                            padding: '2px 5px', 
+                            borderRadius: '10px',
+                            fontWeight: 'bold',
+                            animation: 'pulse 2s infinite'
+                          }}>
+                            MÓN MỚI
+                          </span>
+                        )}
                       </td>
                       <td>{order.orderItems.length} món</td>
                       <td>

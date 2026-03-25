@@ -107,9 +107,10 @@ public class PaymentController : ControllerBase
                     await _context.SaveChangesAsync();
 
                     try {
-                        if (reservation.Customer?.User?.Email != null) {
+                        var targetEmail = reservation.ContactEmail ?? reservation.Customer?.User?.Email;
+                        if (targetEmail != null) {
                             await _emailService.SendReservationConfirmationEmailAsync(
-                                reservation.Customer.User.Email,
+                                targetEmail,
                                 reservation.CustomerName,
                                 reservation.ReservationId,
                                 reservation.ReservedAt,

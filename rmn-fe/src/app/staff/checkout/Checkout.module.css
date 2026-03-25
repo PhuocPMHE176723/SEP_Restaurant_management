@@ -14,13 +14,39 @@
   gap: 1rem;
 }
 
+.printOnlyHeader {
+  display: none;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.printOnlyHeader h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.printOnlyHeader p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
 @media print {
-  .backButton, .paymentSection, .lookupBtn, .discountSection, .checkoutBtn, .header button, .noteArea {
+  .printOnlyHeader {
+    display: block !important;
+  }
+  .backButton, .lookupBtn, .discountSection, .checkoutBtn, .header button, .noteArea, .methodGrid, .methodItem {
     display: none !important;
+  }
+  .paymentSection {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    position: static !important;
   }
   .container {
     padding: 0;
     background: white;
+    width: 100%;
   }
   .content {
     display: block;
@@ -29,10 +55,20 @@
     box-shadow: none;
     border: none;
     padding: 0;
+    margin-bottom: 2rem;
   }
   .title {
     text-align: center;
     margin-bottom: 2rem;
+    font-size: 20px;
+  }
+  .itemTable th {
+    background: #eee !important;
+    color: black !important;
+  }
+  .summary {
+    border-top: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
   }
 }
 

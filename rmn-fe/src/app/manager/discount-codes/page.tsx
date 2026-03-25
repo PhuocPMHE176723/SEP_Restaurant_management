@@ -20,6 +20,12 @@ export default function DiscountCodesPage() {
         isActive: true,
     });
 
+    // Filters & Pagination State
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("ALL");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
     useEffect(() => {
         fetchDiscounts();
     }, []);
@@ -28,13 +34,33 @@ export default function DiscountCodesPage() {
         try {
             setLoading(true);
             const data = await getDiscountCodes();
-            setDiscounts(data);
+            // Sort by latest first
+            const sortedData = [...data].sort((a, b) => b.discountId - a.discountId);
+            setDiscounts(sortedData);
         } catch (error) {
             console.error("Failed to fetch discounts", error);
         } finally {
             setLoading(false);
         }
     }
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
+
+    const filteredDiscounts = discounts.filter((d) => {
+        const matchesSearch = d.code.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "ALL" || 
+            (statusFilter === "ACTIVE" ? d.isActive : !d.isActive);
+        return matchesSearch && matchesStatus;
+    });
+
+    const totalPages = Math.ceil(filteredDiscounts.length / pageSize);
+    const paginatedDiscounts = filteredDiscounts.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
 
     function handleOpenModal(discount?: DiscountCode) {
         if (discount) {
@@ -119,11 +145,52 @@ export default function DiscountCodesPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                         <h1 className={styles.cardTitle}>Quản lý Mã giảm giá</h1>
-                        <p className={styles.pageSubtitle}>Danh sách mã giảm giá — {discounts.length} mã</p>
+                        <p className={styles.pageSubtitle}>Thiết lập các chương trình ưu đãi cho thực khách.</p>
                     </div>
                     <button className={styles.btnAdd} onClick={() => handleOpenModal()}>
                         + Thêm mã mới
                     </button>
+                </div>
+            </div>
+
+            <div className={styles.filterBar}>
+                <div className={styles.searchGroup}>
+                    <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="Tìm kiếm theo mã giảm giá..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <div className={styles.filterGroup}>
+                    <select
+                        className={styles.selectFilter}
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="ACTIVE">Đang bật</option>
+                        <option value="INACTIVE">Đã tắt</option>
+                    </select>
+
+                    {(searchTerm || statusFilter !== "ALL") && (
+                        <button 
+                            className={styles.btnSecondary}
+                            style={{ padding: '0.625rem 1rem', fontSize: '0.85rem' }}
+                            onClick={() => {
+                                setSearchTerm("");
+                                setStatusFilter("ALL");
+                            }}
+                        >
+                            Xoá lọc
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -132,7 +199,7 @@ export default function DiscountCodesPage() {
                     <table className={styles.table}>
                         <thead>
                         <tr>
-                            <th>Mã KH</th>
+                            <th>Mã CODE</th>
                             <th>Loại</th>
                             <th>Giá trị</th>
                             <th>Đơn tối thiểu</th>
@@ -143,19 +210,47 @@ export default function DiscountCodesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {discounts.length === 0 ? (
-                            <tr><td colSpan={8} className={styles.empty}>Không có mã giảm giá nào</td></tr>
+                        {paginatedDiscounts.length === 0 ? (
+                            <tr>
+                                <td colSpan={8} className={styles.empty}>
+                                    {searchTerm || statusFilter !== "ALL" 
+                                        ? "Không tìm thấy mã giảm giá nào phù hợp." 
+                                        : "Chưa có mã giảm giá nào được tạo."}
+                                </td>
+                            </tr>
                         ) : (
-                            discounts.map(d => (
+                            paginatedDiscounts.map(d => (
                                 <tr key={d.discountId}>
-                                    <td style={{ fontWeight: 600, color: '#2563eb' }}>{d.code}</td>
-                                    <td>{d.discountType === "PERCENT" ? "%" : "VNĐ"}</td>
-                                    <td>{d.discountValue.toLocaleString()}</td>
-                                    <td>{d.minOrderValue.toLocaleString()}</td>
-                                    <td>{d.maxDiscountAmount ? d.maxDiscountAmount.toLocaleString() : '-'}</td>
-                                    <td>{d.usedCount} {d.maxUses ? `/ ${d.maxUses}` : '(Vô hạn)'}</td>
+                                    <td style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>{d.code}</td>
                                     <td>
-                                        <button onClick={() => handleToggle(d.discountId)} className={`${styles.statusBadge} ${d.isActive ? styles.statusPublished : styles.statusClosed}`} style={{ cursor: 'pointer', border: 'none', appearance: 'none' }}>
+                                        <span style={{ 
+                                            padding: '2px 8px', 
+                                            background: d.discountType === "PERCENT" ? '#fef3c7' : '#dcfce7',
+                                            color: d.discountType === "PERCENT" ? '#92400e' : '#166534',
+                                            borderRadius: '4px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700
+                                        }}>
+                                            {d.discountType === "PERCENT" ? "PHẦN TRĂM" : "TIỀN MẶT"}
+                                        </span>
+                                    </td>
+                                    <td style={{ fontWeight: 600 }}>
+                                        {d.discountValue.toLocaleString()} {d.discountType === "PERCENT" ? "%" : "đ"}
+                                    </td>
+                                    <td>{d.minOrderValue.toLocaleString()} đ</td>
+                                    <td>{d.maxDiscountAmount ? `${d.maxDiscountAmount.toLocaleString()} đ` : '—'}</td>
+                                    <td>
+                                        <div style={{ fontSize: '0.85rem' }}>
+                                            <b>{d.usedCount}</b> {d.maxUses ? `/ ${d.maxUses}` : '(Vô hạn)'}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button 
+                                            onClick={() => handleToggle(d.discountId)} 
+                                            className={`${styles.statusBadge} ${d.isActive ? styles.statusPublished : styles.statusClosed}`} 
+                                            style={{ cursor: 'pointer', border: 'none', appearance: 'none', width: '100px', justifyContent: 'center' }}
+                                            title="Click để thay đổi trạng thái"
+                                        >
                                             {d.isActive ? 'Đang bật' : 'Đã tắt'}
                                         </button>
                                     </td>
@@ -171,6 +266,39 @@ export default function DiscountCodesPage() {
                     </tbody>
                 </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className={styles.pagination}>
+                        <div className={styles.paginationInfo}>
+                            Hiển thị <b>{Math.min(filteredDiscounts.length, (currentPage - 1) * pageSize + 1)}-{Math.min(filteredDiscounts.length, currentPage * pageSize)}</b> trên tổng số <b>{filteredDiscounts.length}</b> mã
+                        </div>
+                        <button
+                            className={styles.pageBtn}
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                        >
+                            &laquo;
+                        </button>
+                        
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                className={`${styles.pageBtn} ${currentPage === i + 1 ? styles.activePage : ""}`}
+                                onClick={() => setCurrentPage(i + 1)}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            className={styles.pageBtn}
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                        >
+                            &raquo;
+                        </button>
+                    </div>
+                )}
             </div>
 
             {showModal && (

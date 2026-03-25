@@ -1,0 +1,337 @@
+.page {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: var(--font-inter), sans-serif;
+}
+
+.header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+    padding: 2rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.headerTitle h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.headerTitle p {
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+.main {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    padding: 2rem 5%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+    .main {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Menu Section */
+.menuSection {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.searchBar {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+}
+
+.searchBar input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.searchBar input:focus {
+    border-color: #6366f1;
+}
+
+.categories {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.catBtn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 2rem;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.catBtn:hover {
+    background: #e2e8f0;
+}
+
+.activeCat {
+    background: #6366f1;
+    color: white;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.cardImg {
+    height: 160px;
+    background: #f1f5f9;
+    overflow: hidden;
+}
+
+.cardImg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.noImg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-style: italic;
+    background: #f1f5f9;
+}
+
+.cardInfo {
+    padding: 1rem;
+}
+
+.cardInfo h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    height: 2.6rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.price {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #6366f1;
+    margin-bottom: 1rem;
+}
+
+.addBtn {
+    width: 100%;
+    padding: 0.6rem;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.addBtn:hover {
+    background: #4f46e5;
+}
+
+/* Cart Section */
+.cartSection {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+}
+
+.cartHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: #1e293b;
+}
+
+.cartHeader h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.cartItems {
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+    margin-bottom: 1.5rem;
+}
+
+.emptyCart {
+    text-align: center;
+    padding: 2rem 0;
+    color: #94a3b8;
+}
+
+.cartItem {
+    padding: 1rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.cartItemInfo h4 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.noteInput {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.4rem;
+    font-size: 0.85rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    outline: none;
+}
+
+.cartItemActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.qtyBox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+}
+
+.qtyBox button {
+    background: white;
+    border: none;
+    border-radius: 0.25rem;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+
+.removeBtn {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.cartFooter {
+    border-top: 2px solid #f1f5f9;
+    padding-top: 1rem;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.totalRow strong {
+    color: #6366f1;
+    font-size: 1.5rem;
+}
+
+.submitBtn {
+    width: 100%;
+    padding: 1rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s;
+}
+
+.submitBtn:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+}
+
+.submitBtn:disabled {
+    background: #cbd5e1;
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: #64748b;
+}
