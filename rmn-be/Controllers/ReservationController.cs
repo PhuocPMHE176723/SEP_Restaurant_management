@@ -191,4 +191,25 @@ public class ReservationController : BaseController
             return Failure(ex.Message);
         }
     }
+
+    [HttpPut("{id}/items")]
+    public async Task<IActionResult> UpdateReservationItems(long id, [FromBody] List<OrderItemRequest> newItems)
+    {
+        try
+        {
+            var customerId = await GetCustomerIdAsync();
+            var result = await _reservationService.UpdateReservationItemsAsync(id, customerId, newItems ?? new List<OrderItemRequest>());
+
+            if (!result)
+            {
+                return NotFoundResponse("Reservation not found or status is not PENDING");
+            }
+
+            return Success("Reservation items updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return Failure(ex.Message);
+        }
+    }
 }

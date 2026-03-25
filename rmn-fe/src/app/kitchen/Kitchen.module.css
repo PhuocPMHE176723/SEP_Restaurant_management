@@ -1,0 +1,355 @@
+.kitchenGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: calc(100vh - 120px);
+}
+
+.orderCard {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.orderCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.cardHeader {
+  padding: 1.25rem;
+  background: #fff;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tableInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tableName {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.orderTime {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.statusBadge {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statusOpen { background: #dcfce7; color: #166534; }
+.statusKitchen { background: #fef3c7; color: #92400e; }
+
+.cardBody {
+  padding: 0;
+  flex: 1;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.itemRow {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: background 0.2s;
+}
+
+.itemRow:last-child {
+  border-bottom: none;
+}
+
+.itemRowPending { background: transparent; }
+.itemRowCooking { background: #f0f9ff; border-left: 4px solid #0ea5e9; }
+.itemRowServed { background: #f0fdf4; opacity: 0.7; }
+
+.itemMain {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.itemQty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.itemNote {
+  font-size: 0.75rem;
+  color: #f97316;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.1rem;
+}
+
+.btnCook { background: #e0f2fe; color: #0369a1; }
+.btnCook:hover { background: #bae6fd; transform: scale(1.1); }
+
+.btnDone { background: #dcfce7; color: #15803d; }
+.btnDone:hover { background: #bbf7d0; transform: scale(1.1); }
+
+.btnCancel { background: #fee2e2; color: #b91c1c; }
+.btnCancel:hover { background: #fecaca; }
+
+.cardFooter {
+  padding: 1.25rem;
+  background: #f8fafc;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.footerBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnPrimary { background: #f97316; color: #fff; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
+.btnPrimary:hover { background: #ea580c; transform: translateY(-2px); }
+
+.btnOutline { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+.btnOutline:hover { background: #f1f5f9; }
+
+/* Ingredient Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modalHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.ingredientItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.ingredientName {
+  flex: 1;
+  font-weight: 600;
+  color: #475569;
+}
+
+.ingredientInput {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.modalFooter {
+  padding: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #f97316;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 5rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Tabs */
+.tabContainer {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1.5rem;
+  margin-top: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.tabItem {
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.tabItem:hover {
+  color: #1e293b;
+}
+
+.activeTab {
+  color: #f97316;
+}
+
+.activeTab::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #f97316;
+}
+
+/* History List */
+.historyContainer {
+  padding: 1.5rem;
+}
+
+.historyList {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.historyItem {
+  display: grid;
+  grid-template-columns: 80px 1fr 120px 150px;
+  padding: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+
+.historyItem:last-child {
+  border-bottom: none;
+}
+
+.historyItem:hover {
+  background: #f8fafc;
+}
+
+.historyName {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.historyTable {
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.historyTime {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: right;
+}
+

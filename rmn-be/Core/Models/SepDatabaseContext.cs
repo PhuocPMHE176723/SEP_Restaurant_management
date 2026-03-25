@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -184,6 +184,10 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.ReservedAt).HasColumnType("datetime2");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            
+            entity.Property(e => e.DepositAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+            entity.Property(e => e.IsDepositPaid).HasDefaultValue(false);
+            entity.Property(e => e.DepositPaidAt).HasColumnType("datetime2");
 
             entity.HasOne(e => e.Customer)
                   .WithMany(c => c.Reservations)

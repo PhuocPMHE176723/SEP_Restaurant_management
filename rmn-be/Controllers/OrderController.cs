@@ -51,6 +51,7 @@ public class OrderController : BaseController
                         MenuItemName = oi.ItemNameSnapshot,
                         Quantity = oi.Quantity,
                         UnitPrice = oi.UnitPrice,
+                        Status = oi.Status,
                         Note = oi.Note,
                     })
                     .ToList(),
@@ -295,6 +296,49 @@ public class OrderController : BaseController
             await transaction.RollbackAsync();
             return Failure($"Failed to transfer table: {ex.Message}");
         }
+    }
+    [HttpPatch("items/{orderItemId}/status")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen")]
+    public async Task<IActionResult> UpdateOrderItemStatus(
+        long orderItemId,
+        UpdateOrderStatusRequest request
+    )
+    {
+        var orderItem = await _context.OrderItems
+            .Include(oi => oi.Order)
+            .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
+
+        if (orderItem == null)
+        {
+            return NotFoundResponse("Order item not found");
+        }
+
+        var validStatuses = new[] { "PENDING", "COOKING", "SERVED", "CANCELLED" };
+        if (!validStatuses.Contains(request.Status))
+        {
+            return Failure("Invalid status");
+        }
+
+        orderItem.Status = request.Status;
+        
+        // Cập nhật lịch sử trạng thái (tùy chọn)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+        
+        var history = new OrderStatusHistory
+        {
+            OrderId = orderItem.OrderId,
+            OldStatus = $"ITEM:{orderItem.ItemNameSnapshot}",
+            NewStatus = request.Status,
+            ChangedByStaffId = staff?.StaffId,
+            ChangedAt = DateTimeHelper.VietnamNow(),
+            Note = $"Updated item status to {request.Status}"
+        };
+        _context.OrderStatusHistories.Add(history);
+
+        await _context.SaveChangesAsync();
+
+        return Success("Order item status updated successfully");
     }
 }
 

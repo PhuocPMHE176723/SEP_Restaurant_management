@@ -1,0 +1,349 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.header {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media print {
+  .backButton, .paymentSection, .lookupBtn, .discountSection, .checkoutBtn, .header button, .noteArea {
+    display: none !important;
+  }
+  .container {
+    padding: 0;
+    background: white;
+  }
+  .content {
+    display: block;
+  }
+  .orderSection {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+  .title {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+}
+
+.backButton {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.backButton:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+}
+
+/* Left side - Order Details */
+.orderSection {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  border: 1px solid #f1f5f9;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.itemTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.itemTable th {
+  text-align: left;
+  padding: 1rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.itemTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.itemName {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+/* Right side - Payment Actions */
+.paymentSection {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  border: 1px solid #f1f5f9;
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.customerCard {
+  background: #f1f5f9;
+  border-radius: 15px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.customerName {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 1.125rem;
+}
+
+.customerPoints {
+  color: #b45309;
+  font-weight: 600;
+  background: #fef3c7;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  display: inline-block;
+  width: fit-content;
+}
+
+.lookupBtn {
+  width: 100%;
+  background: white;
+  border: 2px dashed #cbd5e1;
+  padding: 1rem;
+  border-radius: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.lookupBtn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.discountSection {
+  margin-bottom: 1.5rem;
+}
+
+.discountInputWrapper {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #3b82f6;
+}
+
+.applyBtn {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 0 1.25rem;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 0;
+  border-top: 2px solid #f1f5f9;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.summaryRow.total {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.checkoutBtn {
+  width: 100%;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 1.25rem;
+  border-radius: 15px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+}
+
+.checkoutBtn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+}
+
+.checkoutBtn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.methodGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.methodItem {
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.methodItem.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Modal styles for Customer Lookup */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1.5rem;
+}
+
+.errorMsg {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.resultList {
+  margin-top: 1.5rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.resultItem {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+}
+
+.resultItem:last-child {
+  border-bottom: none;
+}
+
+.resultItem:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  .paymentSection {
+    position: static;
+  }
+}

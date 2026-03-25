@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import Swal from "sweetalert2";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   createReservation,
@@ -8,6 +9,7 @@ import {
   type MenuItem,
   type OrderItemRequest,
 } from "../../lib/api/reservation";
+import { getSepayConfig, checkSepayTransaction, cancelSepayTimeout } from "../../lib/api/payment";
 import { isValidVNPhone } from "../../lib/validation";
 import Modal from "../Modal/Modal";
 import styles from "./BookingForm.module.css";
@@ -101,13 +103,55 @@ export default function BookingForm() {
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<"success" | "error">("success");
-  const [modalTitle, setModalTitle] = useState("");
-  const [modalMessage, setModalMessage] = useState("");
+  const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrAmount, setQrAmount] = useState(0);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [transferCode, setTransferCode] = useState(""); // display in QR modal
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [currentReservationId, setCurrentReservationId] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes polling
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    getSepayConfig()
+      .then((cfg) => {
+        setSepayConfig(cfg);
+        // Check for existing session right after getting config
+        const sessionStr = localStorage.getItem("sepay_session");
+        if (sessionStr && cfg) {
+          try {
+            const session = JSON.parse(sessionStr);
+            const remaining = Math.floor((session.expireAt - Date.now()) / 1000);
+            
+            if (remaining > 0) {
+              setQrAmount(session.depositAmt);
+              setCurrentReservationId(session.resId);
+              const transferContent = session.paymentCode ? `RMNRES${session.paymentCode}` : `RMNRES${session.resId}`;
+              setTransferCode(transferContent);
+              setQrCodeUrl(
+                `https://qr.sepay.vn/img?acc=${cfg.account}&bank=${cfg.bank}&amount=${session.depositAmt}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${session.depositAmt}`)}`
+              );
+              setQrModalOpen(true);
+              startPaymentCheck(session.resId, session.depositAmt, session.paymentCode || String(session.resId), session.expireAt);
+            } else {
+              // Expired session found on load -> clean up and cancel
+              localStorage.removeItem("sepay_session");
+              cancelSepayTimeout(session.resId).catch(console.error);
+            }
+          } catch (e) {
+            localStorage.removeItem("sepay_session");
+          }
+        }
+      })
+      .catch((err) => console.error("Could not load SePay config", err));
+    
+    return () => {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -237,26 +281,115 @@ export default function BookingForm() {
         note: noteCombined || undefined,
         menuItems: orderItems,
       });
-      setModalType("success");
-      setModalTitle("Đặt bàn thành công!");
-      setModalMessage(
-        `Mã đặt bàn: #${result.reservationId}\n` +
-          `Chúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`,
-      );
-      setModalOpen(true);
-      setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
-      setSelectedItems(new Map());
+
+      // SePay Deposit Logic
+      const _totalAmount = Array.from(selectedItems.entries()).reduce((sum, [id, qty]) => {
+        const item = menuItems.find((m) => m.itemId === id);
+        return sum + (item ? item.basePrice * qty : 0);
+      }, 0);
+
+      if (_totalAmount > 0 && sepayConfig?.account) {
+        const depositAmount = Math.round(_totalAmount * 0.5); // 50%
+        setQrAmount(depositAmount);
+        setCurrentReservationId(result.reservationId);
+        const paymentCode = String(Math.floor(100000 + Math.random() * 900000));
+        const transferContent = `RMNRES${paymentCode}`;
+        setTransferCode(transferContent);
+        setQrCodeUrl(
+          `https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${depositAmount}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${depositAmount}`)}`
+        );
+        setQrModalOpen(true);
+        setTimeLeft(300); // 5 minutes
+        startPaymentCheck(result.reservationId, depositAmount, paymentCode);
+      } else {
+        Swal.fire({
+          title: "Đặt bàn thành công!",
+          text: `Mã đặt bàn: #${result.reservationId}\nChúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`,
+          icon: "success",
+          confirmButtonColor: "var(--brand-primary)"
+        });
+        setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
+        setSelectedItems(new Map());
+      }
     } catch (error: any) {
       const errorMessage =
         error.message || "Đặt bàn thất bại. Vui lòng thử lại.";
       setErrors({ submit: errorMessage });
-      setModalType("error");
-      setModalTitle("Lỗi đặt bàn");
-      setModalMessage(errorMessage);
-      setModalOpen(true);
+      Swal.fire({
+        title: "Lỗi đặt bàn",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  function startPaymentCheck(resId: number, depositAmt: number, paymentCode: string, existingExpireAt?: number) {
+    if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    setCheckingPayment(true);
+
+    const expireAt = existingExpireAt || (Date.now() + 300 * 1000);
+    if (!existingExpireAt) {
+      localStorage.setItem("sepay_session", JSON.stringify({ resId, depositAmt, paymentCode, expireAt }));
+    }
+    
+    setTimeLeft(Math.max(0, Math.floor((expireAt - Date.now()) / 1000)));
+
+    countdownIntervalRef.current = setInterval(() => {
+      const remaining = Math.floor((expireAt - Date.now()) / 1000);
+      if (remaining <= 0) {
+        // Time is up -> cancel reservation and clear
+        localStorage.removeItem("sepay_session");
+        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        
+        cancelSepayTimeout(resId)
+          .then(() => stopPaymentCheck(false, "Đã hết thời gian thanh toán cọc. Đơn đặt bàn của bạn đã bị huỷ tự động."))
+          .catch(() => stopPaymentCheck(false, "Đã hết thời gian thanh toán cọc. (Không thể huỷ đơn, vui lòng liên hệ nhà hàng)"));
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    checkIntervalRef.current = setInterval(async () => {
+      try {
+        const checkRes = await checkSepayTransaction(resId, paymentCode || String(resId));
+        if (checkRes.success) {
+          localStorage.removeItem("sepay_session");
+          stopPaymentCheck(true, "Thanh toán cọc thành công! Email xác nhận chi tiết đã được gửi đến bạn.");
+          setForm({ date: "", timeSlot: "", partySize: 8, phone: "", note: "" });
+          setSelectedItems(new Map());
+        }
+      } catch (err: any) {
+        console.error("Lỗi kiểm tra thanh toán", err);
+        // If it's a configuration error (401/500), we might want to stop or alert the user
+        if (err.message?.includes("Token") || err.message?.includes("401")) {
+          clearInterval(checkIntervalRef.current!);
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi cấu hình thanh toán',
+            text: 'Không thể kết nối với hệ thống SePay. Vui lòng liên hệ nhà hàng để được hỗ trợ.',
+          });
+        }
+      }
+    }, 5000); // Poll every 5s
+  }
+
+  function stopPaymentCheck(isSuccess: boolean, message: string) {
+    if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    setCheckingPayment(false);
+    setQrModalOpen(false);
+    
+    Swal.fire({
+      title: isSuccess ? "Hoàn tất đặt bàn" : "Lưu ý",
+      text: message,
+      icon: isSuccess ? "success" : "error",
+      confirmButtonColor: isSuccess ? "var(--brand-primary)" : "var(--error)"
+    });
   }
 
   // Calculate totals
@@ -478,6 +611,18 @@ export default function BookingForm() {
           Mỗi món được tự động nhân x{numberOfTables} bàn, bạn có thể điều chỉnh
           lại.
         </p>
+        <div className={styles.depositNote}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>
+            <strong>Quy tắc đặt trước:</strong> Để đảm bảo giữ chỗ và chuẩn bị món ăn chu đáo, 
+            quý khách vui lòng <strong>thanh toán cọc 50%</strong> tổng giá trị món ăn đã chọn. 
+            Tiền cọc sẽ được trừ trực tiếp vào hoá đơn khi quý khách thanh toán tại nhà hàng.
+          </div>
+        </div>
 
         {loadingMenu ? (
           <p className={styles.loadingText}>Đang tải thực đơn...</p>
@@ -720,13 +865,111 @@ export default function BookingForm() {
         </div>
       )}
 
+      {/* QR Payment Modal */}
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalTitle}
-        type={modalType}
+        isOpen={qrModalOpen}
+        onClose={() => {
+          Swal.fire({
+            title: "Hủy thanh toán?",
+            text: "Bạn có chắc chắn muốn thoát khi chưa hoàn tất thanh toán cọc? Đơn đặt bàn của bạn sẽ bị huỷ!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Đồng ý, hủy đặt bàn",
+            cancelButtonText: "Tiếp tục thanh toán",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              localStorage.removeItem("sepay_session");
+              if (currentReservationId) {
+                cancelSepayTimeout(currentReservationId).catch(console.error);
+              }
+              stopPaymentCheck(false, "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.");
+            }
+          });
+        }}
+        title="Thanh toán cọc (50%)"
+        showFooter={false}
       >
-        <p className={styles.message}>{modalMessage}</p>
+        <div className={styles.qrContainer}>
+          <p className={styles.qrTitle}>
+            Vui lòng thanh toán số tiền cọc để xác nhận đặt bàn của bạn.
+          </p>
+          
+          <div className={styles.qrTimer}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Thời gian còn lại: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+          </div>
+          
+          <div className={styles.qrCodeWrapper}>
+            <div className={styles.qrScannerLine} />
+            <img 
+              src={qrCodeUrl} 
+              alt="QR Code SePay" 
+              className={styles.qrCode}
+            />
+          </div>
+
+          <div className={styles.qrAmountWrapper}>
+            <span className={styles.qrAmountLabel}>Số tiền cần thanh toán</span>
+            <strong className={styles.qrAmountValue}>{qrAmount.toLocaleString("vi-VN")} đ</strong>
+          </div>
+
+          {transferCode && (
+            <div className={styles.qrAmountWrapper} style={{ marginTop: 8, flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+              <span className={styles.qrAmountLabel}>Nội dung chuyển khoản</span>
+              <strong className={styles.qrAmountValue} style={{ fontSize: "1rem", letterSpacing: 1, color: "var(--brand-primary)" }}>
+                Thanh toan don hang {transferCode} {qrAmount}
+              </strong>
+              <small style={{ color: "var(--text-muted, #888)", fontSize: "0.75rem" }}> </small>
+            </div>
+          )}
+          
+          <div className={styles.qrStatus}>
+            {checkingPayment ? (
+              <>
+                <span className={styles.spinner} style={{ width: "16px", height: "16px", borderWidth: "2px" }} />
+                Đang chờ thanh toán tự động...
+              </>
+            ) : "Đã dừng kiểm tra."}
+          </div>
+          
+          <p className={styles.qrNote}>
+            
+          </p>
+
+          <button 
+            type="button"
+            className={styles.qrCancelBtn}
+            onClick={() => {
+              Swal.fire({
+                title: "Hủy thanh toán?",
+                text: "Bạn có chắc chắn muốn thoát khi chưa hoàn tất thanh toán cọc? Đơn đặt bàn của bạn sẽ bị huỷ!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Đồng ý, hủy đặt bàn",
+                cancelButtonText: "Tiếp tục thanh toán",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  localStorage.removeItem("sepay_session");
+                  if (currentReservationId) {
+                    cancelSepayTimeout(currentReservationId).catch(console.error);
+                  }
+                  stopPaymentCheck(false, "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.");
+                }
+              });
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            Hủy giao dịch & Huỷ đơn đặt bàn
+          </button>
+        </div>
       </Modal>
     </form>
   );

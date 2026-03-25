@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { orderApi, OrderResponse } from "../../../lib/api/order";
 import Pagination from "../../../components/Pagination";
+import OrderDetailModal from "../../../components/OrderDetailModal";
+import { useRouter } from "next/navigation";
 import styles from "../../manager/manager.module.css";
 
 export default function StaffOrdersPage() {
+  const router = useRouter();
   const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +17,8 @@ export default function StaffOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -100,10 +106,26 @@ export default function StaffOrdersPage() {
     try {
       await orderApi.updateOrderStatus(orderId, { status: newStatus });
       await fetchOrders();
+      Swal.fire({
+        title: "Thành công",
+        text: "Cập nhật trạng thái thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (error) {
       console.error("Failed to update order status:", error);
-      alert("Có lỗi khi cập nhật trạng thái order");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Có lỗi khi cập nhật trạng thái order",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
+  };
+
+  const openOrderDetail = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
   };
 
   return (
@@ -192,37 +214,19 @@ export default function StaffOrdersPage() {
                         {formatDateTime(order.openedAt)}
                       </td>
                       <td>
-                        <div className={styles.actionButtons}>
-                          {order.status === "OPEN" && (
-                            <button
-                              className={styles.btnSecondary}
-                              onClick={() => handleStatusUpdate(order.orderId, "SENT_TO_KITCHEN")}
+                        <div className={styles.btnRow}>
+                          <button 
+                            className={`${styles.btnPrimary} btn-sm`}
+                            onClick={() => openOrderDetail(order.orderId)}
+                          >
+                            Chi tiết
+                          </button>
+                          {(order.status !== "CLOSED" && order.status !== "CANCELLED") && (
+                            <button 
+                              className={`${styles.btnSuccess} btn-sm`}
+                              onClick={() => router.push(`/staff/checkout/${order.orderId}`)}
                             >
-                              Gửi bếp
-                            </button>
-                          )}
-                          {order.status === "SENT_TO_KITCHEN" && (
-                            <button
-                              className={styles.btnSuccess}
-                              onClick={() => handleStatusUpdate(order.orderId, "SERVED")}
-                            >
-                              Đã phục vụ
-                            </button>
-                          )}
-                          {order.status === "SERVED" && (
-                            <button
-                              className={styles.btnPrimary}
-                              onClick={() => handleStatusUpdate(order.orderId, "CLOSED")}
-                            >
-                              Đóng order
-                            </button>
-                          )}
-                          {(order.status === "OPEN" || order.status === "SENT_TO_KITCHEN") && (
-                            <button
-                              className={styles.btnDanger}
-                              onClick={() => handleStatusUpdate(order.orderId, "CANCELLED")}
-                            >
-                              Hủy
+                              Thanh toán
                             </button>
                           )}
                         </div>
@@ -247,6 +251,13 @@ export default function StaffOrdersPage() {
           )}
         </div>
       )}
+
+      <OrderDetailModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        orderId={selectedOrderId}
+        onOrderUpdate={fetchOrders}
+      />
     </div>
   );
 }

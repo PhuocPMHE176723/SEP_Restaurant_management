@@ -14,10 +14,10 @@ public interface IPromotionService
     Task<List<DiscountCodeDTO>> GetAllDiscountCodesAsync(bool? isActive = null);
     Task<DiscountCodeDTO?> GetDiscountCodeAsync(int id);
     Task<DiscountCodeDTO?> GetDiscountCodeByCodeAsync(string code);
-    Task<DiscountCodeDTO> CreateDiscountCodeAsync(CreateDiscountCodeDTO request);
-    Task<DiscountCodeDTO> UpdateDiscountCodeAsync(int id, UpdateDiscountCodeDTO request);
+    Task<DiscountCodeDTO?> CreateDiscountCodeAsync(CreateDiscountCodeDTO request);
+    Task<DiscountCodeDTO?> UpdateDiscountCodeAsync(int id, UpdateDiscountCodeDTO request);
     Task DeleteDiscountCodeAsync(int id);
-    Task<DiscountCodeDTO> ToggleDiscountCodeAsync(int id);
+    Task<DiscountCodeDTO?> ToggleDiscountCodeAsync(int id);
 
     // Loyalty Tier
     Task<List<LoyaltyTierDTO>> GetAllLoyaltyTiersAsync();
@@ -25,4 +25,9 @@ public interface IPromotionService
 
     // Loyalty Ledger
     Task<List<LoyaltyLedgerDTO>> GetLoyaltyLedgersAsync(long? customerId = null);
+
+    // Checkout Helpers
+    Task<DiscountCodeDTO?> ValidateDiscountCodeAsync(string code, decimal orderValue);
+    Task<int> CalculateLoyaltyPointsAsync(long customerId, decimal amount);
+    Task AwardPointsAsync(long customerId, int points, string refType, long refId);
 }

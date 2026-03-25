@@ -120,3 +120,12 @@ export async function cancelReservation(id: number): Promise<void> {
     });
     await handleResponse<void>(res);
 }
+
+export async function updateReservationItems(id: number, items: OrderItemRequest[]): Promise<void> {
+    const res = await fetch(`${apiBaseUrl}/api/reservation/${id}/items`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(items),
+    });
+    await handleResponse<void>(res);
+}

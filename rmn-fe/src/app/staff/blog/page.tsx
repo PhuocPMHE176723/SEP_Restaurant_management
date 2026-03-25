@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import Link from "next/link";
 import { blogApi } from "../../../lib/api/blog";
 import styles from "../../manager/manager.module.css";
@@ -43,13 +44,36 @@ export default function BlogPage() {
   };
 
   const handleDeletePost = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa bài viết này?")) return;
+    const result = await Swal.fire({
+      title: "Xác nhận xóa?",
+      text: "Bạn có chắc muốn xóa bài viết này?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy"
+    });
+    
+    if (!result.isConfirmed) return;
+    
     try {
       await blogApi.deletePost(id);
       fetchPosts();
+      Swal.fire({
+        title: "Thành công",
+        text: "Xóa bài viết thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (error) {
       console.error("Failed to delete post:", error);
-      alert("Xóa bài viết thất bại!");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Xóa bài viết thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 
@@ -67,7 +91,12 @@ export default function BlogPage() {
       fetchPosts();
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("Cập nhật trạng thái thất bại!");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Cập nhật trạng thái thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 

@@ -27,7 +27,6 @@
   background: radial-gradient(circle, #fed7aa, #fb923c);
   top: -200px;
   right: -100px;
-  animation: float 8s ease-in-out infinite;
 }
 
 .blob2 {
@@ -36,7 +35,6 @@
   background: radial-gradient(circle, #fef08a, #facc15);
   bottom: -100px;
   left: -80px;
-  animation: float 10s ease-in-out infinite reverse;
 }
 
 .blob3 {
@@ -45,7 +43,6 @@
   background: radial-gradient(circle, #fdba74, #f97316);
   top: 40%;
   left: 35%;
-  animation: float 7s ease-in-out infinite 2s;
 }
 
 @keyframes float {
@@ -178,7 +175,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: slideUp var(--t-slow) 0.15s ease both;
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 16 / 10;
+  margin-left: auto;
 }
 
 .dishGrid {

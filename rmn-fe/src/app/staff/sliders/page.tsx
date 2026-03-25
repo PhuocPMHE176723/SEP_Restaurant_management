@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { sliderApi } from "../../../lib/api/slider";
 import type { Slider } from "../../../types/models/content";
 import styles from "../../manager/manager.module.css";
@@ -44,18 +45,46 @@ export default function SlidersPage() {
       fetchSliders();
     } catch (error) {
       console.error("Failed to save slider:", error);
-      alert("Lưu slider thất bại!");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Lưu slider thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa slider này?")) return;
+    const result = await Swal.fire({
+      title: "Xác nhận xóa?",
+      text: "Bạn có chắc muốn xóa slider này?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy"
+    });
+    
+    if (!result.isConfirmed) return;
+    
     try {
       await sliderApi.deleteSlider(id);
       fetchSliders();
+      Swal.fire({
+        title: "Thành công",
+        text: "Xóa slider thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)"
+      });
     } catch (error) {
       console.error("Failed to delete slider:", error);
-      alert("Xóa slider thất bại!");
+      Swal.fire({
+        title: "Lỗi",
+        text: "Xóa slider thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)"
+      });
     }
   };
 

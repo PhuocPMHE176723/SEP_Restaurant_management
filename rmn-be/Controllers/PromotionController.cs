@@ -7,7 +7,7 @@ namespace SEP_Restaurant_management.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Manager")]
+[Authorize]
 public class PromotionController : ControllerBase
 {
     private readonly IPromotionService _promotionService;
@@ -19,6 +19,7 @@ public class PromotionController : ControllerBase
 
     // ── System Configs ───────────────────────────────────────────
     [HttpGet("configs")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<List<SystemConfigDTO>>> GetAllConfigs()
     {
         var configs = await _promotionService.GetAllConfigsAsync();
@@ -26,6 +27,7 @@ public class PromotionController : ControllerBase
     }
 
     [HttpGet("configs/{key}")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
     public async Task<ActionResult<SystemConfigDTO>> GetConfigByKey(string key)
     {
         var config = await _promotionService.GetConfigByKeyAsync(key);
@@ -34,6 +36,7 @@ public class PromotionController : ControllerBase
     }
 
     [HttpPut("configs")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<List<SystemConfigDTO>>> UpdateMultipleConfigs([FromBody] List<UpdateSystemConfigDTO> requests)
     {
         try
@@ -50,13 +53,24 @@ public class PromotionController : ControllerBase
 
     // ── Discount Codes ───────────────────────────────────────────
     [HttpGet("discounts")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
     public async Task<ActionResult<List<DiscountCodeDTO>>> GetAllDiscountCodes([FromQuery] bool? isActive)
     {
         var discounts = await _promotionService.GetAllDiscountCodesAsync(isActive);
         return Ok(discounts);
     }
 
+    [HttpGet("discounts/validate")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
+    public async Task<ActionResult<DiscountCodeDTO>> ValidateDiscountCode([FromQuery] string code, [FromQuery] decimal orderValue)
+    {
+        var result = await _promotionService.ValidateDiscountCodeAsync(code, orderValue);
+        if (result == null) return BadRequest(new { message = "Mã giảm giá không hợp lệ hoặc không đủ điều kiện." });
+        return Ok(result);
+    }
+
     [HttpGet("discounts/{id}")]
+    [Authorize(Roles = "Admin,Manager,Receptionist,Staff")]
     public async Task<ActionResult<DiscountCodeDTO>> GetDiscountCode(int id)
     {
         var discount = await _promotionService.GetDiscountCodeAsync(id);
@@ -70,6 +84,7 @@ public class PromotionController : ControllerBase
         try
         {
             var result = await _promotionService.CreateDiscountCodeAsync(request);
+            if (result == null) return BadRequest(new { message = "Lỗi khi tạo mã giảm giá" });
             return CreatedAtAction(nameof(GetDiscountCode), new { id = result.DiscountId }, result);
         }
         catch (Exception ex)

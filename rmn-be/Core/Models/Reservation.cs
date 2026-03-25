@@ -48,4 +48,10 @@ public class Reservation
     public virtual Staff? CreatedByStaff { get; set; }
 
     public virtual Order? Order { get; set; }
+    
+    public decimal DepositAmount { get; set; }
+    
+    public bool IsDepositPaid { get; set; } = false;
+    
+    public DateTime? DepositPaidAt { get; set; }
 }

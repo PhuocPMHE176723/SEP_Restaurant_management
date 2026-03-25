@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
+import { orderApi, OrderResponse } from "../../../lib/api/order";
 import type { DiningTableResponse } from "../../../types/models";
 import Pagination from "../../../components/Pagination";
+import OrderDetailModal from "../../../components/OrderDetailModal";
 import styles from "../../manager/manager.module.css";
 
 export default function StaffTablesPage() {
@@ -16,10 +18,23 @@ export default function StaffTablesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTables();
+    fetchOrders();
   }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await orderApi.getAllOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+    }
+  };
 
   useEffect(() => {
     filterTables();
@@ -61,6 +76,17 @@ export default function StaffTablesPage() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentTables = filteredTables.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleTableClick = (table: DiningTableResponse) => {
+    if (table.status === "OCCUPIED") {
+        // Tìm order tương ứng với bàn
+        const order = orders.find(o => o.tableId === table.tableId && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED"));
+        if (order) {
+            setSelectedOrderId(order.orderId);
+            setIsModalOpen(true);
+        }
+    }
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -146,6 +172,8 @@ export default function StaffTablesPage() {
                   <div
                     key={table.tableId}
                     className={`${styles.tableCard} ${styles[table.status.toLowerCase()]}`}
+                    style={{ cursor: table.status === 'OCCUPIED' ? 'pointer' : 'default' }}
+                    onClick={() => handleTableClick(table)}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <h4 style={{ margin: 0 }}>{table.tableName || table.tableCode}</h4>
@@ -178,6 +206,16 @@ export default function StaffTablesPage() {
           </div>
         </>
       )}
+
+      <OrderDetailModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        orderId={selectedOrderId}
+        onOrderUpdate={() => {
+            fetchTables();
+            fetchOrders();
+        }}
+      />
     </div>
   );
 }
