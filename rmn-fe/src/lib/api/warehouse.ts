@@ -56,8 +56,16 @@ export async function getLowStock(threshold: number = 10) {
     return fetchWithAuth(`/Stock/low-stock?threshold=${threshold}`);
 }
 
-export async function getStockMovements() {
-    return fetchWithAuth("/Stock/movements");
+export async function getStockMovements(startDate?: string, endDate?: string, ingredientId?: number) {
+    let query = "";
+    const params = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (ingredientId) params.push(`ingredientId=${ingredientId}`);
+    
+    if (params.length > 0) query = "?" + params.join("&");
+    
+    return fetchWithAuth(`/Stock/movements${query}`);
 }
 
 export async function createManualAdjustment(data: { ingredientId: number; movementType: "IN" | "OUT"; quantity: number; note: string }) {
@@ -79,4 +87,21 @@ export async function createPurchaseReceipt(data: { supplierId?: number; note?: 
 
 export async function updatePurchaseReceiptStatus(id: number, status: "RECEIVED" | "CANCELLED") {
     return fetchWithAuth(`/PurchaseReceipt/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+}
+
+// ----- Inventory Audits -----
+export async function getInventoryAudits() {
+    return fetchWithAuth("/InventoryAudit");
+}
+
+export async function getInventoryAuditById(id: number) {
+    return fetchWithAuth(`/InventoryAudit/${id}`);
+}
+
+export async function createInventoryAudit(data: { note?: string; items: { ingredientId: number; actualQuantity: number }[] }) {
+    return fetchWithAuth("/InventoryAudit", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getConsumptionReport(startDate: string, endDate: string) {
+    return fetchWithAuth(`/Stock/consumption-report?startDate=${startDate}&endDate=${endDate}`);
 }

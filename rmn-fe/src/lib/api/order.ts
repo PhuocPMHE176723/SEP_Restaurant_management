@@ -16,7 +16,7 @@ export interface OrderResponse {
 
 export interface OrderItemResponse {
   orderItemId: number;
-  menuItemName: string;
+  itemNameSnapshot: string;
   quantity: number;
   unitPrice: number;
   status?: string;
@@ -136,6 +136,16 @@ export const orderApi = {
       method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify({ status }),
+    });
+
+    await handleResponse<void>(response);
+  },
+
+  async confirmItems(orderId: number, orderItemIds: number[]): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/${orderId}/confirm-items`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ orderItemIds }),
     });
 
     await handleResponse<void>(response);

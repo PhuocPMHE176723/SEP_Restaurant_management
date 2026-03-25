@@ -64,26 +64,24 @@ export default function CheckoutPage() {
 
   const handleApplyDiscount = async () => {
     if (!discountCode) return;
-    await fetchPreview(discountCode);
-    showSuccess("Đã cập nhật mã giảm giá");
+    try {
+      await fetchPreview(discountCode);
+      showSuccess("Đã cập nhật mã giảm giá");
+    } catch (err: any) {
+      showError(err.message || "Mã giảm giá không hợp lệ");
+      setDiscountCode("");
+    }
   };
 
   const handleApplyPoints = async () => {
     if (pointsToUse < 0) return;
-    await fetchPreview(undefined, pointsToUse);
-    showSuccess("Đã cập nhật điểm thưởng");
-  };
-
-  const calculateFinalTotal = () => {
-    if (!preview) return 0;
-    const afterDiscount = preview.subtotal - discountAmount;
-    const vat = Math.round(afterDiscount * 0.08);
-    return afterDiscount + vat;
-  };
-
-  const calculateVAT = () => {
-    if (!preview) return 0;
-    return Math.round((preview.subtotal - discountAmount) * 0.08);
+    try {
+      await fetchPreview(undefined, pointsToUse);
+      showSuccess("Đã cập nhật điểm thưởng");
+    } catch (err: any) {
+      showError(err.message || "Không thể sử dụng điểm");
+      setPointsToUse(0);
+    }
   };
 
   const handleCheckout = async () => {
@@ -119,14 +117,22 @@ export default function CheckoutPage() {
 
   return (
     <div className={styles.container}>
+      {/* Header chỉ hiện khi in */}
+      <div className={styles.printOnlyHeader}>
+        <h1>NHÀ HÀNG G26</h1>
+        <p>Địa chỉ: 123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh</p>
+        <p>Số điện thoại: 0123 456 789</p>
+        <div style={{ borderBottom: '1px dashed #000', margin: '1rem 0' }}></div>
+      </div>
+
       <header className={styles.header}>
         <button className={styles.backButton} onClick={() => router.back()}>
           ← Quay lại
         </button>
-        <h1 className={styles.title}>Thanh toán đơn hàng #{preview.orderCode}</h1>
+        <h1 className={styles.title}>Hóa đơn #{preview.orderCode}</h1>
         {isSuccess && (
           <button className={styles.backButton} onClick={() => window.print()} style={{ background: '#0f172a', color: 'white' }}>
-            🖨️ In hóa đơn
+            🖨️ In hóa đơn (PDF)
           </button>
         )}
       </header>
@@ -146,7 +152,7 @@ export default function CheckoutPage() {
             <tbody>
               {preview.items?.map((item: any, idx: number) => (
                 <tr key={idx}>
-                  <td className={styles.itemName}>{item.menuItemName}</td>
+                  <td className={styles.itemName}>{item.itemNameSnapshot}</td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}</td>
                   <td style={{ textAlign: 'right' }}>{item.unitPrice?.toLocaleString()}đ</td>
                   <td style={{ textAlign: 'right' }}>{(item.quantity * item.unitPrice).toLocaleString()}đ</td>
@@ -288,7 +294,7 @@ export default function CheckoutPage() {
             <div style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '1rem' }}>Mã QR Thanh Toán (Tổng tiền)</p>
               <img 
-                src={`https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${calculateFinalTotal()}&des=${encodeURIComponent(`Thanh toan hoa don ${preview.orderCode}`)}`}
+                src={`https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${preview.amountToPay}&des=${encodeURIComponent(`Thanh toan hoa don ${preview.orderCode}`)}`}
                 alt="QR Code"
                 style={{ width: '100%', maxWidth: '200px', margin: '0 auto', display: 'block' }}
               />

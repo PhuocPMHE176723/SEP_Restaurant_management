@@ -44,6 +44,7 @@ export interface CreateReservationRequest {
     partySize: number;
     durationMinutes?: number;
     note?: string;
+    contactEmail?: string;
     menuItems: OrderItemRequest[];
 }
 
@@ -53,6 +54,7 @@ export interface ReservationDTO {
     tableId?: number | null;
     customerName: string;
     customerPhone: string;
+    contactEmail?: string | null;
     partySize: number;
     reservedAt: string;
     durationMinutes: number;

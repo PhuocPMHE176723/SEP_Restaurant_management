@@ -12,14 +12,38 @@ function authHeaders(): Record<string, string> {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-    const json = (await res.json()) as { data?: T; message?: string; success?: boolean; Success?: boolean; Data?: T };
-    const success = json.success ?? json.Success ?? res.ok;
-
-    if (!success) {
-        throw new Error(json.message ?? `Request failed (${res.status})`);
+    if (!res.ok) {
+        let errorMsg = `Request failed (${res.status})`;
+        try {
+            const errorJson = await res.json();
+            errorMsg = errorJson.message || errorMsg;
+        } catch (e) {
+            // No JSON body
+        }
+        throw new Error(errorMsg);
     }
 
-    return (json.data ?? json.Data) as T;
+    // Check if response has content
+    const contentLength = res.headers.get("content-length");
+    if (contentLength === "0" || res.status === 204) {
+        return {} as T;
+    }
+
+    try {
+        const json = (await res.json()) as { data?: T; message?: string; success?: boolean; Success?: boolean; Data?: T };
+        const success = json.success ?? json.Success ?? true;
+
+        if (!success) {
+            throw new Error(json.message ?? `Request failed (${res.status})`);
+        }
+
+        return (json.data ?? json.Data) as T;
+    } catch (e) {
+        if (e instanceof Error && e.message.includes("Unexpected end of JSON input")) {
+            return {} as T;
+        }
+        throw e;
+    }
 }
 
 export const adminReservationApi = {

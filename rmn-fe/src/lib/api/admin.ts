@@ -194,3 +194,28 @@ export async function uploadMenuImage(file: File): Promise<{ url: string }> {
 
     return handleResponse<{ url: string }>(res);
 }
+
+// ── MenuItemIngredient (Recipe) API ──────────────────────────────
+export interface MenuItemIngredient {
+    ingredientId: number;
+    ingredientName: string;
+    unit: string;
+    quantity: number;
+}
+
+export async function getMenuItemIngredients(itemId: number): Promise<MenuItemIngredient[]> {
+    const res = await fetch(`${apiBaseUrl}/api/menuitem/${itemId}/ingredients`, {
+        headers: authHeaders(),
+        cache: "no-store"
+    });
+    return handleResponse<MenuItemIngredient[]>(res);
+}
+
+export async function updateMenuItemIngredients(itemId: number, ingredients: { ingredientId: number; quantity: number }[]): Promise<void> {
+    const res = await fetch(`${apiBaseUrl}/api/menuitem/${itemId}/ingredients`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(ingredients)
+    });
+    await handleResponse<unknown>(res);
+}
