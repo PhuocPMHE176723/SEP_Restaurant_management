@@ -7,12 +7,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import styles from "../manager/manager.module.css";
 
 const CASHIER_NAV = [
-  { href: "/cashier/reservations", label: "Danh sách đặt bàn", icon: "📅" },
-  { href: "/cashier/checkin", label: "Check-in & Gán bàn", icon: "🔑" },
-  { href: "/cashier/walkin", label: "Khách vãng lai", icon: "🚶" },
-  { href: "/cashier/orders", label: "Quản lý Order", icon: "📝" },
-  { href: "/cashier/dining-tables", label: "Sơ đồ bàn", icon: "🪑" },
-  { href: "/cashier/table-transfer", label: "Chuyển bàn", icon: "🔄" },
+  { href: "/cashier/reservations", label: "Danh sách đặt bàn" },
+  { href: "/cashier/checkin", label: "Check-in & Gán bàn" },
+  { href: "/cashier/walkin", label: "Khách vãng lai" },
+  { href: "/cashier/orders", label: "Quản lý Order" },
+  { href: "/cashier/dining-tables", label: "Sơ đồ bàn" },
+  { href: "/cashier/table-transfer", label: "Chuyển bàn" },
 ];
 
 export default function ReceptionistLayout({
@@ -81,7 +81,6 @@ export default function ReceptionistLayout({
             <p className={styles.navGroup}>Nghiệp vụ thu ngân</p>
             {CASHIER_NAV.map((item) => (
               <Link key={item.href} href={item.href} className={styles.navItem}>
-                <span className={styles.navIcon}>{item.icon}</span>
                 {item.label}
               </Link>
             ))}

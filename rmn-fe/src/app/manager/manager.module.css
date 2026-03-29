@@ -8,6 +8,15 @@
     font-family: var(--font-inter, 'Inter', sans-serif);
 }
 
+.shell h1,
+.shell h2,
+.shell h3,
+.shell h4,
+.shell h5,
+.shell h6 {
+    font-family: var(--font-inter, 'Inter', sans-serif) !important;
+}
+
 /* ── SIDEBAR ───────────────────────────────── */
 .sidebar {
     width: 280px;
