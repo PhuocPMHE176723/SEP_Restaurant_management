@@ -111,8 +111,9 @@ namespace SEP_Restaurant_management.Core.DTOs
         public string IngredientName { get; set; } = default!;
         public string Unit { get; set; } = default!;
         public decimal OrderConsumption { get; set; } // Quantity from ORDER_ITEM movements
-        public decimal AuditLoss { get; set; }       // OUT during AUDIT
-        public decimal AuditGain { get; set; }       // IN during AUDIT
-        public decimal TotalUsage => OrderConsumption + AuditLoss - AuditGain;
+        public decimal ManualConsumption { get; set; } // Quantity from ADJUSTMENT movements
+        public decimal AuditLoss { get; set; }         // OUT during AUDIT
+        public decimal AuditGain { get; set; }         // IN during AUDIT
+        public decimal TotalUsage => OrderConsumption + ManualConsumption + AuditLoss - AuditGain;
     }
 }

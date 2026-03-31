@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { getConsumptionReport } from "@/lib/api/warehouse";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import styles from "../../../manager/manager.module.css";
+import styles from "../../Kitchen.module.css";
 import { BarChart3, Calendar, Download, Filter } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -12,6 +12,7 @@ interface ConsumptionData {
     ingredientName: string;
     unit: string;
     orderConsumption: number;
+    manualConsumption: number;
     auditLoss: number;
     auditGain: number;
     totalUsage: number;
@@ -76,7 +77,7 @@ export default function IngredientUsagePage() {
                             onChange={(e) => setEndDate(e.target.value)} 
                         />
                     </div>
-                    <button type="submit" className={styles.btnPrimary} style={{ height: "42px" }}>
+                    <button type="submit" className={styles.btnPrimary}>
                         <Filter size={18} /> Lọc dữ liệu
                     </button>
                 </form>
@@ -87,12 +88,13 @@ export default function IngredientUsagePage() {
             ) : (
                 <div className={styles.card}>
                     <div className={styles.tableWrap}>
-                        <table className={styles.table}>
+                        <table className={styles.reportTable}>
                             <thead>
                                 <tr>
                                     <th>Nguyên liệu</th>
                                     <th>Đơn vị</th>
-                                    <th style={{ textAlign: "right" }}>Tiêu thụ (Bán hàng)</th>
+                                    <th style={{ textAlign: "right" }}>Tiêu thụ (Tự động)</th>
+                                    <th style={{ textAlign: "right" }}>Tiêu thụ (Từ bếp)</th>
                                     <th style={{ textAlign: "right" }}>Hao hụt (Kiểm kê)</th>
                                     <th style={{ textAlign: "right" }}>Thặng dư (Kiểm kê)</th>
                                     <th style={{ textAlign: "right", color: "#6366f1" }}>Tổng tiêu thụ</th>
@@ -111,14 +113,17 @@ export default function IngredientUsagePage() {
                                             <td><strong>{item.ingredientName}</strong></td>
                                             <td>{item.unit}</td>
                                             <td style={{ textAlign: "right" }}>{item.orderConsumption.toLocaleString()}</td>
+                                            <td style={{ textAlign: "right" }}>{item.manualConsumption.toLocaleString()}</td>
                                             <td style={{ textAlign: "right", color: "#ef4444" }}>
                                                 {item.auditLoss > 0 ? `+${item.auditLoss.toLocaleString()}` : "-"}
                                             </td>
                                             <td style={{ textAlign: "right", color: "#10b981" }}>
                                                 {item.auditGain > 0 ? `+${item.auditGain.toLocaleString()}` : "-"}
                                             </td>
-                                            <td style={{ textAlign: "right", fontWeight: "700", color: "#4f46e5" }}>
-                                                {item.totalUsage.toLocaleString()}
+                                            <td style={{ textAlign: "right" }}>
+                                                <span className={styles.usageBadge}>
+                                                  {item.totalUsage.toLocaleString()}
+                                                </span>
                                             </td>
                                         </tr>
                                     ))
@@ -130,7 +135,7 @@ export default function IngredientUsagePage() {
             )}
 
             <div style={{ marginTop: "1rem", color: "#64748b", fontSize: "0.875rem" }}>
-                <p>* <strong>Tổng tiêu thụ</strong> = Tiêu thụ bán hàng + Hao hụt kiểm kê - Thặng dư kiểm kê.</p>
+                <p>* <strong>Tổng tiêu thụ</strong> = Tự động (Recipe) + Thủ công (Bếp) + Hao hụt kiểm kê - Thặng dư kiểm kê.</p>
                 <p>* Dữ liệu chỉ bao gồm các món ăn đã được xác nhận "Xong món" (SERVED).</p>
             </div>
         </div>

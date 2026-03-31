@@ -383,3 +383,179 @@
     position: static;
   }
 }
+
+/* QR Modal Styles (from BookingForm) */
+.qrContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  gap: 1.5rem;
+}
+
+.qrTitle {
+  margin-bottom: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  max-width: 320px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.qrCodeWrapper {
+  position: relative;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.qrCode {
+  max-width: 240px;
+  display: block;
+  border-radius: 12px;
+}
+
+.qrScannerLine {
+  position: absolute;
+  top: 0;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2px;
+  background: #3b82f6;
+  box-shadow: 0 0 12px #3b82f6;
+  animation: qrScan 3s ease-in-out infinite;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+@keyframes qrScan {
+  0% { top: 0.75rem; }
+  50% { top: calc(100% - 0.75rem - 2px); }
+  100% { top: 0.75rem; }
+}
+
+.qrAmountWrapper {
+  text-align: center;
+  width: 100%;
+}
+
+.qrAmountLabel {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.qrAmountValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #e11d48;
+  letter-spacing: -0.5px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  font-size: 0.825rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  margin: 1rem auto;
+  line-height: 1;
+}
+
+.statusPending {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.statusSuccess {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.statusError {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.statusIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.statusSuccess .statusIcon {
+  background: #10b981;
+  color: white;
+}
+
+.statusPending .statusIcon {
+  background: #f59e0b;
+  color: white;
+}
+
+/* Update qrStatus to use these styles */
+.qrStatus {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.spinnerSmall {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.viewQrBtn {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.viewQrBtn:hover {
+  background: #dbeafe;
+}
