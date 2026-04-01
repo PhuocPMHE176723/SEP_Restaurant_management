@@ -99,12 +99,14 @@ export default function OrderDetailModal({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Món đã gọi</h3>
-                  <button 
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setShowAddMenu(!showAddMenu)}
-                  >
-                    {showAddMenu ? "← Quay lại" : "+ Gọi thêm món"}
-                  </button>
+                  {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && (
+                    <button 
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setShowAddMenu(!showAddMenu)}
+                    >
+                      {showAddMenu ? "← Quay lại" : "+ Gọi thêm món"}
+                    </button>
+                  )}
                 </div>
 
                 <div className={styles.tableWrap}>
@@ -115,7 +117,9 @@ export default function OrderDetailModal({
                         <th className={styles.colNarrow}>SL</th>
                         <th className={styles.colNarrow}>Trạng thái</th>
                         <th style={{ textAlign: 'right' }}>Thành tiền</th>
-                        <th style={{ textAlign: 'center' }}>Xác nhận</th>
+                        {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                          <th style={{ textAlign: 'center' }}>Xác nhận</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -140,27 +144,29 @@ export default function OrderDetailModal({
                           <td style={{ textAlign: 'right' }}>
                             {(item.quantity * item.unitPrice).toLocaleString('vi-VN')}đ
                           </td>
-                          <td style={{ textAlign: 'center' }}>
-                            {item.status === 'WAIT_CONFIRM' && (
-                              <button 
-                                className="btn btn-success btn-sm"
-                                style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                                onClick={async () => {
-                                  if (!orderId) return;
-                                  try {
-                                    await orderApi.confirmItems(orderId, [item.orderItemId]);
-                                    showSuccess("Đã xác nhận món");
-                                    fetchOrderDetails();
-                                    if (onOrderUpdate) onOrderUpdate();
-                                  } catch (e) {
-                                    showError("Xác nhận thất bại");
-                                  }
-                                }}
-                              >
-                                Duyệt
-                              </button>
-                            )}
-                          </td>
+                          {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                            <td style={{ textAlign: 'center' }}>
+                              {item.status === 'WAIT_CONFIRM' && (
+                                <button 
+                                  className="btn btn-success btn-sm"
+                                  style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                  onClick={async () => {
+                                    if (!orderId) return;
+                                    try {
+                                      await orderApi.confirmItems(orderId, [item.orderItemId]);
+                                      showSuccess("Đã xác nhận món");
+                                      fetchOrderDetails();
+                                      if (onOrderUpdate) onOrderUpdate();
+                                    } catch (e) {
+                                      showError("Xác nhận thất bại");
+                                    }
+                                  }}
+                                >
+                                  Duyệt
+                                </button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -170,13 +176,15 @@ export default function OrderDetailModal({
                         <td style={{ fontWeight: 700, textAlign: 'right', color: '#f97316', fontSize: '1.1rem' }}>
                           {order?.totalAmount.toLocaleString('vi-VN')}đ
                         </td>
-                        <td></td>
+                        {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                          <td></td>
+                        )}
                       </tr>
                     </tfoot>
                   </table>
                 </div>
 
-                {order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
+                {order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && order?.status !== "CLOSED" && order?.status !== "CANCELLED" && (
                   <div style={{ marginTop: '1rem', textAlign: 'right' }}>
                     <button 
                       className="btn btn-success"

@@ -71,11 +71,12 @@ export default function StaffOrdersPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "OPEN": return "Mở";
-      case "SENT_TO_KITCHEN": return "Gửi bếp";
+      case "OPEN": return "Mới mở";
+      case "SENT_TO_KITCHEN": return "Đang chờ bếp";
       case "SERVED": return "Đã phục vụ";
       case "CANCELLED": return "Đã hủy";
-      case "CLOSED": return "Đã đóng";
+      case "CLOSED": return "Đã thanh toán";
+      case "RESERVED": return "Đã đặt bàn";
       default: return status;
     }
   };
@@ -87,6 +88,7 @@ export default function StaffOrdersPage() {
       case "SERVED": return styles.statusServed;
       case "CANCELLED": return styles.statusCancelled;
       case "CLOSED": return styles.statusClosed;
+      case "RESERVED": return styles.statusReserved || styles.statusDefault;
       default: return styles.statusDefault;
     }
   };
@@ -161,7 +163,8 @@ export default function StaffOrdersPage() {
             <option value="SENT_TO_KITCHEN">Đang chờ bếp</option>
             <option value="SERVED">Đã phục vụ</option>
             <option value="CLOSED">Đã thanh toán</option>
-            <option value="CANCELLED">Hủy bỏ</option>
+            <option value="CANCELLED">Đã hủy</option>
+            <option value="RESERVED">Đã đặt bàn</option>
           </select>
         </div>
       </div>
