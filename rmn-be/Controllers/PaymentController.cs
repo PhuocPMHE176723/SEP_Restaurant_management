@@ -134,6 +134,63 @@ public class PaymentController : ControllerBase
         }
     }
 
+    [HttpGet("sepay/check-invoice")]
+    public async Task<IActionResult> CheckInvoiceSepayTransaction([FromQuery] long orderId, [FromQuery] string orderCode)
+    {
+        try
+        {
+            var apiKey = _configuration["SePay:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+                return StatusCode(500, new { success = false, message = "Thiếu ApiKey trong appsettings.json" });
+
+            // The QR content format used in frontend: "Thanh toan hoa don {orderCode}"
+            var expectedCode = orderCode;
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            var url = $"https://my.sepay.vn/userapi/transactions/list?transaction_content={Uri.EscapeDataString(expectedCode)}";
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                return StatusCode((int)response.StatusCode, new { success = false, message = $"Lỗi kết nối SePay: {response.StatusCode}" });
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(json))
+                return Ok(new { success = false });
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("transactions", out var transactionsElement))
+                return Ok(new { success = false });
+
+            foreach (var tran in transactionsElement.EnumerateArray())
+            {
+                decimal amountIn = 0;
+                if (tran.TryGetProperty("amount_in", out var amtInProp))
+                    decimal.TryParse(amtInProp.GetString(), CultureInfo.InvariantCulture, out amountIn);
+                
+                if (amountIn <= 0) continue;
+
+                var content = tran.TryGetProperty("transaction_content", out var cp) ? cp.GetString() ?? "" : "";
+                if (!content.Contains(expectedCode, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Found a successful incoming transaction matching the order code
+                return Ok(new { success = true, amount = amountIn, message = "Thanh toán thành công" });
+            }
+
+            return Ok(new { success = false, message = "Chưa nhận được giao dịch" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
     [HttpPost("sepay/cancel-timeout")]
     public async Task<IActionResult> CancelTimeout([FromQuery] long reservationId)
     {

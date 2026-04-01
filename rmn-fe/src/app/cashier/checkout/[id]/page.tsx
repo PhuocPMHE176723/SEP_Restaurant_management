@@ -7,8 +7,9 @@ import styles from '../Checkout.module.css';
 import { invoiceApi, InvoicePreview } from '@/lib/api/invoice';
 import { CustomerLookupResponse } from '@/lib/api/customer';
 import CustomerLookupModal from '@/components/CustomerLookupModal';
-import { getSepayConfig } from '@/lib/api/payment';
+import { getSepayConfig, checkInvoicePayment } from '@/lib/api/payment';
 import { showSuccess, showError } from '@/lib/ui/alerts';
+import Modal from '@/components/Modal/Modal';
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -31,6 +32,8 @@ export default function CheckoutPage() {
   const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [isAutoChecking, setIsAutoChecking] = useState(false);
+  const [qrTimer, setQrTimer] = useState(300); // 5 minutes
 
   useEffect(() => {
     if (orderId) {
@@ -49,6 +52,44 @@ export default function CheckoutPage() {
     }
     loadConfig();
   }, []);
+
+  // Automated polling for Bank Transfer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    const isExpired = qrTimer <= 0;
+    if (showQrModal && paymentMethod === 'BANK' && sepayConfig && !isSuccess && !isAutoChecking && !isExpired) {
+      interval = setInterval(async () => {
+        try {
+          const res = await checkInvoicePayment(Number(orderId), preview?.orderCode || "");
+          if (res.success) {
+            clearInterval(interval);
+            setIsAutoChecking(true);
+            setShowQrModal(false);
+            // Auto complete checkout
+            handleCheckout();
+          }
+        } catch (err) {
+          console.error("Payment polling error:", err);
+        }
+      }, 5000); // 5 second polling
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [showQrModal, paymentMethod, sepayConfig, orderId, preview?.orderCode, isSuccess, isAutoChecking, qrTimer]);
+
+  // QR Modal timer
+  useEffect(() => {
+    let timerId: NodeJS.Timeout;
+    if (showQrModal && qrTimer > 0 && !isSuccess) {
+      timerId = setInterval(() => {
+        setQrTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timerId);
+  }, [showQrModal, qrTimer, isSuccess]);
+
+  const isExpired = qrTimer <= 0;
 
   const fetchPreview = async (code?: string, points?: number) => {
     try {
@@ -85,6 +126,7 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    if (isProcessing || isSuccess) return;
     setIsProcessing(true);
     try {
       await invoiceApi.checkout({
@@ -129,10 +171,10 @@ export default function CheckoutPage() {
         <button className={styles.backButton} onClick={() => router.back()}>
           ← Quay lại
         </button>
-        <h1 className={styles.title}>Hóa đơn #{preview.orderCode}</h1>
+        <h1 className={styles.title}>BILL #{preview.orderCode}</h1>
         {isSuccess && (
           <button className={styles.backButton} onClick={() => window.print()} style={{ background: '#0f172a', color: 'white' }}>
-            🖨️ In hóa đơn (PDF)
+            🖨️ In Bill (PDF)
           </button>
         )}
       </header>
@@ -162,11 +204,11 @@ export default function CheckoutPage() {
           </table>
           
           <div style={{ marginTop: '2rem' }} className={styles.noteArea}>
-            <label className={styles.sectionTitle} style={{ border: 'none', marginBottom: '0.5rem', display: 'block' }}>Ghi chú hóa đơn</label>
+            <label className={styles.sectionTitle} style={{ border: 'none', marginBottom: '0.5rem', display: 'block' }}>Ghi chú phiếu thanh toán</label>
             <textarea 
               className={styles.input} 
               style={{ width: '100%', minHeight: '80px' }}
-              placeholder="Nhập ghi chú xuất hóa đơn nếu có..."
+              placeholder="Nhập ghi chú xuất bill nếu có..."
               value={note}
               onChange={e => setNote(e.target.value)}
             />
@@ -235,15 +277,21 @@ export default function CheckoutPage() {
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Phương thức thanh toán</label>
             <div className={styles.methodGrid}>
-              {['CASH', 'BANK', 'QR', 'CARD'].map(m => (
-                <div 
-                  key={m}
-                  className={`${styles.methodItem} ${paymentMethod === m ? styles.active : ''}`}
-                  onClick={() => setPaymentMethod(m)}
-                >
-                  {m === 'CASH' ? 'Tiền mặt' : m === 'BANK' ? 'Chuyển khoản' : m === 'QR' ? 'Quét mã QR' : 'Thẻ'}
-                </div>
-              ))}
+              <div 
+                className={`${styles.methodItem} ${paymentMethod === 'CASH' ? styles.active : ''}`}
+                onClick={() => setPaymentMethod('CASH')}
+              >
+                Tiền mặt
+              </div>
+              <div 
+                className={`${styles.methodItem} ${paymentMethod === 'BANK' ? styles.active : ''}`}
+                onClick={() => {
+                  setPaymentMethod('BANK');
+                  setShowQrModal(true);
+                }}
+              >
+                Chuyển khoản
+              </div>
             </div>
           </div>
 
@@ -263,7 +311,7 @@ export default function CheckoutPage() {
               <span>{preview.vatAmount.toLocaleString()}đ</span>
             </div>
             <div className={styles.summaryRow} style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.5rem', fontWeight: 600 }}>
-              <span>Tổng cộng hóa đơn</span>
+              <span>Tổng cộng bill</span>
               <span>{preview.totalAmount.toLocaleString()}đ</span>
             </div>
             {preview.depositDeducted > 0 && (
@@ -290,19 +338,72 @@ export default function CheckoutPage() {
             {isProcessing ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
           </button>
 
-          {paymentMethod === 'QR' && sepayConfig && (
-            <div style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '1rem' }}>Mã QR Thanh Toán (Tổng tiền)</p>
-              <img 
-                src={`https://qr.sepay.vn/img?acc=${sepayConfig.account}&bank=${sepayConfig.bank}&amount=${preview.amountToPay}&des=${encodeURIComponent(`Thanh toan hoa don ${preview.orderCode}`)}`}
-                alt="QR Code"
-                style={{ width: '100%', maxWidth: '200px', margin: '0 auto', display: 'block' }}
-              />
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '0.5rem' }}>Dành cho nhân viên quét cho khách</p>
-            </div>
+          {paymentMethod === 'BANK' && sepayConfig && (
+            <button 
+              className={styles.viewQrBtn} 
+              onClick={() => setShowQrModal(true)}
+              style={{ background: '#fef3c7', borderColor: '#f59e0b', color: '#b45309' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <rect x="7" y="7" width="3" height="3"/>
+                <rect x="14" y="7" width="3" height="3"/>
+                <rect x="7" y="14" width="3" height="3"/>
+                <rect x="14" y="14" width="3" height="3"/>
+              </svg>
+              Đang chờ thanh toán (Mở QR)
+            </button>
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        title="Quét mã QR thanh toán"
+        type="info"
+        showFooter={true}
+      >
+        <div className={styles.qrContainer}>
+          <p className={styles.qrTitle}>
+            Quý khách vui lòng quét mã này bằng ứng dụng Ngân hàng hoặc Ví điện tử để thanh toán.
+          </p>
+          
+          <div className={styles.qrCodeWrapper}>
+            <div className={styles.qrScannerLine} />
+            <img 
+              src={`https://qr.sepay.vn/img?acc=${sepayConfig?.account}&bank=${sepayConfig?.bank}&amount=${preview.amountToPay}&des=${encodeURIComponent(`Thanh toan hoa don ${preview.orderCode}`)}`}
+              alt="QR Code SePay" 
+              className={styles.qrCode}
+            />
+          </div>
+
+          <div className={styles.qrAmountWrapper}>
+            <span className={styles.qrAmountLabel}>Số tiền cần thanh toán</span>
+            <strong className={styles.qrAmountValue}>{preview.amountToPay.toLocaleString("vi-VN")} đ</strong>
+          </div>
+          
+          <div className={styles.qrStatus}>
+            <div className={`${styles.statusBadge} ${isSuccess ? styles.statusSuccess : isExpired ? styles.statusError : styles.statusPending}`}>
+              <div className={styles.statusIcon}>
+                {isSuccess ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                ) : isExpired ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                ) : (
+                  <span className={styles.spinnerSmall} />
+                )}
+              </div>
+              {isSuccess ? "Thanh toán thành công" : isExpired ? "Mã QR đã hết hạn" : `Đang chờ nhận tiền... (${Math.floor(qrTimer / 60)}:${(qrTimer % 60).toString().padStart(2, '0')})`}
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {isModalOpen && (
         <CustomerLookupModal 

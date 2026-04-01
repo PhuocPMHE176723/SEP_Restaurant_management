@@ -166,8 +166,10 @@ public class OrderController : BaseController
             ItemId = request.MenuItemId,
             Quantity = request.Quantity,
             UnitPrice = menuItem.BasePrice,
+            ItemNameSnapshot = menuItem.ItemName,
             Note = request.Note,
-            CreatedAt = DateTime.UtcNow,
+            Status = "PENDING",
+            CreatedAt = DateTimeHelper.VietnamNow(),
         };
 
         _context.OrderItems.Add(orderItem);

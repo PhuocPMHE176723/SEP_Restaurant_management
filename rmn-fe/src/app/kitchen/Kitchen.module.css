@@ -1,10 +1,73 @@
+.pageContainer {
+  padding: 2rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
 .kitchenGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 1.5rem;
+  padding: 1.5rem 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
-  background: #f8fafc;
-  min-height: calc(100vh - 120px);
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.pageSubtitle {
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.controlBar {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 42px;
+  background: #fff;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
 .orderCard {
@@ -52,15 +115,40 @@
 }
 
 .statusBadge {
-  padding: 0.4rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
+  border: 1px solid transparent;
+  line-height: 1;
 }
 
-.statusOpen { background: #dcfce7; color: #166534; }
-.statusKitchen { background: #fef3c7; color: #92400e; }
+.statusOpen { 
+  background: #ecfdf5; 
+  color: #059669; 
+  border-color: rgba(16, 185, 129, 0.2); 
+}
+
+.statusKitchen { 
+  background: #fff7ed; 
+  color: #c2410c; 
+  border-color: rgba(249, 115, 22, 0.2); 
+}
+
+.statusServed {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.1);
+}
+
+.statusCooking {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: rgba(3, 105, 161, 0.1);
+}
 
 .cardBody {
   padding: 0;
@@ -167,8 +255,28 @@
   transition: all 0.2s;
 }
 
-.btnPrimary { background: #f97316; color: #fff; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
-.btnPrimary:hover { background: #ea580c; transform: translateY(-2px); }
+.btnPrimary { 
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+  color: #fff; 
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); 
+  height: 42px;
+  padding: 0 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btnPrimary:hover { 
+  background: linear-gradient(135deg, #ea580c 0%, #d9480f 100%); 
+  transform: translateY(-2px); 
+  box-shadow: 0 6px 15px rgba(249, 115, 22, 0.4);
+}
+.btnPrimary:active { transform: translateY(0); }
 
 .btnOutline { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
 .btnOutline:hover { background: #f1f5f9; }
@@ -341,15 +449,55 @@
 
 .historyTable {
   font-size: 0.85rem;
-  color: #64748b;
+  font-weight: 600;
+  color: #475569;
   background: #f1f5f9;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
 .historyTime {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: #64748b;
   text-align: right;
+  font-weight: 500;
+}
+
+/* Report Styles */
+.reportTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.reportTable th {
+  background: #f8fafc;
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.reportTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.textRight { text-align: right; }
+.textCenter { text-align: center; }
+
+.usageBadge {
+  font-weight: 700;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
 }
 

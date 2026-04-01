@@ -34,3 +34,14 @@ export async function cancelSepayTimeout(reservationId: number) {
   }
   return res.json();
 }
+
+export async function checkInvoicePayment(orderId: number, orderCode: string) {
+  const res = await fetch(
+    `${API_URL}/Payment/sepay/check-invoice?orderId=${orderId}&orderCode=${encodeURIComponent(orderCode)}`,
+  );
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Lỗi kiểm tra thanh toán hóa đơn");
+  }
+  return res.json();
+}

@@ -59,9 +59,8 @@ export default function KitchenPage() {
       }
       
       if (status === "SERVED" && item) {
-        setCurrentItem(item);
-        setShowIngredientModal(true);
-        setSelectedIngredients([]);
+        showSuccess(`Đã hoàn thành: ${item.itemNameSnapshot}`);
+        // Only show modal if needed manually, or just refresh
       }
       
       await fetchQueue();
@@ -142,7 +141,8 @@ export default function KitchenPage() {
                   <span className={styles.orderTime}>🕒 {new Date(order.openedAt).toLocaleTimeString()}</span>
                 </div>
                 <span className={`${styles.statusBadge} ${order.status === "OPEN" ? styles.statusOpen : styles.statusKitchen}`}>
-                  {order.status === "OPEN" ? "MỚI" : "BẾP"}
+                  <span style={{ marginRight: '4px' }}>{order.status === "OPEN" ? "●" : "⚡"}</span>
+                  {order.status === "OPEN" ? "MỚI" : "ĐANG CHẾ BIẾN"}
                 </span>
               </div>
               
@@ -174,13 +174,27 @@ export default function KitchenPage() {
                             </button>
                           )}
                           {(status === "PENDING" || status === "COOKING") && (
-                            <button 
-                              className={`${styles.actionBtn} ${styles.btnDone}`} 
-                              title="Hoàn thành"
-                              onClick={() => handleUpdateItemStatus(item.orderItemId, "SERVED", item)}
-                            >
-                              ✔️
-                            </button>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button 
+                                className={`${styles.actionBtn} ${styles.btnDone}`} 
+                                title="Hoàn thành"
+                                onClick={() => handleUpdateItemStatus(item.orderItemId, "SERVED", item)}
+                              >
+                                ✓
+                              </button>
+                              <button 
+                                className={`${styles.actionBtn} ${styles.btnOutline}`} 
+                                style={{ width: '36px', height: '36px', fontSize: '0.9rem', padding: 0 }}
+                                title="Điều chỉnh nguyên liệu"
+                                onClick={() => {
+                                  setCurrentItem(item);
+                                  setShowIngredientModal(true);
+                                  setSelectedIngredients([]);
+                                }}
+                              >
+                                ⚙️
+                              </button>
+                            </div>
                           )}
                         </div>
                       </li>
@@ -207,11 +221,14 @@ export default function KitchenPage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Xuất nguyên liệu cho món</h2>
-              <button style={{ border: 'none', background: 'none', fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => setShowIngredientModal(false)}>×</button>
+              <h2 className={styles.modalTitle}>Điều chỉnh nguyên liệu tiêu hao</h2>
+              <button style={{ border: 'none', background: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }} onClick={() => setShowIngredientModal(false)}>×</button>
             </div>
             <div className={styles.modalBody}>
-              <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Món: <span style={{ color: '#f97316' }}>{currentItem?.itemNameSnapshot}</span></p>
+              <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#64748b' }}>
+                Sử dụng để ghi nhận các nguyên liệu dùng thêm hoặc thay thế cho món ăn này.
+              </p>
+              <p style={{ marginBottom: '1rem', fontWeight: 700 }}>Món: <span style={{ color: '#f97316' }}>{currentItem?.itemNameSnapshot}</span></p>
               
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {ingredients.map(ing => {

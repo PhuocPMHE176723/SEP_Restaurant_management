@@ -131,7 +131,7 @@ namespace SEP_Restaurant_management.Core.Services.Implementation
             var movements = await _context.StockMovements
                 .Include(m => m.Ingredient)
                 .Where(m => m.MovedAt >= startDate && m.MovedAt <= endDate)
-                .Where(m => m.RefType == "ORDER_ITEM" || m.RefType == "AUDIT")
+                .Where(m => m.RefType == "ORDER_ITEM" || m.RefType == "AUDIT" || m.RefType == "ADJUSTMENT")
                 .ToListAsync();
 
             var report = movements
@@ -142,6 +142,7 @@ namespace SEP_Restaurant_management.Core.Services.Implementation
                     IngredientName = g.First().Ingredient.IngredientName,
                     Unit = g.First().Ingredient.Unit,
                     OrderConsumption = g.Where(m => m.RefType == "ORDER_ITEM" && m.MovementType == "OUT").Sum(m => m.Quantity),
+                    ManualConsumption = g.Where(m => m.RefType == "ADJUSTMENT" && m.MovementType == "OUT").Sum(m => m.Quantity),
                     AuditLoss = g.Where(m => m.RefType == "AUDIT" && m.MovementType == "OUT").Sum(m => m.Quantity),
                     AuditGain = g.Where(m => m.RefType == "AUDIT" && m.MovementType == "IN").Sum(m => m.Quantity)
                 })
