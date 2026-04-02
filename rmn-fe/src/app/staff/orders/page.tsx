@@ -70,7 +70,7 @@ export default function StaffOrdersPage() {
     : [];
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case "OPEN": return "Mới mở";
       case "SENT_TO_KITCHEN": return "Đang chờ bếp";
       case "SERVED": return "Đã phục vụ";
@@ -82,13 +82,13 @@ export default function StaffOrdersPage() {
   };
 
   const getStatusClass = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case "OPEN": return styles.statusOpen;
       case "SENT_TO_KITCHEN": return styles.statusSentToKitchen;
       case "SERVED": return styles.statusServed;
       case "CANCELLED": return styles.statusCancelled;
       case "CLOSED": return styles.statusClosed;
-      case "RESERVED": return styles.statusReserved || styles.statusDefault;
+      case "RESERVED": return styles.statusReserved;
       default: return styles.statusDefault;
     }
   };
