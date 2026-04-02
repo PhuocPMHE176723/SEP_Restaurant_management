@@ -134,35 +134,57 @@ export default function StaffTablesPage() {
         </div>
       </div>
 
-      <div className={styles.controlBar} style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div className={styles.searchBox} style={{ flex: 1, minWidth: '300px' }}>
+      <div
+        className={styles.filterBar}
+        style={{
+          display: "flex",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          background: "#fff",
+          borderRadius: "16px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
           <input
             type="text"
             className={styles.input}
             placeholder="Tìm kiếm bàn theo tên hoặc mã..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", paddingLeft: '2.5rem' }}
           />
+          <svg 
+            style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
         </div>
         
-        <div className={styles.filterGroup} style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <select 
             className={styles.select}
             value={capacityFilter}
             onChange={(e) => setCapacityFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
+            style={{ width: '160px', padding: '0.5rem' }}
           >
             <option value="ALL">Tất cả sức chứa</option>
-            <option value="2">&ge; 2 người</option>
-            <option value="4">&ge; 4 người</option>
-            <option value="6">&ge; 6 người</option>
-            <option value="8">&ge; 8 người</option>
-            <option value="10">&ge; 10 người</option>
+            <option value="2">≥ 2 người</option>
+            <option value="4">≥ 4 người</option>
+            <option value="6">≥ 6 người</option>
+            <option value="8">≥ 8 người</option>
+            <option value="10">≥ 10 người</option>
           </select>
 
           <select 
             className={styles.select}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: '160px', padding: '0.5rem' }}
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="AVAILABLE">Bàn trống</option>
@@ -198,9 +220,9 @@ export default function StaffTablesPage() {
                     style={{ cursor: table.status === 'OCCUPIED' ? 'pointer' : 'default' }}
                     onClick={() => handleTableClick(table)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h4 style={{ margin: 0 }}>{table.tableName || table.tableCode}</h4>
-                      <span className={`${styles.status} ${getStatusClass(table.status)}`}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>{table.tableName || table.tableCode}</h4>
+                      <span className={`${styles.statusBadge} ${getStatusClass(table.status)}`} style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                         {getStatusText(table.status)}
                       </span>
                     </div>

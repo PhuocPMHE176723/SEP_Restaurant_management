@@ -35,6 +35,7 @@ export interface InvoicePreview {
   totalAmount: number;
   depositDeducted: number;
   amountToPay: number;
+  refundAmount: number;
   pointsEarned: number;
   items: any[];
 }

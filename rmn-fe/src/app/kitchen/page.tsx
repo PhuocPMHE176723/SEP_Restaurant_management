@@ -137,7 +137,13 @@ export default function KitchenPage() {
             <div key={order.orderId} className={styles.orderCard}>
               <div className={styles.cardHeader}>
                 <div className={styles.tableInfo}>
-                  <h3 className={styles.tableName}>Bàn: {order.tableName || "Mang về"}</h3>
+                  <h3 className={styles.tableName}>
+                    {order.orderType === "TAKEAWAY" ? (
+                      <span style={{ color: '#f59e0b' }}>🛍️ Mang về</span>
+                    ) : (
+                      `Bàn: ${order.tableName || "Tại quán"}`
+                    )}
+                  </h3>
                   <span className={styles.orderTime}>🕒 {new Date(order.openedAt).toLocaleTimeString()}</span>
                 </div>
                 <span className={`${styles.statusBadge} ${order.status === "OPEN" ? styles.statusOpen : styles.statusKitchen}`}>

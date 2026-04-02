@@ -40,6 +40,7 @@ public class OrderController : BaseController
                 Status = o.Status,
                 TableId = o.TableId,
                 TableName = o.Table != null ? o.Table.TableCode : null,
+                OrderType = o.OrderType,
                 CustomerName = o.Customer != null ? o.Customer.FullName : null,
                 OpenedAt = o.OpenedAt,
                 ClosedAt = o.ClosedAt,
@@ -84,6 +85,7 @@ public class OrderController : BaseController
             Status = order.Status,
             TableId = order.TableId,
             TableName = order.Table?.TableCode,
+            OrderType = order.OrderType,
             CustomerName = order.Customer?.FullName,
             OpenedAt = order.OpenedAt,
             ClosedAt = order.ClosedAt,
@@ -152,6 +154,11 @@ public class OrderController : BaseController
         if (order == null)
         {
             return NotFoundResponse("Order not found");
+        }
+
+        if (order.Status == "CLOSED" || order.Status == "CANCELLED")
+        {
+            return Failure("Cannot add items to a closed or cancelled order");
         }
 
         var menuItem = await _context.MenuItems.FindAsync(request.MenuItemId);
@@ -406,6 +413,12 @@ public class OrderController : BaseController
     [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
     public async Task<IActionResult> ConfirmGuestItems(long id, [FromBody] ConfirmItemsRequest request)
     {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null || order.Status == "CLOSED" || order.Status == "CANCELLED")
+        {
+            return Failure("Cannot confirm items for a closed or cancelled order");
+        }
+
         var orderItems = await _context.OrderItems
             .Where(oi => oi.OrderId == id && request.OrderItemIds.Contains(oi.OrderItemId) && oi.Status == "WAIT_CONFIRM")
             .ToListAsync();

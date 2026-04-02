@@ -7,6 +7,7 @@ export interface OrderResponse {
   status: string;
   tableId?: number;
   tableName?: string;
+  orderType: string;
   customerName?: string;
   openedAt: string;
   closedAt?: string;

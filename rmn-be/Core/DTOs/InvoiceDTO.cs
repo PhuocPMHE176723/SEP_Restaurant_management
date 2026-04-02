@@ -28,6 +28,7 @@ public class InvoicePreviewDTO
     public decimal TotalAmount { get; set; }
     public decimal DepositDeducted { get; set; }
     public decimal AmountToPay { get; set; }
+    public decimal RefundAmount { get; set; }
     public int PointsEarned { get; set; }
     public List<OrderItemDTO> Items { get; set; } = new();
 }

@@ -145,14 +145,16 @@ export default function OrderDetailModal({
                             {item.note && <div style={{ fontSize: '0.75rem', color: '#f97316' }}>{item.note}</div>}
                           </td>
                           <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                          <td>
-                            <span className={`${styles.badge} ${
-                                item.status === 'SERVED' ? styles.statusServed : 
-                                item.status === 'COOKING' ? styles.statusInProgress : 
-                                item.status === 'WAIT_CONFIRM' ? styles.statusDanger : 
-                                styles.statusWarning
-                            }`} style={{ padding: '0.3rem 0.75rem', fontSize: '0.68rem', borderRadius: '12px' }}>
-                                {item.status === 'SERVED' ? 'Xong' : item.status === 'COOKING' ? 'Đang nấu' : item.status === 'WAIT_CONFIRM' ? 'Khách chọn' : 'Chờ'}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`${styles.statusBadge} ${
+                                item.status === 'SERVED' ? styles.statusPublished : 
+                                item.status === 'COOKING' ? styles.statusPending : 
+                                item.status === 'WAIT_CONFIRM' ? styles.statusCancelled : 
+                                styles.statusDefault
+                            }`} style={{ padding: '0.25rem 0.6rem', fontSize: '0.65rem' }}>
+                                {item.status === 'SERVED' ? 'Đã lên món' : 
+                                 item.status === 'COOKING' ? 'Đang nấu' : 
+                                 item.status === 'WAIT_CONFIRM' ? 'Khách chọn' : 'Chờ'}
                             </span>
                           </td>
                           <td style={{ textAlign: 'right' }}>
@@ -262,10 +264,10 @@ export default function OrderDetailModal({
                             border: 'none',
                             boxShadow: '0 2px 6px rgba(249, 115, 22, 0.2)'
                           }}
-                          disabled={item.itemId ? addingItem === item.itemId : true}
+                          disabled={(item.itemId ? (addingItem === item.itemId || order?.status === 'CLOSED' || order?.status === 'CANCELLED') : true)}
                           onClick={() => handleAddItem(item)}
                         >
-                          {item.itemId && addingItem === item.itemId ? "..." : "Thêm"}
+                          {order?.status === 'CLOSED' || order?.status === 'CANCELLED' ? "×" : (item.itemId && addingItem === item.itemId ? "..." : "Thêm")}
                         </button>
                       </div>
                     ))}

@@ -124,25 +124,46 @@ export default function CheckinPage() {
         </div>
       </div>
 
-      <div className={styles.controlBar} style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Ngày:</label>
+      <div
+        className={styles.filterBar}
+        style={{
+          display: "flex",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          background: "#fff",
+          borderRadius: "16px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Ngày:</span>
           <input
             type="date"
             className={styles.input}
-            style={{ width: '160px' }}
+            style={{ width: "160px", padding: '0.5rem' }}
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
         </div>
-        <div style={{ flex: 1 }}>
+
+        <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
           <input
             type="text"
             className={styles.input}
             placeholder="Tìm theo tên khách hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", paddingLeft: '2.5rem', paddingRight: '1rem' }}
           />
+          <svg 
+            style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
         </div>
       </div>
 
