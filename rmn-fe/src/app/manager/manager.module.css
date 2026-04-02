@@ -524,6 +524,12 @@
     border-color: #f59e0b44;
 }
 
+.statusReserved {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border-color: #ddd6fe;
+}
+
 /* Info / In-Progress / Sent to Kitchen */
 .statusInProgress,
 .statusSentToKitchen,
@@ -536,7 +542,12 @@
 /* Neutral / Inactive / Maintenance / Closed */
 .badgeInactive,
 .badgeMaintenance,
-.statusClosed,
+.statusClosed {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
 .statusDefault {
     background: #f8fafc;
     color: #64748b;
