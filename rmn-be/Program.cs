@@ -150,52 +150,11 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
-// ─────────────────────────────────────────────────────────────
-//  BUILD
-// ─────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ─────────────────────────────────────────────────────────────
-//  SEED DATABASE
-// ─────────────────────────────────────────────────────────────
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        await DbInitializer.Initialize(services);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
-
-    // One-time schema patch: make CreatedByStaffId nullable (in case EF migration not applied)
-    try
-    {
-        var ctx = services.GetRequiredService<SepDatabaseContext>();
-        ctx.Database.ExecuteSqlRaw(
-            @"
-            IF EXISTS (
-                SELECT 1 FROM sys.columns
-                WHERE object_id = OBJECT_ID('PurchaseReceipts')
-                  AND name = 'CreatedByStaffId' AND is_nullable = 0
-            ) ALTER TABLE [PurchaseReceipts] ALTER COLUMN [CreatedByStaffId] BIGINT NULL"
-        );
-    }
-    catch
-    { /* ignore if already nullable or table doesn't exist */
-    }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  MIDDLEWARE PIPELINE
-// ─────────────────────────────────────────────────────────────
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// In development we keep HTTP to avoid redirecting to a non-existent HTTPS endpoint
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();

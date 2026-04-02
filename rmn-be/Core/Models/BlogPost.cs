@@ -15,26 +15,15 @@ public class BlogPost
     [Required]
     public string Content { get; set; } = default!;
 
-    [MaxLength(500)]
-    public string? Excerpt { get; set; }
-
     [MaxLength(255)]
     public string? FeaturedImage { get; set; }
 
     public int CategoryId { get; set; }
 
     [MaxLength(20)]
-    public string Status { get; set; } = "DRAFT"; // DRAFT, PUBLISHED, ARCHIVED
-
-    public string? Tags { get; set; } // Comma separated tags
+    public string Status { get; set; } = "DRAFT"; 
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public DateTime? PublishedAt { get; set; }
-
-    public string? AuthorId { get; set; }
-
-    // Navigation
     public virtual BlogCategory Category { get; set; } = default!;
-    public virtual UserIdentity? Author { get; set; }
 }

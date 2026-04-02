@@ -16,6 +16,7 @@ export default function StaffTablesPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [capacityFilter, setCapacityFilter] = useState<number | "ALL">("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -38,7 +39,7 @@ export default function StaffTablesPage() {
 
   useEffect(() => {
     filterTables();
-  }, [allTables, statusFilter, searchTerm]);
+  }, [allTables, statusFilter, searchTerm, capacityFilter]);
 
   const fetchTables = async () => {
     try {
@@ -52,10 +53,14 @@ export default function StaffTablesPage() {
   };
 
   const filterTables = () => {
-    let filtered = allTables;
+    let filtered = [...allTables];
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((table) => table.status === statusFilter);
+    }
+
+    if (capacityFilter !== "ALL") {
+      filtered = filtered.filter((table) => table.capacity >= (capacityFilter as number));
     }
 
     if (searchTerm) {
@@ -66,6 +71,11 @@ export default function StaffTablesPage() {
           table.tableName?.toLowerCase().includes(term),
       );
     }
+
+    // Sort logically (e.g., T1-1, T1-2... VIP 1...)
+    filtered.sort((a, b) => {
+      return (a.tableName || a.tableCode).localeCompare(b.tableName || b.tableCode, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     setFilteredTables(filtered);
     setCurrentPage(1);
@@ -135,7 +145,20 @@ export default function StaffTablesPage() {
           />
         </div>
         
-        <div className={styles.filterGroup}>
+        <div className={styles.filterGroup} style={{ display: 'flex', gap: '1rem' }}>
+          <select 
+            className={styles.select}
+            value={capacityFilter}
+            onChange={(e) => setCapacityFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
+          >
+            <option value="ALL">Tất cả sức chứa</option>
+            <option value="2">&ge; 2 người</option>
+            <option value="4">&ge; 4 người</option>
+            <option value="6">&ge; 6 người</option>
+            <option value="8">&ge; 8 người</option>
+            <option value="10">&ge; 10 người</option>
+          </select>
+
           <select 
             className={styles.select}
             value={statusFilter}

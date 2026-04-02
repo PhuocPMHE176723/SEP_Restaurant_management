@@ -577,11 +577,6 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                   .WithMany(c => c.BlogPosts)
                   .HasForeignKey(e => e.CategoryId)
                   .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(e => e.Author)
-                  .WithMany()
-                  .HasForeignKey(e => e.AuthorId)
-                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Sliders ────────────────────────────────────────

@@ -14,7 +14,6 @@ export default function StaffReservationsPage() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -26,7 +25,7 @@ export default function StaffReservationsPage() {
 
   useEffect(() => {
     filterReservations();
-  }, [reservations, filter, searchTerm]);
+  }, [reservations, filter, search, date]);
 
   const fetchReservations = async () => {
     try {
@@ -48,12 +47,19 @@ export default function StaffReservationsPage() {
       );
     }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (date) {
+      filtered = filtered.filter((reservation) => 
+        new Date(reservation.reservedAt).toISOString().split("T")[0] === date
+      );
+    }
+
+    if (search) {
+      const term = search.toLowerCase();
       filtered = filtered.filter(
         (reservation) =>
           reservation.customerName?.toLowerCase().includes(term) ||
-          reservation.customerPhone?.toLowerCase().includes(term),
+          reservation.customerPhone?.toLowerCase().includes(term) ||
+          reservation.reservationId.toString().includes(term),
       );
     }
 
@@ -135,8 +141,9 @@ export default function StaffReservationsPage() {
       {loading ? (
         <div className={styles.spinner} />
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
             <thead>
               <tr>
                 <th>Mã</th>
@@ -159,7 +166,7 @@ export default function StaffReservationsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredReservations.map((reservation) => (
+                currentReservations.map((reservation) => (
                   <tr key={reservation.reservationId}>
                     <td>#{reservation.reservationId}</td>
                     <td>{reservation.customerName}</td>
@@ -232,6 +239,19 @@ export default function StaffReservationsPage() {
             </tbody>
           </table>
         </div>
+
+          {totalPages > 1 && (
+            <div style={{ marginTop: "1rem" }}>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

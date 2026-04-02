@@ -84,41 +84,56 @@ export default function OrderDetailModal({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%' }}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Chi tiết đơn hàng: {order?.orderCode}</h2>
-          <button className={styles.closeBtn} onClick={onClose}>×</button>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ 
+        maxWidth: showAddMenu ? '950px' : '560px', 
+        width: '95%', 
+        minWidth: showAddMenu ? '800px' : '450px', 
+        borderRadius: '28px',
+        overflow: 'hidden',
+        transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+      }}>
+        <div className={styles.modalHeader} style={{ background: 'linear-gradient(to right, #f8fafc, #ffffff)', padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <h2 className={styles.modalTitle} style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.1rem', marginBottom: '2px' }}>
+              Chi tiết đơn hàng
+            </h2>
+            <div style={{ color: '#f97316', fontWeight: 700, fontSize: '0.85rem' }}>{order?.orderCode}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && (
+              <button 
+                className={styles.btnAdd}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', height: 'auto' }}
+                onClick={() => setShowAddMenu(!showAddMenu)}
+              >
+                {showAddMenu ? "← Quay lại" : "+ Gọi thêm món"}
+              </button>
+            )}
+            <button className={styles.closeBtn} onClick={onClose} style={{ fontSize: '1.5rem' }}>×</button>
+          </div>
         </div>
 
-        <div className={styles.modalBody}>
+        <div className={styles.modalBody} style={{ padding: '1.25rem' }}>
           {loading && !order ? (
             <div className={styles.spinner} />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: showAddMenu ? '1fr 1fr' : '1fr', gap: '2rem' }}>
               {/* Order Items List */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Món đã gọi</h3>
-                  {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && (
-                    <button 
-                      className="btn btn-primary btn-sm"
-                      onClick={() => setShowAddMenu(!showAddMenu)}
-                    >
-                      {showAddMenu ? "← Quay lại" : "+ Gọi thêm món"}
-                    </button>
-                  )}
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', color: '#475569', fontWeight: 700 }}>Món đã gọi</h3>
                 </div>
 
-                <div className={styles.tableWrap}>
-                  <table className={styles.table} style={{ fontSize: '0.9rem' }}>
+                <div className={styles.tableWrap} style={{ marginBottom: 0, overflow: 'hidden', borderRadius: '20px', border: '1px solid #f1f5f9' }}>
+                  <table className={styles.table} style={{ fontSize: '0.9rem', minWidth: 'auto', width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th>Tên món</th>
-                        <th className={styles.colNarrow}>SL</th>
-                        <th className={styles.colNarrow}>Trạng thái</th>
-                        <th style={{ textAlign: 'right' }}>Thành tiền</th>
+                        <th style={{ width: '45%' }}>Tên món</th>
+                        <th className={styles.colNarrow} style={{ width: '50px', textAlign: 'center' }}>SL</th>
+                        <th className={styles.colNarrow} style={{ width: '90px', textAlign: 'center' }}>Trạng thái</th>
+                        <th style={{ width: '110px', textAlign: 'right' }}>Thành tiền</th>
                         {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
-                          <th style={{ textAlign: 'center' }}>Xác nhận</th>
+                          <th style={{ textAlign: 'center', width: '80px' }}>Duyệt</th>
                         )}
                       </tr>
                     </thead>
@@ -131,13 +146,12 @@ export default function OrderDetailModal({
                           </td>
                           <td style={{ textAlign: 'center' }}>{item.quantity}</td>
                           <td>
-                            <span style={{ 
-                                fontSize: '0.7rem', 
-                                padding: '2px 6px', 
-                                borderRadius: '4px',
-                                backgroundColor: item.status === 'SERVED' ? '#dcfce7' : item.status === 'COOKING' ? '#e0f2fe' : item.status === 'WAIT_CONFIRM' ? '#ffe4e6' : '#fef3c7',
-                                color: item.status === 'SERVED' ? '#166534' : item.status === 'COOKING' ? '#0369a1' : item.status === 'WAIT_CONFIRM' ? '#9f1239' : '#92400e'
-                            }}>
+                            <span className={`${styles.badge} ${
+                                item.status === 'SERVED' ? styles.statusServed : 
+                                item.status === 'COOKING' ? styles.statusInProgress : 
+                                item.status === 'WAIT_CONFIRM' ? styles.statusDanger : 
+                                styles.statusWarning
+                            }`} style={{ padding: '0.3rem 0.75rem', fontSize: '0.68rem', borderRadius: '12px' }}>
                                 {item.status === 'SERVED' ? 'Xong' : item.status === 'COOKING' ? 'Đang nấu' : item.status === 'WAIT_CONFIRM' ? 'Khách chọn' : 'Chờ'}
                             </span>
                           </td>
@@ -170,10 +184,12 @@ export default function OrderDetailModal({
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot>
+                    <tfoot style={{ background: '#f8fafc' }}>
                       <tr>
-                        <td colSpan={3} style={{ fontWeight: 700, textAlign: 'right', padding: '1rem' }}>Tổng cộng:</td>
-                        <td style={{ fontWeight: 700, textAlign: 'right', color: '#f97316', fontSize: '1.1rem' }}>
+                        <td colSpan={3} style={{ fontWeight: 800, textAlign: 'right', padding: '0.65rem 0.85rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          TỔNG CỘNG:
+                        </td>
+                        <td style={{ fontWeight: 800, textAlign: 'right', color: '#ea580c', fontSize: '1.1rem', padding: '0.65rem 0.85rem' }}>
                           {order?.totalAmount.toLocaleString('vi-VN')}đ
                         </td>
                         {order?.status !== "CLOSED" && order?.status !== "CANCELLED" && order?.orderItems.some(i => i.status === 'WAIT_CONFIRM') && (
@@ -220,24 +236,32 @@ export default function OrderDetailModal({
                       onChange={(e) => setSearchMenu(e.target.value)}
                     />
                   </div>
-                  <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ maxHeight: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.5rem' }}>
                     {filteredMenu.map((item, index) => (
                       <div key={item.itemId || index} style={{ 
                         display: 'flex', 
                         justifyContent: 'space-between', 
                         alignItems: 'center', 
-                        padding: '0.75rem', 
-                        backgroundColor: '#f8fafc', 
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0'
+                        padding: '1.25rem', 
+                        backgroundColor: '#ffffff', 
+                        borderRadius: '20px',
+                        border: '1px solid #f1f5f9',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                       }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.itemName || "Món không tên"}</div>
-                          <div style={{ color: '#f97316', fontSize: '0.8rem', fontWeight: 700 }}>{(item.basePrice || 0).toLocaleString('vi-VN')}đ</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>{item.itemName || "Món không tên"}</div>
+                          <div style={{ color: '#ea580c', fontSize: '0.85rem', fontWeight: 800, marginTop: '2px' }}>{(item.basePrice || 0).toLocaleString('vi-VN')}đ</div>
                         </div>
                         <button 
                           className="btn btn-primary btn-sm" 
-                          style={{ padding: '4px 12px' }}
+                          style={{ 
+                            padding: '6px 16px', 
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                            border: 'none',
+                            boxShadow: '0 2px 6px rgba(249, 115, 22, 0.2)'
+                          }}
                           disabled={item.itemId ? addingItem === item.itemId : true}
                           onClick={() => handleAddItem(item)}
                         >
@@ -252,8 +276,23 @@ export default function OrderDetailModal({
           )}
         </div>
 
-        <div className={styles.modalFooter}>
-          <button className="btn btn-ghost" onClick={onClose}>Đóng</button>
+        <div className={styles.modalFoot} style={{ display: 'flex', justifyContent: 'center', padding: '1rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={onClose}
+            style={{ 
+              borderRadius: '12px', 
+              padding: '0.5rem 2rem', 
+              fontSize: '0.875rem', 
+              fontWeight: 700, 
+              color: '#64748b',
+              border: '1.5px solid #e2e8f0',
+              background: '#fff',
+              cursor: 'pointer'
+            }}
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

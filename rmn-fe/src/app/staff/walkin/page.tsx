@@ -7,6 +7,7 @@ import { showSuccess, showError } from "../../../lib/ui/alerts";
 import { isValidVNPhone } from "../../../lib/validation";
 import Pagination from "../../../components/Pagination";
 import styles from "../../manager/manager.module.css";
+import { User, Phone, Users, MessageSquare, PlusCircle } from "lucide-react";
 
 interface Table {
   tableId: number;
@@ -63,6 +64,30 @@ export default function WalkinPage() {
       console.error("Failed to fetch tables:", error);
       setLoading(false);
     }
+  };
+
+  const handleAutoCheckin = async () => {
+    if (!customer.name.trim()) {
+      showError("Lỗi", "Vui lòng nhập tên khách hàng");
+      return;
+    }
+
+    if (!isValidVNPhone(customer.phone)) {
+      showError("Lỗi", "Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng Việt Nam (ví dụ: 0912345678)");
+      return;
+    }
+
+    const suitableTables = tables
+      .filter((t) => t.status === "AVAILABLE" && t.capacity >= customer.partySize)
+      .sort((a, b) => a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode));
+
+    if (suitableTables.length === 0) {
+      showError("Lỗi", "Hiện tại không có bàn trống nào đủ cho " + customer.partySize + " người.");
+      return;
+    }
+
+    const targetTable = suitableTables[0];
+    await handleAssignTable(targetTable.tableId);
   };
 
   const handleAssignTable = async (tableId: number) => {
@@ -128,38 +153,66 @@ export default function WalkinPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: "350px 1fr", gap: "2rem" }}>
-        {/* Customer form */}
-        <div className={styles.card} style={{ height: 'fit-content', position: 'sticky', top: '1rem' }}>
-          <h3 style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>Thông tin khách hàng</h3>
-          <div className={styles.modalBody} style={{ padding: 0 }}>
-            <div className={styles.formGroup}>
-              <label>Tên khách hàng *</label>
+        {/* Customer form - Beautified */}
+        <div className={styles.card} style={{ height: 'fit-content', position: 'sticky', top: '1.5rem', overflow: 'hidden', padding: 0 }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+            padding: '1.5rem', 
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem'
+          }}>
+            <div style={{ 
+              background: 'white', 
+              padding: '0.5rem', 
+              borderRadius: '0.5rem', 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              color: '#3b82f6'
+            }}>
+              <PlusCircle size={20} />
+            </div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>Thông tin khách hàng</h3>
+          </div>
+
+          <div style={{ padding: '1.5rem' }}>
+            <div className={styles.formGroup} style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                <User size={14} /> Tên khách hàng *
+              </label>
               <input
                 type="text"
                 className={styles.input}
                 value={customer.name}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Nhập tên khách hàng"
+                style={{ borderRadius: '0.75rem' }}
               />
             </div>
 
-            <div className={styles.formGroup}>
-              <label>Số điện thoại *</label>
+            <div className={styles.formGroup} style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                <Phone size={14} /> Số điện thoại *
+              </label>
               <input
                 type="tel"
                 className={styles.input}
                 value={customer.phone}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
                 placeholder="Nhập số điện thoại"
+                style={{ borderRadius: '0.75rem' }}
               />
             </div>
 
-            <div className={styles.formGroup}>
-              <label>Số khách</label>
+            <div className={styles.formGroup} style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                <Users size={14} /> Số khách
+              </label>
               <select
                 className={styles.select}
                 value={customer.partySize}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, partySize: parseInt(e.target.value) }))}
+                style={{ borderRadius: '0.75rem' }}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
                   <option key={num} value={num}>{num} người</option>
@@ -167,15 +220,54 @@ export default function WalkinPage() {
               </select>
             </div>
 
-            <div className={styles.formGroup}>
-              <label>Ghi chú</label>
+            <div className={styles.formGroup} style={{ marginBottom: '2rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                <MessageSquare size={14} /> Ghi chú
+              </label>
               <textarea
                 className={styles.textarea}
                 value={customer.note}
                 onChange={(e) => setCustomer((prev) => ({ ...prev, note: e.target.value }))}
                 placeholder="Yêu cầu đặc biệt..."
-                rows={4}
+                rows={3}
+                style={{ borderRadius: '0.75rem' }}
               />
+            </div>
+
+            <div style={{ marginTop: '2rem' }}>
+              <button
+                className={styles.btnAdd}
+                style={{ 
+                  width: '100%', 
+                  padding: '1.125rem', 
+                  height: 'auto',
+                  borderRadius: '0.875rem',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                  boxShadow: '0 10px 15px -3px rgba(249, 115, 22, 0.3)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={handleAutoCheckin}
+              >
+                Gán bàn và Check-in
+              </button>
+              <p style={{ 
+                fontSize: '0.7rem', 
+                color: '#94a3b8', 
+                textAlign: 'center', 
+                marginTop: '1rem',
+                fontStyle: 'italic',
+                lineHeight: 1.4
+              }}>
+                Hệ thống sẽ tự động tìm bàn phù hợp nhất cho {customer.partySize} khách
+              </p>
             </div>
           </div>
         </div>

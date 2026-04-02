@@ -75,6 +75,20 @@ export default function CheckinPage() {
     }
   };
 
+  const handleAutoCheckin = async (reservation: Reservation) => {
+    const suitable = tables
+      .filter((t) => t.status === "AVAILABLE" && t.capacity >= reservation.partySize)
+      .sort((a, b) => a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode));
+
+    if (suitable.length === 0) {
+      showError("Lỗi", "Hiện tại không có bàn trống nào phù hợp với " + reservation.partySize + " người.");
+      return;
+    }
+
+    const targetTable = suitable[0];
+    await handleCheckin(reservation.reservationId, targetTable.tableId);
+  };
+
   const filteredReservations = reservations.filter((r) => {
     const resDate = new Date(r.reservedAt).toISOString().split("T")[0];
     const matchDate = resDate === selectedDate;
@@ -176,9 +190,28 @@ export default function CheckinPage() {
                         </td>
                         <td>{r.partySize} người</td>
                         <td>
-                          <button className={styles.btnPrimary} style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}>
-                            Chọn bàn
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button 
+                              className={styles.btnPrimary} 
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedReservationId(r.reservationId);
+                              }}
+                            >
+                              Chọn bàn
+                            </button>
+                            <button 
+                              className={styles.btnSuccess} 
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAutoCheckin(r);
+                              }}
+                            >
+                              Check-in nhanh
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -263,9 +296,18 @@ export default function CheckinPage() {
                     </div>
                   </div>
 
-                  <button className={styles.btnSecondary} onClick={() => setSelectedReservationId(null)}>
-                    Đóng lại
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button 
+                      className={styles.btnSuccess} 
+                      style={{ padding: '0.75rem', width: '100%', height: 'auto' }}
+                      onClick={() => handleAutoCheckin(selectedReservation)}
+                    >
+                      💡 Tự động gán bàn & Check-in
+                    </button>
+                    <button className={styles.btnSecondary} onClick={() => setSelectedReservationId(null)}>
+                      Đóng lại
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#94a3b8' }}>
