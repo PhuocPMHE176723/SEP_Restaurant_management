@@ -18,6 +18,7 @@ export default function StaffReservationsPage() {
   const [itemsPerPage] = useState(10);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState<string>("");
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ReservationResponse; direction: 'asc' | 'desc' } | null>({ key: 'reservationId', direction: 'desc' });
 
   useEffect(() => {
     fetchReservations();
@@ -63,6 +64,18 @@ export default function StaffReservationsPage() {
       );
     }
 
+    if (sortConfig) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        
+        if (aValue === bValue) return 0;
+        
+        const comparison = (aValue as any) < (bValue as any) ? -1 : 1;
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      });
+    }
+
     setFilteredReservations(filtered);
     setCurrentPage(1); // Reset to first page when filtering
   };
@@ -100,6 +113,19 @@ export default function StaffReservationsPage() {
         confirmButtonColor: "var(--error)"
       });
     }
+  };
+
+  const requestSort = (key: keyof ReservationResponse) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig?.key !== key) return <span style={{ color: '#cbd5e1' }}>↕</span>;
+    return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
   };
 
   return (
@@ -180,14 +206,26 @@ export default function StaffReservationsPage() {
             <table className={styles.table}>
             <thead>
               <tr>
-                <th>Mã</th>
-                <th>Khách hàng</th>
-                <th>SĐT</th>
-                <th>Số khách</th>
-                <th>Thời gian</th>
-                <th>Trạng thái</th>
-                <th>Ghi chú</th>
-                <th>Thao tác</th>
+                <th onClick={() => requestSort('reservationId')} style={{ cursor: 'pointer' }}>
+                  ID {getSortIcon('reservationId')}
+                </th>
+                <th onClick={() => requestSort('customerName')} style={{ cursor: 'pointer' }}>
+                  Khách hàng {getSortIcon('customerName')}
+                </th>
+                <th onClick={() => requestSort('customerPhone')} style={{ cursor: 'pointer' }}>
+                  SĐT {getSortIcon('customerPhone')}
+                </th>
+                <th onClick={() => requestSort('partySize')} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                  Số người {getSortIcon('partySize')}
+                </th>
+                <th onClick={() => requestSort('reservedAt')} style={{ cursor: 'pointer' }}>
+                  Thời gian {getSortIcon('reservedAt')}
+                </th>
+                <th onClick={() => requestSort('status')} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                  Trạng thái {getSortIcon('status')}
+                </th>
+                <th style={{ width: '150px' }}>Ghi chú</th>
+                <th style={{ textAlign: 'center', width: '200px' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>

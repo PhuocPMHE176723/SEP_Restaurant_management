@@ -394,14 +394,6 @@ export default function AdminReservationsPage() {
         }}>
           {selectedNote}
         </div>
-        <div style={{ marginTop: "1.5rem", textAlign: "right" }}>
-          <button 
-            className={styles.viewOrderBtn}
-            onClick={() => setIsNoteModalOpen(false)}
-          >
-            Đóng
-          </button>
-        </div>
       </Modal>
     </div>
   );
