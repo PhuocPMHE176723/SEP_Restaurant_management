@@ -153,11 +153,26 @@ public class ReservationService : IReservationService
         return _mapper.Map<List<ReservationDTO>>(reservations);
     }
 
-    public async Task<List<ReservationDTO>> GetAllReservationsAsync()
+    public async Task<List<ReservationDTO>> GetAllReservationsAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var reservations = await _context
-            .Reservations.Include(r => r.Order)
+        var query = _context.Reservations
+            .Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
+            .AsQueryable();
+
+        if (startDate.HasValue)
+        {
+            var start = startDate.Value.Date;
+            query = query.Where(r => r.ReservedAt >= start);
+        }
+
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.Date.AddDays(1).AddTicks(-1); // End of day
+            query = query.Where(r => r.ReservedAt <= end);
+        }
+
+        var reservations = await query
             .OrderByDescending(r => r.ReservedAt)
             .ToListAsync();
 
