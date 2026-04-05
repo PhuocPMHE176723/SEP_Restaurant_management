@@ -23,7 +23,7 @@ export default function StaffOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [dateFilter]);
 
   useEffect(() => {
     filterOrders();
@@ -32,7 +32,7 @@ export default function StaffOrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const data = await orderApi.getAllOrders();
+      const data = await orderApi.getAllOrders(dateFilter, dateFilter);
       setAllOrders(data);
       setLoading(false);
     } catch (error) {

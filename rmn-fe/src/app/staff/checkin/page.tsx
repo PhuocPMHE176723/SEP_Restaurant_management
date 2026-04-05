@@ -46,7 +46,7 @@ export default function CheckinPage() {
     try {
       setLoading(true);
       const [reservationsData, tablesData] = await Promise.all([
-        adminReservationApi.getAllReservations(),
+        adminReservationApi.getAllReservations(selectedDate, selectedDate),
         diningTableApi.getAllTables(),
       ]);
 

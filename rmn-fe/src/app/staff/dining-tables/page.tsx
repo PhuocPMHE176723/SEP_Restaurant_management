@@ -89,8 +89,22 @@ export default function StaffTablesPage() {
 
   const handleTableClick = (table: DiningTableResponse) => {
     if (table.status === "OCCUPIED") {
-        // Tìm order tương ứng với bàn
-        const order = orders.find(o => o.tableId === table.tableId && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED"));
+        const order = orders.find(o => {
+            // Direct match
+            if (o.tableId === table.tableId && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED")) return true;
+            
+            // Extra table match in Note: [Tables:1,2,3]
+            if (o.note?.startsWith("[Tables:") && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED")) {
+                const endBracket = o.note.indexOf(']');
+                if (endBracket > 8) {
+                    const tableIdsStr = o.note.substring(8, endBracket);
+                    const tableIds = tableIdsStr.split(',').map(id => parseInt(id.trim()));
+                    if (tableIds.includes(table.tableId)) return true;
+                }
+            }
+            return false;
+        });
+
         if (order) {
             setSelectedOrderId(order.orderId);
             setIsModalOpen(true);

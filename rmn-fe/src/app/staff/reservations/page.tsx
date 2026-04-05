@@ -22,7 +22,7 @@ export default function StaffReservationsPage() {
 
   useEffect(() => {
     fetchReservations();
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     filterReservations();
@@ -30,7 +30,8 @@ export default function StaffReservationsPage() {
 
   const fetchReservations = async () => {
     try {
-      const data = await adminReservationApi.getAllReservations();
+      setLoading(true);
+      const data = await adminReservationApi.getAllReservations(date, date);
       setReservations(data);
       setLoading(false);
     } catch (error) {
