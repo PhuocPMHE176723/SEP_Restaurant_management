@@ -47,8 +47,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const adminReservationApi = {
-    async getAllReservations(): Promise<ReservationResponse[]> {
-        const res = await fetch(`${apiBaseUrl}/api/AdminReservation`, {
+    async getAllReservations(startDate?: string, endDate?: string): Promise<ReservationResponse[]> {
+        let url = `${apiBaseUrl}/api/AdminReservation`;
+        const params = new URLSearchParams();
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const res = await fetch(url, {
             method: "GET",
             headers: authHeaders(),
             cache: "no-store",
