@@ -13,6 +13,7 @@ const CASHIER_NAV = [
   { href: "/cashier/orders", label: "Quản lý Order" },
   { href: "/cashier/dining-tables", label: "Sơ đồ bàn" },
   { href: "/cashier/table-transfer", label: "Chuyển bàn" },
+  { href: "/cashier/merge-orders", label: "Gộp hóa đơn" },
 ];
 
 export default function ReceptionistLayout({
