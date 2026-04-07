@@ -55,6 +55,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<StockMovement> StockMovements { get; set; }
     public virtual DbSet<InventoryAudit> InventoryAudits { get; set; }
     public virtual DbSet<InventoryAuditItem> InventoryAuditItems { get; set; }
+    public virtual DbSet<DailyIngredientAllocation> DailyIngredientAllocations { get; set; }
 
     // ── Content Management ─────────────────────────────────
     public virtual DbSet<BlogCategory> BlogCategories { get; set; }
@@ -633,6 +634,20 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
                   .WithMany(a => a.AuditItems)
                   .HasForeignKey(e => e.AuditId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Ingredient)
+                  .WithMany()
+                  .HasForeignKey(e => e.IngredientId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── DailyIngredientAllocation ──────────────────────
+        modelBuilder.Entity<DailyIngredientAllocation>(entity =>
+        {
+            entity.ToTable("DailyIngredientAllocations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).UseIdentityColumn();
+            entity.Property(e => e.Date).HasColumnType("datetime2").IsRequired();
 
             entity.HasOne(e => e.Ingredient)
                   .WithMany()

@@ -383,15 +383,27 @@ public class OrderController : BaseController
 
         orderItem.Status = request.Status;
         
-        // 1. Tự động trừ kho nếu món ăn được phục vụ (SERVED)
+        // 1. Tự động trừ kho và cập nhật định lượng ngày nếu món ăn được phục vụ (SERVED)
         if (request.Status == "SERVED")
         {
             var ingredients = await _context.MenuItemIngredients
                 .Where(mi => mi.ItemId == orderItem.ItemId)
                 .ToListAsync();
 
+            var today = DateTimeHelper.VietnamNow().Date;
+
             foreach (var ing in ingredients)
             {
+                // A. Cập nhật Định lượng Ngày (Daily Allocation)
+                var dailyAllocation = await _context.DailyIngredientAllocations
+                    .FirstOrDefaultAsync(da => da.IngredientId == ing.IngredientId && da.Date == today);
+
+                if (dailyAllocation != null)
+                {
+                    dailyAllocation.ActuallyUsedQuantity += ing.Quantity * orderItem.Quantity;
+                }
+
+                // B. Ghi nhận biến động kho tổng (Stock Movement)
                 var movement = new StockMovement
                 {
                     IngredientId = ing.IngredientId,
