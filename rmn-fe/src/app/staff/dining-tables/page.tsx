@@ -16,6 +16,7 @@ export default function StaffTablesPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [capacityFilter, setCapacityFilter] = useState<number | "ALL">("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -38,7 +39,7 @@ export default function StaffTablesPage() {
 
   useEffect(() => {
     filterTables();
-  }, [allTables, statusFilter, searchTerm]);
+  }, [allTables, statusFilter, searchTerm, capacityFilter]);
 
   const fetchTables = async () => {
     try {
@@ -52,10 +53,14 @@ export default function StaffTablesPage() {
   };
 
   const filterTables = () => {
-    let filtered = allTables;
+    let filtered = [...allTables];
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((table) => table.status === statusFilter);
+    }
+
+    if (capacityFilter !== "ALL") {
+      filtered = filtered.filter((table) => table.capacity >= (capacityFilter as number));
     }
 
     if (searchTerm) {
@@ -66,6 +71,11 @@ export default function StaffTablesPage() {
           table.tableName?.toLowerCase().includes(term),
       );
     }
+
+    // Sort logically (e.g., T1-1, T1-2... VIP 1...)
+    filtered.sort((a, b) => {
+      return (a.tableName || a.tableCode).localeCompare(b.tableName || b.tableCode, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     setFilteredTables(filtered);
     setCurrentPage(1);
@@ -79,8 +89,22 @@ export default function StaffTablesPage() {
 
   const handleTableClick = (table: DiningTableResponse) => {
     if (table.status === "OCCUPIED") {
-        // Tìm order tương ứng với bàn
-        const order = orders.find(o => o.tableId === table.tableId && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED"));
+        const order = orders.find(o => {
+            // Direct match
+            if (o.tableId === table.tableId && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED")) return true;
+            
+            // Extra table match in Note: [Tables:1,2,3]
+            if (o.note?.startsWith("[Tables:") && (o.status === "OPEN" || o.status === "SENT_TO_KITCHEN" || o.status === "SERVED")) {
+                const endBracket = o.note.indexOf(']');
+                if (endBracket > 8) {
+                    const tableIdsStr = o.note.substring(8, endBracket);
+                    const tableIds = tableIdsStr.split(',').map(id => parseInt(id.trim()));
+                    if (tableIds.includes(table.tableId)) return true;
+                }
+            }
+            return false;
+        });
+
         if (order) {
             setSelectedOrderId(order.orderId);
             setIsModalOpen(true);
@@ -124,22 +148,57 @@ export default function StaffTablesPage() {
         </div>
       </div>
 
-      <div className={styles.controlBar} style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div className={styles.searchBox} style={{ flex: 1, minWidth: '300px' }}>
+      <div
+        className={styles.filterBar}
+        style={{
+          display: "flex",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          background: "#fff",
+          borderRadius: "16px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
           <input
             type="text"
             className={styles.input}
             placeholder="Tìm kiếm bàn theo tên hoặc mã..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", paddingLeft: '2.5rem' }}
           />
+          <svg 
+            style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
         </div>
         
-        <div className={styles.filterGroup}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <select 
+            className={styles.select}
+            value={capacityFilter}
+            onChange={(e) => setCapacityFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
+            style={{ width: '160px', padding: '0.5rem' }}
+          >
+            <option value="ALL">Tất cả sức chứa</option>
+            <option value="2">≥ 2 người</option>
+            <option value="4">≥ 4 người</option>
+            <option value="6">≥ 6 người</option>
+            <option value="8">≥ 8 người</option>
+            <option value="10">≥ 10 người</option>
+          </select>
+
           <select 
             className={styles.select}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: '160px', padding: '0.5rem' }}
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="AVAILABLE">Bàn trống</option>
@@ -175,9 +234,9 @@ export default function StaffTablesPage() {
                     style={{ cursor: table.status === 'OCCUPIED' ? 'pointer' : 'default' }}
                     onClick={() => handleTableClick(table)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h4 style={{ margin: 0 }}>{table.tableName || table.tableCode}</h4>
-                      <span className={`${styles.status} ${getStatusClass(table.status)}`}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>{table.tableName || table.tableCode}</h4>
+                      <span className={`${styles.statusBadge} ${getStatusClass(table.status)}`} style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                         {getStatusText(table.status)}
                       </span>
                     </div>

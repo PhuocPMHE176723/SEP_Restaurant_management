@@ -1,5 +1,5 @@
 import { apiBaseUrl } from "../config";
-import { getToken } from "../auth";
+import { authHeaders, handleResponse } from "./api-helper";
 
 export interface OrderResponse {
   orderId: number;
@@ -7,10 +7,12 @@ export interface OrderResponse {
   status: string;
   tableId?: number;
   tableName?: string;
+  orderType: string;
   customerName?: string;
   openedAt: string;
   closedAt?: string;
   totalAmount: number;
+  note?: string;
   orderItems: OrderItemResponse[];
 }
 
@@ -27,40 +29,21 @@ export interface UpdateOrderStatusRequest {
   status: string;
 }
 
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
 export interface AddOrderItemRequest {
   menuItemId: number;
   quantity: number;
   note?: string;
 }
 
-async function handleResponse<T>(res: Response): Promise<T> {
-  const json = (await res.json()) as {
-    data?: T;
-    message?: string;
-    success?: boolean;
-    Success?: boolean;
-    Data?: T;
-  };
-  const success = json.success ?? json.Success ?? res.ok;
-
-  if (!success) {
-    throw new Error(json.message ?? `Request failed (${res.status})`);
-  }
-
-  return (json.data ?? json.Data) as T;
-}
-
 export const orderApi = {
-  async getAllOrders(): Promise<OrderResponse[]> {
-    const response = await fetch(`${apiBaseUrl}/api/Order`, {
+  async getAllOrders(startDate?: string, endDate?: string): Promise<OrderResponse[]> {
+    let url = `${apiBaseUrl}/api/Order`;
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    const response = await fetch(url, {
       headers: authHeaders(),
     });
 
@@ -99,7 +82,7 @@ export const orderApi = {
   },
 
   async createWalkinOrder(request: {
-    tableId: number;
+    tableIds: number[];
     name: string;
     phone: string;
     partySize: number;
@@ -146,6 +129,15 @@ export const orderApi = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ orderItemIds }),
+    });
+
+    await handleResponse<void>(response);
+  },
+  async mergeOrders(request: { primaryOrderId: number; secondaryOrderIds: number[] }): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/merge`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(request),
     });
 
     await handleResponse<void>(response);

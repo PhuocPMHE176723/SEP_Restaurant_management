@@ -31,6 +31,7 @@ public class OrderDTO
     public string OrderCode { get; set; } = default!;
     public string Status { get; set; } = default!;
     public string? TableName { get; set; }
+    public string OrderType { get; set; } = "DINE_IN";
     public int? TableId { get; set; }
     public string? CustomerName { get; set; }
     public DateTime OpenedAt { get; set; }
@@ -97,7 +98,8 @@ public class UpdateReservationStatusRequest
 public class CreateWalkinOrderRequest
 {
     [Required]
-    public int TableId { get; set; }
+    [MinLength(1, ErrorMessage = "At least one table must be selected.")]
+    public List<int> TableIds { get; set; } = new();
 
     [Required]
     [MaxLength(150)]
@@ -119,4 +121,14 @@ public class TransferTableRequest
     public int FromTableId { get; set; }
     public int ToTableId { get; set; }
     public string? Reason { get; set; }
+}
+
+public class MergeOrdersRequest
+{
+    [Required]
+    public long PrimaryOrderId { get; set; }
+    
+    [Required]
+    [MinLength(1, ErrorMessage = "Must select at least one secondary order to merge.")]
+    public List<long> SecondaryOrderIds { get; set; } = new();
 }

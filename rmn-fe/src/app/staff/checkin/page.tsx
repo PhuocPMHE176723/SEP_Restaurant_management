@@ -46,7 +46,7 @@ export default function CheckinPage() {
     try {
       setLoading(true);
       const [reservationsData, tablesData] = await Promise.all([
-        adminReservationApi.getAllReservations(),
+        adminReservationApi.getAllReservations(selectedDate, selectedDate),
         diningTableApi.getAllTables(),
       ]);
 
@@ -73,6 +73,20 @@ export default function CheckinPage() {
       console.error("Check-in failed:", error);
       showError("Lỗi", "Check-in thất bại!");
     }
+  };
+
+  const handleAutoCheckin = async (reservation: Reservation) => {
+    const suitable = tables
+      .filter((t) => t.status === "AVAILABLE" && t.capacity >= reservation.partySize)
+      .sort((a, b) => a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode));
+
+    if (suitable.length === 0) {
+      showError("Lỗi", "Hiện tại không có bàn trống nào phù hợp với " + reservation.partySize + " người.");
+      return;
+    }
+
+    const targetTable = suitable[0];
+    await handleCheckin(reservation.reservationId, targetTable.tableId);
   };
 
   const filteredReservations = reservations.filter((r) => {
@@ -110,25 +124,46 @@ export default function CheckinPage() {
         </div>
       </div>
 
-      <div className={styles.controlBar} style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Ngày:</label>
+      <div
+        className={styles.filterBar}
+        style={{
+          display: "flex",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          background: "#fff",
+          borderRadius: "16px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Ngày:</span>
           <input
             type="date"
             className={styles.input}
-            style={{ width: '160px' }}
+            style={{ width: "160px", padding: '0.5rem' }}
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
         </div>
-        <div style={{ flex: 1 }}>
+
+        <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
           <input
             type="text"
             className={styles.input}
             placeholder="Tìm theo tên khách hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", paddingLeft: '2.5rem', paddingRight: '1rem' }}
           />
+          <svg 
+            style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
         </div>
       </div>
 
@@ -176,9 +211,28 @@ export default function CheckinPage() {
                         </td>
                         <td>{r.partySize} người</td>
                         <td>
-                          <button className={styles.btnPrimary} style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}>
-                            Chọn bàn
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button 
+                              className={styles.btnPrimary} 
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedReservationId(r.reservationId);
+                              }}
+                            >
+                              Chọn bàn
+                            </button>
+                            <button 
+                              className={styles.btnSuccess} 
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAutoCheckin(r);
+                              }}
+                            >
+                              Check-in nhanh
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -263,9 +317,18 @@ export default function CheckinPage() {
                     </div>
                   </div>
 
-                  <button className={styles.btnSecondary} onClick={() => setSelectedReservationId(null)}>
-                    Đóng lại
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button 
+                      className={styles.btnSuccess} 
+                      style={{ padding: '0.75rem', width: '100%', height: 'auto' }}
+                      onClick={() => handleAutoCheckin(selectedReservation)}
+                    >
+                      💡 Tự động gán bàn & Check-in
+                    </button>
+                    <button className={styles.btnSecondary} onClick={() => setSelectedReservationId(null)}>
+                      Đóng lại
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#94a3b8' }}>

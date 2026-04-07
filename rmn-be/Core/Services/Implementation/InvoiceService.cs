@@ -83,7 +83,8 @@ public class InvoiceService
         }
 
         decimal amountToPay = Math.Max(0, finalTotal - depositDeducted);
-
+        decimal refundAmount = Math.Max(0, depositDeducted - finalTotal);
+ 
         return new InvoicePreviewDTO
         {
             OrderId = orderId,
@@ -94,6 +95,7 @@ public class InvoiceService
             TotalAmount = finalTotal,
             DepositDeducted = depositDeducted,
             AmountToPay = amountToPay,
+            RefundAmount = refundAmount,
             PointsEarned = (int)(amountToPay / 20000), // 1 point per 20k paid
             Items = order.OrderItems.Select(oi => new OrderItemDTO
             {

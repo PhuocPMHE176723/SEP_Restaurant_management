@@ -15,6 +15,7 @@ export default function StaffOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -22,16 +23,16 @@ export default function StaffOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [dateFilter]);
 
   useEffect(() => {
     filterOrders();
-  }, [allOrders, statusFilter, searchTerm]);
+  }, [allOrders, statusFilter, searchTerm, dateFilter]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const data = await orderApi.getAllOrders();
+      const data = await orderApi.getAllOrders(dateFilter, dateFilter);
       setAllOrders(data);
       setLoading(false);
     } catch (error) {
@@ -41,10 +42,16 @@ export default function StaffOrdersPage() {
   };
 
   const filterOrders = () => {
-    let filtered = allOrders;
+    let filtered = [...allOrders];
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((order) => order.status === statusFilter);
+    }
+
+    if (dateFilter) {
+      filtered = filtered.filter((order) => 
+        new Date(order.openedAt).toISOString().split("T")[0] === dateFilter
+      );
     }
 
     if (searchTerm) {
@@ -56,6 +63,9 @@ export default function StaffOrdersPage() {
           order.tableName?.toLowerCase().includes(term),
       );
     }
+
+    // Sắp xếp thời gian mới nhất lên đầu (Descending)
+    filtered.sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime());
 
     setFilteredOrders(filtered || []);
     setCurrentPage(1);
@@ -149,6 +159,16 @@ export default function StaffOrdersPage() {
             placeholder="Tìm theo mã order, bàn hoặc tên khách..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Ngày:</label>
+          <input
+            type="date"
+            className={styles.input}
+            style={{ width: '160px' }}
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
           />
         </div>
         

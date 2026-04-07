@@ -42,8 +42,7 @@ public class MappingProfile : Profile
         // ── Blog & Sliders ─────────────────────────────────────
         CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();
         CreateMap<BlogPost, BlogPostDTO>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
-            .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.Author != null ? src.Author.FullName : "Admin"));
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName));
         CreateMap<CreateBlogPostDTO, BlogPost>();
         
         CreateMap<Slider, SliderDTO>().ReverseMap();

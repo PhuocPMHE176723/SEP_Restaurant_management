@@ -11,7 +11,7 @@ import { getSepayConfig, checkInvoicePayment } from '@/lib/api/payment';
 import { showSuccess, showError } from '@/lib/ui/alerts';
 import Modal from '@/components/Modal/Modal';
 
-export default function CheckoutPage() {
+export default function CashierCheckoutPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = Number(params.id);
@@ -38,20 +38,9 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (orderId) {
       fetchPreview();
+      getSepayConfig().then(setSepayConfig).catch(console.error);
     }
   }, [orderId]);
-
-  useEffect(() => {
-    async function loadConfig() {
-      try {
-        const cfg = await getSepayConfig();
-        setSepayConfig(cfg);
-      } catch (e) {
-        console.error("Failed to load SePay config:", e);
-      }
-    }
-    loadConfig();
-  }, []);
 
   // Automated polling for Bank Transfer
   useEffect(() => {
@@ -320,10 +309,17 @@ export default function CheckoutPage() {
                 <span>-{preview.depositDeducted.toLocaleString()}đ</span>
               </div>
             )}
-            <div className={`${styles.summaryRow} ${styles.total}`}>
-              <span>Số tiền cần thu</span>
-              <span>{preview.amountToPay.toLocaleString()}đ</span>
-            </div>
+            {preview.refundAmount > 0 ? (
+              <div className={`${styles.summaryRow} ${styles.total}`} style={{ background: '#ecfdf5', borderColor: '#10b981', color: '#059669', padding: '1rem', borderRadius: '12px', marginTop: '1rem' }}>
+                <span style={{ fontWeight: 800 }}>TIỀN HOÀN CỌC CHO KHÁCH</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{preview.refundAmount.toLocaleString()}đ</span>
+              </div>
+            ) : (
+              <div className={`${styles.summaryRow} ${styles.total}`}>
+                <span>Số tiền cần thu</span>
+                <span>{preview.amountToPay.toLocaleString()}đ</span>
+              </div>
+            )}
             <div className={styles.summaryRow} style={{ fontSize: '0.85rem', color: '#64748b' }}>
               <span>Điểm thưởng tích lũy thêm</span>
               <span>+{preview.pointsEarned} điểm</span>

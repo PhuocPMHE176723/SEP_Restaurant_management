@@ -25,13 +25,28 @@ public class OrderController : BaseController
 
     [HttpGet]
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
-    public async Task<IActionResult> GetAllOrders()
+    public async Task<IActionResult> GetAllOrders([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
     {
-        var orders = await _context
-            .Orders.Include(o => o.Table)
+        var query = _context.Orders
+            .Include(o => o.Table)
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .Include(o => o.OrderItems)
+            .AsQueryable();
+
+        if (startDate.HasValue)
+        {
+            var start = startDate.Value.Date;
+            query = query.Where(o => o.OpenedAt >= start);
+        }
+
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(o => o.OpenedAt <= end);
+        }
+
+        var orders = await query
             .OrderByDescending(o => o.OpenedAt)
             .Select(o => new OrderDTO
             {
@@ -40,6 +55,7 @@ public class OrderController : BaseController
                 Status = o.Status,
                 TableId = o.TableId,
                 TableName = o.Table != null ? o.Table.TableCode : null,
+                OrderType = o.OrderType,
                 CustomerName = o.Customer != null ? o.Customer.FullName : null,
                 OpenedAt = o.OpenedAt,
                 ClosedAt = o.ClosedAt,
@@ -62,7 +78,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
     public async Task<IActionResult> GetOrder(long id)
     {
         var order = await _context
@@ -84,6 +100,7 @@ public class OrderController : BaseController
             Status = order.Status,
             TableId = order.TableId,
             TableName = order.Table?.TableCode,
+            OrderType = order.OrderType,
             CustomerName = order.Customer?.FullName,
             OpenedAt = order.OpenedAt,
             ClosedAt = order.ClosedAt,
@@ -95,6 +112,7 @@ public class OrderController : BaseController
                     ItemNameSnapshot = oi.ItemNameSnapshot,
                     Quantity = oi.Quantity,
                     UnitPrice = oi.UnitPrice,
+                    Status = oi.Status,
                     Note = oi.Note,
                 })
                 .ToList(),
@@ -131,11 +149,35 @@ public class OrderController : BaseController
                 order.ClosedAt = DateTimeHelper.VietnamNow();
             }
             
-            // Reset table status to AVAILABLE
-            var table = await _context.DiningTables.FindAsync(order.TableId);
-            if (table != null)
+            // 1. Release Primary Table
+            if (order.TableId.HasValue)
             {
-                table.Status = "AVAILABLE";
+                var primaryTable = await _context.DiningTables.FindAsync(order.TableId.Value);
+                if (primaryTable != null) primaryTable.Status = "AVAILABLE";
+            }
+
+            // 2. Release Extra Tables from Note
+            if (!string.IsNullOrEmpty(order.Note) && order.Note.StartsWith("[Tables:"))
+            {
+                var endBracketIndex = order.Note.IndexOf(']');
+                if (endBracketIndex > 8)
+                {
+                    var tableIdsStr = order.Note.Substring(8, endBracketIndex - 8);
+                    var tableIds = tableIdsStr.Split(',')
+                        .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+                        .Where(id => id.HasValue)
+                        .Select(id => id!.Value)
+                        .ToList();
+
+                    var extraTables = await _context.DiningTables
+                        .Where(t => tableIds.Contains(t.TableId))
+                        .ToListAsync();
+
+                    foreach (var table in extraTables)
+                    {
+                        table.Status = "AVAILABLE";
+                    }
+                }
             }
         }
 
@@ -152,6 +194,11 @@ public class OrderController : BaseController
         if (order == null)
         {
             return NotFoundResponse("Order not found");
+        }
+
+        if (order.Status == "CLOSED" || order.Status == "CANCELLED")
+        {
+            return Failure("Cannot add items to a closed or cancelled order");
         }
 
         var menuItem = await _context.MenuItems.FindAsync(request.MenuItemId);
@@ -201,33 +248,43 @@ public class OrderController : BaseController
                 await _context.SaveChangesAsync();
             }
 
-            // 2. Validate Table
-            var table = await _context.DiningTables.FindAsync(request.TableId);
-            if (table == null) return NotFoundResponse("Table not found");
-            if (table.Status != "AVAILABLE") return Failure("Table is not available");
+            // 2. Validate All Tables
+            var tables = await _context.DiningTables
+                .Where(t => request.TableIds.Contains(t.TableId))
+                .ToListAsync();
+
+            if (tables.Count != request.TableIds.Count) return NotFoundResponse("Some tables not found");
+            if (tables.Any(t => t.Status != "AVAILABLE")) return Failure("Some tables are not available");
 
             // 3. Get Staff ID
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
             
-            // 4. Create Order
+            // 4. Track Tables for release (Store IDs in Note)
+            var tableIdsStr = string.Join(",", request.TableIds);
+            var noteWithTables = $"[Tables:{tableIdsStr}] " + (request.Note ?? "");
+            
+            // 5. Create Order (Link to the first/primary table)
             var orderCode = $"WALK-{DateTimeHelper.VietnamNow():yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
             var order = new Order
             {
                 OrderCode = orderCode,
-                TableId = request.TableId,
+                TableId = request.TableIds[0],
                 CustomerId = customer.CustomerId,
                 OrderType = "DINE_IN",
                 Status = "OPEN",
                 OpenedAt = DateTimeHelper.VietnamNow(),
                 CreatedByStaffId = staff?.StaffId,
-                Note = request.Note
+                Note = noteWithTables
             };
 
             _context.Orders.Add(order);
 
-            // 5. Update Table Status
-            table.Status = "OCCUPIED";
+            // 6. Update ALL Table Statuses to OCCUPIED
+            foreach (var table in tables)
+            {
+                table.Status = "OCCUPIED";
+            }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -326,15 +383,27 @@ public class OrderController : BaseController
 
         orderItem.Status = request.Status;
         
-        // 1. Tự động trừ kho nếu món ăn được phục vụ (SERVED)
+        // 1. Tự động trừ kho và cập nhật định lượng ngày nếu món ăn được phục vụ (SERVED)
         if (request.Status == "SERVED")
         {
             var ingredients = await _context.MenuItemIngredients
                 .Where(mi => mi.ItemId == orderItem.ItemId)
                 .ToListAsync();
 
+            var today = DateTimeHelper.VietnamNow().Date;
+
             foreach (var ing in ingredients)
             {
+                // A. Cập nhật Định lượng Ngày (Daily Allocation)
+                var dailyAllocation = await _context.DailyIngredientAllocations
+                    .FirstOrDefaultAsync(da => da.IngredientId == ing.IngredientId && da.Date == today);
+
+                if (dailyAllocation != null)
+                {
+                    dailyAllocation.ActuallyUsedQuantity += ing.Quantity * orderItem.Quantity;
+                }
+
+                // B. Ghi nhận biến động kho tổng (Stock Movement)
                 var movement = new StockMovement
                 {
                     IngredientId = ing.IngredientId,
@@ -406,6 +475,12 @@ public class OrderController : BaseController
     [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
     public async Task<IActionResult> ConfirmGuestItems(long id, [FromBody] ConfirmItemsRequest request)
     {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null || order.Status == "CLOSED" || order.Status == "CANCELLED")
+        {
+            return Failure("Cannot confirm items for a closed or cancelled order");
+        }
+
         var orderItems = await _context.OrderItems
             .Where(oi => oi.OrderId == id && request.OrderItemIds.Contains(oi.OrderItemId) && oi.Status == "WAIT_CONFIRM")
             .ToListAsync();
@@ -427,6 +502,99 @@ public class OrderController : BaseController
 
         await _context.SaveChangesAsync();
         return Success($"Đã xác nhận {orderItems.Count} món và đẩy xuống bếp.");
+    }
+
+    [HttpPost("merge")]
+    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
+    public async Task<IActionResult> MergeOrders([FromBody] MergeOrdersRequest request)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            if (request.SecondaryOrderIds == null || !request.SecondaryOrderIds.Any())
+                return Failure("Must provide at least one secondary order to merge.");
+
+            var primaryOrder = await _context.Orders
+                .Include(o => o.Table)
+                .FirstOrDefaultAsync(o => o.OrderId == request.PrimaryOrderId);
+
+            if (primaryOrder == null)
+                return NotFoundResponse("Primary order not found.");
+            if (primaryOrder.Status == "CLOSED" || primaryOrder.Status == "CANCELLED")
+                return Failure("Primary order cannot be closed or cancelled.");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+
+            foreach (var secondaryId in request.SecondaryOrderIds)
+            {
+                if (secondaryId == request.PrimaryOrderId) continue;
+
+                var secondaryOrder = await _context.Orders
+                    .Include(o => o.OrderItems)
+                    .Include(o => o.Table)
+                    .FirstOrDefaultAsync(o => o.OrderId == secondaryId);
+
+                if (secondaryOrder == null) continue;
+                if (secondaryOrder.Status == "CLOSED" || secondaryOrder.Status == "CANCELLED") continue;
+
+                // Move items
+                foreach (var item in secondaryOrder.OrderItems)
+                {
+                    item.OrderId = primaryOrder.OrderId;
+                }
+
+                // Append note
+                string mergeNote = $"Merged from {secondaryOrder.OrderCode} (Table {secondaryOrder.Table?.TableCode})";
+                primaryOrder.Note = string.IsNullOrEmpty(primaryOrder.Note) ? mergeNote : $"{primaryOrder.Note} | {mergeNote}";
+
+                // Cancel secondary order
+                secondaryOrder.Status = "CANCELLED";
+                secondaryOrder.Note = string.IsNullOrEmpty(secondaryOrder.Note) 
+                    ? $"Merged into {primaryOrder.OrderCode} (Table {primaryOrder.Table?.TableCode})" 
+                    : $"{secondaryOrder.Note} | Merged into {primaryOrder.OrderCode}";
+                
+                // Free table if different and table is set
+                if (secondaryOrder.TableId.HasValue && secondaryOrder.TableId != primaryOrder.TableId)
+                {
+                    var table = await _context.DiningTables.FindAsync(secondaryOrder.TableId);
+                    // Only free the table if it's currently occupied. If there's another active order on the same table, it shouldn't realistically happen.
+                    if (table != null) table.Status = "AVAILABLE";
+                }
+
+                // Add history
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderId = secondaryOrder.OrderId,
+                    OldStatus = "OPEN/SERVED", 
+                    NewStatus = "CANCELLED",
+                    ChangedByStaffId = staff?.StaffId,
+                    ChangedAt = DateTimeHelper.VietnamNow(),
+                    Note = $"Merged into order {primaryOrder.OrderCode}"
+                });
+            }
+
+            // History for primary
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = primaryOrder.OrderId,
+                OldStatus = primaryOrder.Status,
+                NewStatus = primaryOrder.Status,
+                ChangedByStaffId = staff?.StaffId,
+                ChangedAt = DateTimeHelper.VietnamNow(),
+                Note = "Received merged orders"
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Success("Orders merged successfully.");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Failure($"Failed to merge orders: {ex.Message}");
+        }
     }
 }
 

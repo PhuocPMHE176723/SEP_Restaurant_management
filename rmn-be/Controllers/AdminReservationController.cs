@@ -19,11 +19,11 @@ public class AdminReservationController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllReservations()
+    public async Task<IActionResult> GetAllReservations([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            var reservations = await _reservationService.GetAllReservationsAsync();
+            var reservations = await _reservationService.GetAllReservationsAsync(startDate, endDate);
             return Success(reservations);
         }
         catch (Exception ex)

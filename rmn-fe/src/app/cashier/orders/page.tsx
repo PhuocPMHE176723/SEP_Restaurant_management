@@ -15,6 +15,7 @@ export default function CashierOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -26,7 +27,7 @@ export default function CashierOrdersPage() {
 
   useEffect(() => {
     filterOrders();
-  }, [allOrders, statusFilter, searchTerm]);
+  }, [allOrders, statusFilter, searchTerm, dateFilter]);
 
   const fetchOrders = async () => {
     try {
@@ -41,10 +42,16 @@ export default function CashierOrdersPage() {
   };
 
   const filterOrders = () => {
-    let filtered = allOrders;
+    let filtered = [...allOrders];
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((order) => order.status === statusFilter);
+    }
+
+    if (dateFilter) {
+      filtered = filtered.filter((order) => 
+        new Date(order.openedAt).toISOString().split("T")[0] === dateFilter
+      );
     }
 
     if (searchTerm) {
@@ -56,6 +63,9 @@ export default function CashierOrdersPage() {
           order.tableName?.toLowerCase().includes(term),
       );
     }
+
+    // Sắp xếp thời gian mới nhất lên đầu (Descending)
+    filtered.sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime());
 
     setFilteredOrders(filtered || []);
     setCurrentPage(1);
@@ -70,23 +80,25 @@ export default function CashierOrdersPage() {
     : [];
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case "OPEN": return "Mở";
-      case "SENT_TO_KITCHEN": return "Gửi bếp";
+    switch (status?.toUpperCase()) {
+      case "OPEN": return "Mới mở";
+      case "SENT_TO_KITCHEN": return "Đang chờ bếp";
       case "SERVED": return "Đã phục vụ";
       case "CANCELLED": return "Đã hủy";
-      case "CLOSED": return "Đã đóng";
+      case "CLOSED": return "Đã thanh toán";
+      case "RESERVED": return "Đã đặt bàn";
       default: return status;
     }
   };
 
   const getStatusClass = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case "OPEN": return styles.statusOpen;
       case "SENT_TO_KITCHEN": return styles.statusSentToKitchen;
       case "SERVED": return styles.statusServed;
       case "CANCELLED": return styles.statusCancelled;
       case "CLOSED": return styles.statusClosed;
+      case "RESERVED": return styles.statusReserved;
       default: return styles.statusDefault;
     }
   };
@@ -100,27 +112,6 @@ export default function CashierOrdersPage() {
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString("vi-VN");
-  };
-
-  const handleStatusUpdate = async (orderId: number, newStatus: string) => {
-    try {
-      await orderApi.updateOrderStatus(orderId, { status: newStatus });
-      await fetchOrders();
-      Swal.fire({
-        title: "Thành công",
-        text: "Cập nhật trạng thái thành công!",
-        icon: "success",
-        confirmButtonColor: "var(--brand-primary)"
-      });
-    } catch (error) {
-      console.error("Failed to update order status:", error);
-      Swal.fire({
-        title: "Lỗi",
-        text: "Có lỗi khi cập nhật trạng thái order",
-        icon: "error",
-        confirmButtonColor: "var(--error)"
-      });
-    }
   };
 
   const openOrderDetail = (orderId: number) => {
@@ -149,6 +140,16 @@ export default function CashierOrdersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Ngày:</label>
+          <input
+            type="date"
+            className={styles.input}
+            style={{ width: '160px' }}
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          />
+        </div>
         
         <div className={styles.filterGroup}>
           <select 
@@ -161,7 +162,8 @@ export default function CashierOrdersPage() {
             <option value="SENT_TO_KITCHEN">Đang chờ bếp</option>
             <option value="SERVED">Đã phục vụ</option>
             <option value="CLOSED">Đã thanh toán</option>
-            <option value="CANCELLED">Hủy bỏ</option>
+            <option value="CANCELLED">Đã hủy</option>
+            <option value="RESERVED">Đã đặt bàn</option>
           </select>
         </div>
       </div>

@@ -30,7 +30,6 @@ public class BlogController : BaseController
     {
         var posts = await _context.BlogPosts
             .Include(p => p.Category)
-            .Include(p => p.Author)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
         
@@ -43,7 +42,6 @@ public class BlogController : BaseController
     {
         var post = await _context.BlogPosts
             .Include(p => p.Category)
-            .Include(p => p.Author)
             .FirstOrDefaultAsync(p => p.PostId == id);
             
         if (post == null) return NotFoundResponse("Blog post not found");

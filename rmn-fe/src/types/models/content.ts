@@ -9,25 +9,19 @@ export interface BlogPost {
     postId: number;
     title: string;
     content: string;
-    excerpt?: string;
     featuredImage?: string;
     categoryId: number;
     categoryName: string;
     status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-    tags?: string;
     createdAt: string;
-    publishedAt?: string;
-    authorName?: string;
 }
 
 export interface CreateBlogPostRequest {
     title: string;
     content: string;
-    excerpt?: string;
     featuredImage?: string;
     categoryId: number;
     status: string;
-    tags?: string;
 }
 
 export interface Slider {

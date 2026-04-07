@@ -4,22 +4,8 @@ import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import Link from "next/link";
 import { blogApi } from "../../../lib/api/blog";
+import { BlogPost } from "../../../types/models/content";
 import styles from "../../manager/manager.module.css";
-
-interface BlogPost {
-  postId: number;
-  title: string;
-  content: string;
-  excerpt?: string;
-  featuredImage?: string;
-  categoryId: number;
-  categoryName: string;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-  tags?: string;
-  createdAt: string;
-  publishedAt?: string;
-  authorName?: string;
-}
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -84,9 +70,7 @@ export default function BlogPage() {
         content: post.content,
         categoryId: post.categoryId,
         status: newStatus,
-        excerpt: post.excerpt,
         featuredImage: post.featuredImage,
-        tags: post.tags,
       });
       fetchPosts();
     } catch (error) {
@@ -178,7 +162,7 @@ export default function BlogPage() {
                       )}
                       <div>
                         <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.title}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{post.authorName || "Quản trị viên"}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Quản trị viên</div>
                       </div>
                     </div>
                   </td>

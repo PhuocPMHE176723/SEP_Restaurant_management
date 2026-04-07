@@ -22,18 +22,19 @@ export default function AdminReservationsPage() {
   // Filters & Pagination State
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("");
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
   useEffect(() => {
     fetchReservations();
-  }, []);
+  }, [startDate, endDate]);
 
   const fetchReservations = async () => {
     try {
       setLoading(true);
-      const data = await adminReservationApi.getAllReservations();
+      const data = await adminReservationApi.getAllReservations(startDate, endDate);
       // Sort by latest first
       const sortedData = [...data].sort((a, b) => b.reservationId - a.reservationId);
       setReservations(sortedData);
@@ -49,7 +50,7 @@ export default function AdminReservationsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, dateFilter]);
+  }, [searchTerm, statusFilter, startDate, endDate]);
 
   const filteredReservations = reservations.filter((res) => {
     const matchesSearch =
@@ -59,9 +60,9 @@ export default function AdminReservationsPage() {
     
     const matchesStatus = statusFilter === "ALL" || res.status === statusFilter;
     
-    const matchesDate = !dateFilter || res.reservedAt.startsWith(dateFilter);
-
-    return matchesSearch && matchesStatus && matchesDate;
+    // Server already filters by date range, but we can double check locally if needed
+    // For now, we trust the server response for the range.
+    return matchesSearch && matchesStatus;
   });
 
   const totalPages = Math.ceil(filteredReservations.length / pageSize);
@@ -183,22 +184,37 @@ export default function AdminReservationsPage() {
             <option value="CANCELLED">Đã huỷ</option>
           </select>
 
-          <input
-            type="date"
-            className={styles.selectFilter}
-            style={{ minWidth: "180px" }}
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Từ:</span>
+            <input
+              type="date"
+              className={styles.selectFilter}
+              style={{ minWidth: "150px" }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
 
-          {(searchTerm || statusFilter !== "ALL" || dateFilter) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Đến:</span>
+            <input
+              type="date"
+              className={styles.selectFilter}
+              style={{ minWidth: "150px" }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+
+          {(searchTerm || statusFilter !== "ALL" || startDate !== new Date().toISOString().split("T")[0] || endDate !== new Date().toISOString().split("T")[0]) && (
             <button 
               className={styles.viewOrderBtn}
               style={{ background: "#fff1f2", color: "#e11d48", borderColor: "#fecdd3" }}
               onClick={() => {
                 setSearchTerm("");
                 setStatusFilter("ALL");
-                setDateFilter("");
+                setStartDate(new Date().toISOString().split("T")[0]);
+                setEndDate(new Date().toISOString().split("T")[0]);
               }}
             >
               Xoá lọc
@@ -225,7 +241,7 @@ export default function AdminReservationsPage() {
             {paginatedReservations.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: "center", padding: "4rem", color: "#94a3b8" }}>
-                  {searchTerm || statusFilter !== "ALL" || dateFilter 
+                  {searchTerm || statusFilter !== "ALL" || startDate !== new Date().toISOString().split("T")[0] || endDate !== new Date().toISOString().split("T")[0]
                     ? "Không tìm thấy kết quả phù hợp với bộ lọc." 
                     : "Chưa có dữ liệu đặt bàn nào."}
                 </td>
@@ -393,14 +409,6 @@ export default function AdminReservationsPage() {
           border: "1px solid #e2e8f0"
         }}>
           {selectedNote}
-        </div>
-        <div style={{ marginTop: "1.5rem", textAlign: "right" }}>
-          <button 
-            className={styles.viewOrderBtn}
-            onClick={() => setIsNoteModalOpen(false)}
-          >
-            Đóng
-          </button>
         </div>
       </Modal>
     </div>

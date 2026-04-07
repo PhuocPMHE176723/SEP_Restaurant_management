@@ -8,6 +8,7 @@ import styles from "../manager/manager.module.css"; // Reusing admin styles
 
 const NAV_ITEMS = [
     { href: "/warehouse/ingredients", label: "Danh sách nguyên liệu" },
+    { href: "/warehouse/daily-estimation", label: "Định lượng theo ngày" },
     { href: "/warehouse/stock-in", label: "Phiếu nhập kho" },
     { href: "/warehouse/inventory", label: "Tồn kho & Cảnh báo" },
     { href: "/warehouse/transactions", label: "Lịch sử kho" },
