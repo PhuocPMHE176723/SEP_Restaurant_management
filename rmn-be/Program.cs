@@ -93,6 +93,13 @@ builder.Services.AddScoped<
     SEP_Restaurant_management.Core.Services.Implementation.PromotionService
 >();
 
+// Background Cleanup Service
+builder.Services.AddScoped<
+    SEP_Restaurant_management.Core.Services.Interface.ICleanupService,
+    SEP_Restaurant_management.Core.Services.Implementation.CleanupService
+>();
+builder.Services.AddHostedService<DailyTableCleanupService>();
+
 // ─────────────────────────────────────────────────────────────
 //  CORS
 // ─────────────────────────────────────────────────────────────

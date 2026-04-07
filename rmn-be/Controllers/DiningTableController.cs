@@ -10,10 +10,20 @@ namespace SEP_Restaurant_management.Controllers;
 public class DiningTableController : BaseController
 {
     private readonly IDiningTableService _tableService;
+    private readonly ICleanupService _cleanupService;
 
-    public DiningTableController(IDiningTableService tableService)
+    public DiningTableController(IDiningTableService tableService, ICleanupService cleanupService)
     {
         _tableService = tableService;
+        _cleanupService = cleanupService;
+    }
+
+    [HttpPost("cleanup")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> ManualCleanup()
+    {
+        var results = await _cleanupService.DoDailyCleanupAsync();
+        return Success(results, "Manual cleanup performed successfully");
     }
 
     
