@@ -281,36 +281,57 @@ public class ReservationService : IReservationService
             return false;
         }
 
-        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
-            r.ReservationId == id
-        );
+        var reservation = await _context.Reservations
+            .Include(r => r.Table)
+            .FirstOrDefaultAsync(r => r.ReservationId == id);
+
         if (reservation == null)
         {
             return false;
         }
 
+        string oldStatus = reservation.Status;
         reservation.Status = status.ToUpper();
 
+        // 1. Handle Table Assignment & Status Sync
         if (tableId.HasValue)
         {
-            var table = await _context.DiningTables.FirstOrDefaultAsync(t =>
-                t.TableId == tableId.Value
-            );
-            if (table == null)
+            var table = await _context.DiningTables.FindAsync(tableId.Value);
+            if (table == null) return false;
+
+            // Release old table if changed
+            if (reservation.TableId.HasValue && reservation.TableId != tableId)
             {
-                return false;
+                var oldTable = await _context.DiningTables.FindAsync(reservation.TableId.Value);
+                if (oldTable != null && (oldTable.Status == "RESERVED" || oldTable.Status == "OCCUPIED"))
+                {
+                    oldTable.Status = "AVAILABLE";
+                }
             }
 
             reservation.TableId = tableId;
 
-            // Update table status if checking in
+            // Update new table status
             if (status.ToUpper() == "CHECKED_IN")
             {
                 table.Status = "OCCUPIED";
             }
+            else if (status.ToUpper() == "CONFIRMED")
+            {
+                table.Status = "RESERVED";
+            }
+        }
+        else if (reservation.TableId.HasValue)
+        {
+            // If status changed to CANCELLED or NO_SHOW, release the table
+            if (status.ToUpper() == "CANCELLED" || status.ToUpper() == "NO_SHOW" || status.ToUpper() == "COMPLETED")
+            {
+                var table = await _context.DiningTables.FindAsync(reservation.TableId.Value);
+                if (table != null) table.Status = "AVAILABLE";
+            }
         }
 
-        // Handle associated Order based on new status
+        // 2. Handle associated Order based on new status
         var order = await _context.Orders
             .Include(o => o.OrderItems)
             .FirstOrDefaultAsync(o => o.ReservationId == id);
@@ -320,9 +341,9 @@ public class ReservationService : IReservationService
             if (status.ToUpper() == "CHECKED_IN")
             {
                 order.Status = "OPEN";
-                if (tableId.HasValue)
+                if (reservation.TableId.HasValue)
                 {
-                    order.TableId = tableId;
+                    order.TableId = reservation.TableId;
                 }
             }
             else if (status.ToUpper() == "CANCELLED" || status.ToUpper() == "NO_SHOW")
@@ -336,9 +357,7 @@ public class ReservationService : IReservationService
             }
         }
 
-        _context.Reservations.Update(reservation);
         await _context.SaveChangesAsync();
-
         return true;
     }
 
