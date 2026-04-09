@@ -6,11 +6,14 @@ import {
   createTable,
   updateTable,
   deleteTable,
+  cleanupTables,
   type DiningTable,
   type CreateDiningTableRequest,
   type UpdateDiningTableRequest,
 } from "../../../lib/api/admin";
 import styles from "../manager.module.css";
+import { Trash2, Eraser } from "lucide-react";
+import Swal from "sweetalert2";
 
 const STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED"];
 
@@ -335,10 +338,16 @@ function DeleteModal({
   );
 }
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 // ── Page ─────────────────────────────────────────────────────────
 export default function DiningTablesPage() {
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cleaning, setCleaning] = useState(false);
   const [modal, setModal] = useState<{
     type: "create" | "edit" | "delete";
     table?: DiningTable;
@@ -364,6 +373,51 @@ export default function DiningTablesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleCleanup = async () => {
+    const result = await Swal.fire({
+      title: "Dọn dẹp bàn & đơn hàng?",
+      text: "Hệ thống sẽ tự động hủy các đơn hàng từ những ngày trước và giải phóng toàn bộ bàn đang trống (không có khách thực tế). Bạn có chắc chắn muốn thực hiện?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "var(--brand-primary)",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Đồng ý dọn dẹp",
+      cancelButtonText: "Hủy",
+      background: "#fff",
+      color: "#0f172a",
+    });
+
+    if (result.isConfirmed) {
+      setCleaning(true);
+      try {
+        const res = await cleanupTables();
+        await Swal.fire({
+          title: "Hoàn tất dọn dẹp",
+          html: `
+            <div style="text-align: left; padding: 0.5rem;">
+              <p>Đã hủy <b>${res.ordersCancelled}</b> đơn hàng cũ.</p>
+              <p>Đã dọn dẹp <b>${res.reservationsCleared}</b> đặt bàn quá hạn.</p>
+              <p>Đã giải phóng <b>${res.tablesReleased}</b> bàn đang bị kẹt.</p>
+            </div>
+          `,
+          icon: "success",
+          confirmButtonColor: "var(--brand-primary)",
+        });
+        await load();
+      } catch (err: any) {
+        Swal.fire("Lỗi", err.message || "Không thể thực hiện dọn dẹp", "error");
+      } finally {
+        setCleaning(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (action === "cleanup") {
+      void handleCleanup();
+    }
+  }, [action]);
 
   // Derived state
   const filteredItems = tables.filter((t) => {
@@ -397,13 +451,29 @@ export default function DiningTablesPage() {
                 Danh sách bàn — {tables.length} bàn
               </p>
             </div>
-            <button
-              id="add-table-btn"
-              className={styles.btnAdd}
-              onClick={() => setModal({ type: "create" })}
-            >
-              + Thêm bàn
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                className={styles.btnSecondary}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1.25rem",
+                  borderColor: "#e2e8f0",
+                }}
+                onClick={handleCleanup}
+                disabled={cleaning}
+              >
+                {cleaning ? "Đang dọn dẹp..." : "Dọn dẹp bàn & đơn cũ"}
+              </button>
+              <button
+                id="add-table-btn"
+                className={styles.btnAdd}
+                onClick={() => setModal({ type: "create" })}
+              >
+                + Thêm bàn
+              </button>
+            </div>
           </div>
         </div>
 

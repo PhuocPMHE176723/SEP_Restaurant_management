@@ -5,7 +5,7 @@ using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace SEP_Restaurant_management.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/diningtable")]
 [ApiController]
 public class DiningTableController : BaseController
 {
@@ -22,8 +22,12 @@ public class DiningTableController : BaseController
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> ManualCleanup()
     {
-        var results = await _cleanupService.DoDailyCleanupAsync();
-        return Success(results, "Manual cleanup performed successfully");
+        var (orders, res, tables) = await _cleanupService.DoDailyCleanupAsync();
+        return Success(new { 
+            ordersCancelled = orders, 
+            reservationsCleared = res, 
+            tablesReleased = tables 
+        }, "Manual cleanup performed successfully");
     }
 
     
