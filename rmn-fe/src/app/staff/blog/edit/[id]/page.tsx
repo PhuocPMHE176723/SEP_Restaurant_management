@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Swal from "sweetalert2";
-import { blogApi } from "../../../../lib/api/blog";
-import { BlogCategory, CreateBlogPostRequest } from "../../../../types/models/content";
-import styles from "../../../manager/manager.module.css";
-import { ArrowLeft, Save, Image as ImageIcon, Type, FileText, Tag, Layers } from "lucide-react";
+import { blogApi } from "../../../../../lib/api/blog";
+import { BlogCategory, CreateBlogPostRequest, BlogPost } from "../../../../../types/models/content";
+import styles from "../../../../manager/manager.module.css";
+import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-import { ImageUpload } from "../../../../components/common/ImageUpload";
+import { ImageUpload } from "../../../../../components/common/ImageUpload";
 
-export default function CreateBlogPostPage() {
+export default function EditBlogPostPage() {
   const router = useRouter();
+  const params = useParams();
+  const postId = Number(params.id);
+
   const [categories, setCategories] = useState<BlogCategory[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<CreateBlogPostRequest>({
     title: "",
     content: "",
@@ -24,18 +28,30 @@ export default function CreateBlogPostPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchData();
+  }, [postId]);
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
-      const data = await blogApi.getCategories();
-      setCategories(data.filter(c => c.isActive));
-      if (data.length > 0) {
-        setFormData(prev => ({ ...prev, categoryId: data[0].categoryId }));
-      }
+      setLoading(true);
+      const [postData, catsData] = await Promise.all([
+        blogApi.getPostById(postId),
+        blogApi.getCategories()
+      ]);
+      
+      setCategories(catsData.filter(c => c.isActive));
+      setFormData({
+        title: postData.title,
+        content: postData.content,
+        featuredImage: postData.featuredImage || "",
+        categoryId: postData.categoryId,
+        status: postData.status,
+      });
+      setLoading(false);
     } catch (error) {
-      console.error("Failed to fetch categories:", error);
+      console.error("Failed to fetch data:", error);
+      setLoading(false);
+      Swal.fire("Lỗi", "Không thể tải dữ liệu bài viết", "error");
     }
   };
 
@@ -47,7 +63,7 @@ export default function CreateBlogPostPage() {
     }
 
     try {
-      setLoading(true);
+      setSaving(true);
       
       let featuredImage = formData.featuredImage;
       if (imageFile) {
@@ -55,20 +71,22 @@ export default function CreateBlogPostPage() {
         featuredImage = result.url;
       }
 
-      await blogApi.createPost({ ...formData, featuredImage });
-      setLoading(false);
+      await blogApi.updatePost(postId, { ...formData, featuredImage });
+      setSaving(false);
       await Swal.fire({
         title: "Thành công",
-        text: "Bài viết đã được tạo thành công!",
+        text: "Bài viết đã được cập nhật thành công!",
         icon: "success",
         confirmButtonColor: "var(--brand-primary)"
       });
       router.push("/staff/blog");
     } catch (error: any) {
-      setLoading(false);
-      Swal.fire("Lỗi", error.message || "Tạo bài viết thất bại", "error");
+      setSaving(false);
+      Swal.fire("Lỗi", error.message || "Cập nhật bài viết thất bại", "error");
     }
   };
+
+  if (loading) return <div className={styles.loading}>Đang tải dữ liệu...</div>;
 
   return (
     <div className={styles.pageContainer}>
@@ -78,8 +96,8 @@ export default function CreateBlogPostPage() {
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className={styles.pageTitle}>Tạo bài viết mới</h1>
-            <p className={styles.pageSubtitle}>Điền thông tin và lưu bài viết</p>
+            <h1 className={styles.pageTitle}>Sửa bài viết</h1>
+            <p className={styles.pageSubtitle}>Chỉnh sửa nội dung và lưu thay đổi</p>
           </div>
         </div>
       </div>
@@ -126,6 +144,7 @@ export default function CreateBlogPostPage() {
               >
                 <option value="DRAFT">Bản nháp</option>
                 <option value="PUBLISHED">Xuất bản</option>
+                <option value="ARCHIVED">Lưu trữ</option>
               </select>
             </div>
           </div>
@@ -156,9 +175,9 @@ export default function CreateBlogPostPage() {
               type="submit"
               className={styles.btnAdd}
               style={{ flex: 2, padding: '1rem', fontWeight: 700, margin: 0, height: 'auto' }}
-              disabled={loading}
+              disabled={saving}
             >
-              {loading ? "Đang lưu..." : "Lưu bài viết"}
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
             </button>
             <Link href="/staff/blog" className={styles.btnCancel} style={{ flex: 1, textAlign: 'center', padding: '1rem', fontWeight: 600 }}>
               Hủy bỏ

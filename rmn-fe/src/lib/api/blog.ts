@@ -97,4 +97,20 @@ export const blogApi = {
         });
         return handleResponse<string>(res);
     },
+
+    async uploadImage(file: File): Promise<{ url: string }> {
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch(`${apiBaseUrl}/api/Blog/upload-image`, {
+            method: "POST",
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
+        });
+
+        return handleResponse<{ url: string }>(res);
+    },
 };
