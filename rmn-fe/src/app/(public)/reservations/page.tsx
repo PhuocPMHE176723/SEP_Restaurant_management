@@ -44,6 +44,7 @@ export default function ReservationsPage() {
   // Loyalty Data
   const [loyaltyProfile, setLoyaltyProfile] = useState<CustomerProfileResponse | null>(null);
   const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
+  const [activeTab, setActiveTab] = useState<'points' | 'discounts'>('points');
 
   useEffect(() => {
     setMounted(true);
@@ -168,6 +169,96 @@ export default function ReservationsPage() {
             <h1 className={styles.title}>Lịch sử đặt bàn</h1>
             <p className={styles.subtitle}>Quản lý các đơn đặt bàn của bạn</p>
           </div>
+
+          {/* Loyalty Section */}
+          {loyaltyProfile && (
+            <div className={styles.loyaltySection}>
+              <div className={styles.loyaltyCard}>
+                <div className={styles.loyaltyMain}>
+                  <div className={styles.currentTier}>{loyaltyProfile.currentTier}</div>
+                  <div className={styles.totalPoints}>
+                    {loyaltyProfile.totalPoints.toLocaleString()}
+                    <span className={styles.pointsLabel}>điểm</span>
+                  </div>
+                </div>
+
+                <div className={styles.loyaltyDetails}>
+                  <div className={styles.milestones}>
+                    <div className={styles.milestoneHeader}>
+                      <span className={styles.milestoneTitle}>Mốc đổi & Ưu đãi</span>
+                    </div>
+                    <div className={styles.milestoneList}>
+                      {tiers.map(tier => (
+                        <div 
+                          key={tier.tierId} 
+                          className={`${styles.milestoneItem} ${loyaltyProfile.totalPoints >= tier.minPoints ? styles.milestoneReached : ""}`}
+                        >
+                          <span className={styles.milestoneName}>{tier.tierName} (Giảm {tier.discountRate}%)</span>
+                          <span className={styles.milestonePoints}>{tier.minPoints.toLocaleString()} điểm</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.historyCard} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)' }}>
+                <div className={styles.tabs}>
+                  <button 
+                    className={`${styles.tabBtn} ${activeTab === 'points' ? styles.tabActive : ""}`}
+                    onClick={() => setActiveTab('points')}
+                  >
+                    Lịch sử điểm
+                  </button>
+                  <button 
+                    className={`${styles.tabBtn} ${activeTab === 'discounts' ? styles.tabActive : ""}`}
+                    onClick={() => setActiveTab('discounts')}
+                  >
+                    Lịch sử ưu đãi
+                  </button>
+                </div>
+
+                {activeTab === 'points' ? (
+                  <div className={styles.historyList}>
+                    {loyaltyProfile.pointHistory.length === 0 ? (
+                      <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử tích điểm</div>
+                    ) : (
+                      loyaltyProfile.pointHistory.map(entry => (
+                        <div key={entry.ledgerId} className={styles.historyItem}>
+                          <div className={styles.historyInfo}>
+                            <span className={styles.historyNote}>{entry.note || "Tích điểm đơn hàng"}</span>
+                            <span className={styles.historyDate}>{formatDate(entry.createdAt)} {formatTime(entry.createdAt)}</span>
+                          </div>
+                          <div className={`${styles.historyChange} ${entry.pointsChange > 0 ? styles.changePositive : styles.changeNegative}`}>
+                            {entry.pointsChange > 0 ? "+" : ""}{entry.pointsChange}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <div className={styles.historyList}>
+                    {loyaltyProfile.discountHistory.length === 0 ? (
+                      <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử sử dụng ưu đãi</div>
+                    ) : (
+                      loyaltyProfile.discountHistory.map(history => (
+                        <div key={history.invoiceId} className={styles.discountItem}>
+                          <div className={styles.discountHeader}>
+                            <span>Đơn hàng {history.invoiceCode}</span>
+                            <span className={styles.discountAmount}>-{history.discountAmount.toLocaleString()}đ</span>
+                          </div>
+                          <div className={styles.discountMeta}>
+                            <span>Ngày: {formatDate(history.issuedAt)}</span>
+                            <span>Tổng đơn: {history.totalAmount.toLocaleString()}đ</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {reservations.length === 0 ? (
             <div className={styles.empty}>
