@@ -10,7 +10,6 @@ const NAV_ITEMS = [
     { href: "/manager/dining-tables", label: "Quản lý bàn ăn" },
     { href: "/manager/menu-categories", label: "Danh mục món" },
     { href: "/manager/menu-items", label: "Quản lý món ăn" },
-    { href: "/warehouse/daily-estimation", label: "Định lượng nguyên liệu" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
