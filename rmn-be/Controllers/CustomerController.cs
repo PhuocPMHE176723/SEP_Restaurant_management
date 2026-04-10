@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.Data;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.DTOs;
+using System.Security.Claims;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -20,7 +21,7 @@ public class CustomerController : BaseController
     }
 
     [HttpGet("lookup")]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> LookupByPhone([FromQuery] string phone)
     {
         var customer = await _context.Customers
@@ -39,7 +40,7 @@ public class CustomerController : BaseController
     }
 
     [HttpPost]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
         if (await _context.Customers.AnyAsync(c => c.Phone == request.Phone))
@@ -58,6 +59,65 @@ public class CustomerController : BaseController
         await _context.SaveChangesAsync();
 
         return Success(customer, "Tạo khách hàng thành công");
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Failure("Không tìm thấy thông tin đăng nhập");
+
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (customer == null) return Failure("Tài khoản chưa được liên kết với hồ sơ khách hàng.");
+
+        // Lấy lịch sử tích/trừ điểm
+        var ledgers = await _context.CustomerPointsLedgers
+            .Where(l => l.CustomerId == customer.CustomerId)
+            .OrderByDescending(l => l.CreatedAt)
+            .Select(l => new {
+                l.LedgerId,
+                l.RefType,
+                l.RefId,
+                l.PointsChange,
+                l.Note,
+                l.CreatedAt
+            })
+            .ToListAsync();
+
+        // Lấy lịch sử ưu đãi (các hoá đơn có giảm giá hoặc dùng điểm)
+        var discountHistory = await _context.Invoices
+            .Where(i => i.CustomerId == customer.CustomerId && (i.DiscountAmount > 0))
+            .OrderByDescending(i => i.IssuedAt)
+            .Select(i => new {
+                i.InvoiceId,
+                i.InvoiceCode,
+                i.TotalAmount,
+                i.DiscountAmount,
+                i.PaidAmount,
+                i.IssuedAt
+            })
+            .ToListAsync();
+
+        // Tính hạng thành viên (Nếu có bảng LoyaltyTiers, lấy hạng tương ứng)
+        var tiers = await _context.LoyaltyTiers
+            .Where(t => t.IsActive)
+            .OrderByDescending(t => t.MinPoints).ToListAsync();
+            
+        var currentTier = tiers.FirstOrDefault(t => customer.TotalPoints >= t.MinPoints)?.TierName ?? "Thành viên";
+
+        return Success(new {
+            customer.CustomerId,
+            customer.FullName,
+            customer.Phone,
+            customer.Email,
+            customer.TotalPoints,
+            CurrentTier = currentTier,
+            PointHistory = ledgers,
+            DiscountHistory = discountHistory
+        });
     }
 }
 
