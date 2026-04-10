@@ -28,7 +28,7 @@ public class InvoiceController : BaseController
     }
 
     [HttpGet("preview/{orderId}")]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> PreviewInvoice(long orderId, [FromQuery] string? discountCode, [FromQuery] int pointsToUse = 0)
     {
         try
@@ -43,7 +43,7 @@ public class InvoiceController : BaseController
     }
 
     [HttpPost("checkout")]
-    [Authorize(Roles = "Receptionist,Staff,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();

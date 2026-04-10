@@ -63,6 +63,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
                     <Link href="/manager/reservations" className={styles.navItem}>Lịch sử Đặt bàn</Link>
 
+                    <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Hệ thống & Bảo trì</p>
+                    <Link href="/manager/dining-tables?action=cleanup" className={styles.navItem}>Dọn dẹp & Giải phóng bàn</Link>
+
                 </nav>
 
                 <div className={styles.sidebarFoot}>

@@ -25,11 +25,11 @@ export default function WarehouseLayout({ children }: { children: React.ReactNod
         if (!mounted) return;
         if (!isLoggedIn) { router.replace("/login?redirect=/warehouse"); return; }
         // Note: Staff might have multiple roles. Admin should also be allowed.
-        const canAccess = user?.roles.includes("Warehouse") || user?.roles.includes("Admin");
+        const canAccess = user?.roles.includes("Warehouse") || user?.roles.includes("Admin") || user?.roles.includes("Manager");
         if (!canAccess) { router.replace("/"); }
     }, [mounted, isLoggedIn, user, router]);
 
-    if (!mounted || !isLoggedIn || (!user?.roles.includes("Warehouse") && !user?.roles.includes("Admin"))) {
+    if (!mounted || !isLoggedIn || (!user?.roles.includes("Warehouse") && !user?.roles.includes("Admin") && !user?.roles.includes("Manager"))) {
         return (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100svh", color: "#94a3b8", fontSize: "0.9rem" }}>
                 Đang kiểm tra quyền truy cập kho...

@@ -5,7 +5,7 @@ using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace SEP_Restaurant_management.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/diningtable")]
 [ApiController]
 public class DiningTableController : BaseController
 {
@@ -22,12 +22,16 @@ public class DiningTableController : BaseController
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> ManualCleanup()
     {
-        var results = await _cleanupService.DoDailyCleanupAsync();
-        return Success(results, "Manual cleanup performed successfully");
+        var (orders, res, tables) = await _cleanupService.DoDailyCleanupAsync();
+        return Success(new { 
+            ordersCancelled = orders, 
+            reservationsCleared = res, 
+            tablesReleased = tables 
+        }, "Manual cleanup performed successfully");
     }
 
     
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -37,7 +41,7 @@ public class DiningTableController : BaseController
 
     
     [HttpGet("with-orders")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> GetAllWithOrders()
     {
         var tables = await _tableService.GetAllWithOrdersAsync();
@@ -45,7 +49,7 @@ public class DiningTableController : BaseController
     }
 
  
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

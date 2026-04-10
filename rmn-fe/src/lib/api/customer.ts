@@ -9,6 +9,35 @@ export interface CustomerLookupResponse {
   email?: string;
 }
 
+export interface PointLedgerEntry {
+  ledgerId: number;
+  refType: string;
+  refId?: number;
+  pointsChange: number;
+  note?: string;
+  createdAt: string;
+}
+
+export interface DiscountHistoryEntry {
+  invoiceId: number;
+  invoiceCode: string;
+  totalAmount: number;
+  discountAmount: number;
+  paidAmount: number;
+  issuedAt: string;
+}
+
+export interface CustomerProfileResponse {
+  customerId: number;
+  fullName: string;
+  phone: string;
+  email?: string;
+  totalPoints: number;
+  currentTier: string;
+  pointHistory: PointLedgerEntry[];
+  discountHistory: DiscountHistoryEntry[];
+}
+
 function authHeaders(): Record<string, string> {
   const token = getToken();
   return {
@@ -40,6 +69,18 @@ export const customerApi = {
     const json = await response.json();
     if (!json.success && !json.Success) {
       throw new Error(json.message || "Lỗi khi tạo khách hàng");
+    }
+    return json.data || json.Data;
+  },
+
+  async getMyProfile(): Promise<CustomerProfileResponse> {
+    const response = await fetch(`${apiBaseUrl}/api/Customer/me`, {
+      headers: authHeaders(),
+    });
+
+    const json = await response.json();
+    if (!json.success && !json.Success) {
+      throw new Error(json.message || "Lỗi khi lấy thông tin hồ sơ");
     }
     return json.data || json.Data;
   }

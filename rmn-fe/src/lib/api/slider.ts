@@ -55,4 +55,20 @@ export const sliderApi = {
         });
         return handleResponse<string>(res);
     },
+
+    async uploadImage(file: File): Promise<{ url: string }> {
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch(`${apiBaseUrl}/api/Slider/upload-image`, {
+            method: "POST",
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
+        });
+
+        return handleResponse<{ url: string }>(res);
+    },
 };

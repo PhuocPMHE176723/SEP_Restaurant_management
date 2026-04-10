@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
+using Microsoft.AspNetCore.Http;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -17,11 +19,13 @@ public class BlogController : BaseController
 {
     private readonly SepDatabaseContext _context;
     private readonly IMapper _mapper;
+    private readonly ICloudinaryService _cloudinaryService;
 
-    public BlogController(SepDatabaseContext context, IMapper mapper)
+    public BlogController(SepDatabaseContext context, IMapper mapper, ICloudinaryService cloudinaryService)
     {
         _context = context;
         _mapper = mapper;
+        _cloudinaryService = cloudinaryService;
     }
 
     [HttpGet]
@@ -125,5 +129,31 @@ public class BlogController : BaseController
         _context.BlogCategories.Remove(category);
         await _context.SaveChangesAsync();
         return Success("Category deleted successfully");
+    }
+
+    /// <summary>Upload an image to Cloudinary and return the URL</summary>
+    [HttpPost("upload-image")]
+    public async Task<IActionResult> UploadImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return Failure("No file uploaded");
+
+        const long maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.Length > maxSize)
+            return Failure("File size exceeds 5MB limit");
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/jpg", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            return Failure("Only image files (JPEG, PNG, WebP) are allowed");
+
+        try
+        {
+            var imageUrl = await _cloudinaryService.UploadImageAsync(file, "blog-posts");
+            return Success(new { url = imageUrl }, "Image uploaded successfully");
+        }
+        catch (Exception ex)
+        {
+            return Failure($"Upload failed: {ex.Message}");
+        }
     }
 }

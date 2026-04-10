@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { sliderApi } from "../../../lib/api/slider";
 import type { Slider } from "../../../types/models/content";
 import styles from "../../manager/manager.module.css";
+import { ImageUpload } from "../../../components/common/ImageUpload";
 
 export default function SlidersPage() {
   const [sliders, setSliders] = useState<Slider[]>([]);
@@ -17,6 +18,8 @@ export default function SlidersPage() {
     displayOrder: 0,
     isActive: true
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchSliders();
@@ -35,22 +38,38 @@ export default function SlidersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     try {
+      let imageUrl = currentSlider.imageUrl;
+
+      // Upload if there's a new file
+      if (imageFile) {
+        const result = await sliderApi.uploadImage(imageFile);
+        imageUrl = result.url;
+      }
+
+      if (!imageUrl) {
+        Swal.fire("Lỗi", "Vui lòng chọn hình ảnh", "error");
+        setSaving(false);
+        return;
+      }
+
+      const payload = { ...currentSlider, imageUrl };
+
       if (currentSlider.sliderId) {
-        await sliderApi.updateSlider(currentSlider.sliderId, currentSlider as any);
+        await sliderApi.updateSlider(currentSlider.sliderId, payload as any);
       } else {
-        await sliderApi.createSlider(currentSlider as any);
+        await sliderApi.createSlider(payload as any);
       }
       setShowModal(false);
+      setImageFile(null);
       fetchSliders();
-    } catch (error) {
+      Swal.fire("Thành công", "Lưu slider thành công!", "success");
+    } catch (error: any) {
       console.error("Failed to save slider:", error);
-      Swal.fire({
-        title: "Lỗi",
-        text: "Lưu slider thất bại!",
-        icon: "error",
-        confirmButtonColor: "var(--error)"
-      });
+      Swal.fire("Lỗi", error.message || "Lưu slider thất bại!", "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -99,6 +118,7 @@ export default function SlidersPage() {
           className={styles.btnAdd}
           onClick={() => {
             setCurrentSlider({ imageUrl: "", title: "", link: "", displayOrder: 0, isActive: true });
+            setImageFile(null);
             setShowModal(true);
           }}
         >
@@ -152,6 +172,7 @@ export default function SlidersPage() {
                       className={styles.btnEdit}
                       onClick={() => {
                         setCurrentSlider(slider);
+                        setImageFile(null);
                         setShowModal(true);
                       }}
                     >
@@ -181,14 +202,11 @@ export default function SlidersPage() {
             <form onSubmit={handleSubmit}>
               <div className={styles.modalBody}>
                 <div className={styles.formGroup}>
-                  <label>URL Hình ảnh</label>
-                  <input 
-                    type="text" 
-                    className={styles.input}
+                  <ImageUpload 
+                    label="Hình ảnh Banner"
                     value={currentSlider.imageUrl}
-                    onChange={e => setCurrentSlider({...currentSlider, imageUrl: e.target.value})}
-                    placeholder="https://..."
-                    required
+                    onChange={(url) => setCurrentSlider({...currentSlider, imageUrl: url || ""})}
+                    onFileChange={setImageFile}
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -232,7 +250,9 @@ export default function SlidersPage() {
               </div>
               <div className={styles.modalFoot}>
                 <button type="button" className={styles.btnCancel} onClick={() => setShowModal(false)}>Hủy</button>
-                <button type="submit" className={styles.btnAdd} style={{ marginTop: 0 }}>Lưu Slider</button>
+                <button type="submit" className={styles.btnAdd} style={{ marginTop: 0 }} disabled={saving}>
+                  {saving ? "Đang lưu..." : "Lưu Slider"}
+                </button>
               </div>
             </form>
           </div>

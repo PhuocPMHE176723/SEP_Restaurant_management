@@ -58,13 +58,6 @@ public static class DbInitializer
         );
         await SeedUser(
             userManager,
-            "receptionist@restaurant.com",
-            "Receptionist@123",
-            "Receptionist Staff",
-            "Receptionist"
-        );
-        await SeedUser(
-            userManager,
             "cashier@restaurant.com",
             "Cashier@123",
             "Cashier Staff",
@@ -667,7 +660,7 @@ public static class DbInitializer
     )
     {
         var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
-        var rolesToStaff = new[] { "Manager", "Staff", "Kitchen", "Receptionist", "Warehouse" };
+        var rolesToStaff = new[] { "Manager", "Staff", "Kitchen", "Warehouse", "Cashier" };
 
         foreach (var role in rolesToStaff)
         {

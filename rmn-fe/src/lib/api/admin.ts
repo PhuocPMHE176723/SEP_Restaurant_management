@@ -219,3 +219,11 @@ export async function updateMenuItemIngredients(itemId: number, ingredients: { i
     });
     await handleResponse<unknown>(res);
 }
+
+export async function cleanupTables(): Promise<{ ordersCancelled: number; reservationsCleared: number; tablesReleased: number }> {
+    const res = await fetch(`${apiBaseUrl}/api/diningtable/cleanup`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return handleResponse<{ ordersCancelled: number; reservationsCleared: number; tablesReleased: number }>(res);
+}

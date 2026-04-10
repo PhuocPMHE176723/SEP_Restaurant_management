@@ -1,0 +1,83 @@
+Actor,Screen Function,Screen Function Description,In Charge,Status
+Admin,User List,Danh sách người dùng hệ thống (staff/admin/cashier/warehouse),Huy Vũ,NA
+Admin,Create User,Tạo tài khoản nhân viên mới,Huy Vũ,NA
+Admin,Edit User,Chỉnh sửa thông tin tài khoản & trạng thái (Active/Inactive),Huy Vũ,NA
+Admin,Reset Password,Đặt lại mật khẩu cho nhân viên,Huy Vũ,NA
+Admin,Role Assignment,Gán role cho user (Admin/Manager/Staff/Cashier/Warehouse/Kitchen),Huy Vũ,NA
+Admin,System Settings (Basic),"Cấu hình thông tin nhà hàng (tên, địa chỉ, hotline)",Huy Vũ,NA
+Admin,Audit Log (Basic),"Log thao tác cơ bản (tạo/sửa user, cấu hình)",Huy Vũ,NA
+Manager,Table List / Map,Danh sách bàn & trạng thái,Ngọc Tuấn,Done
+Manager,Create/Edit Table,"Tạo/sửa bàn (mã bàn, số ghế, khu vực)",Ngọc Tuấn,Done
+Manager,Manual Table Cleanup,Dọn dẹp và giải phóng bàn/order tự động/thủ công,Ngọc Tuấn,Done
+Manager,Menu Item List,Danh sách món ăn,Huy Phạm,Done
+Manager,Create/Edit Menu Item,"Tạo/sửa món (tên, giá, trạng thái bán)",Huy Phạm,Done
+Manager,Menu Category Management,Quản lý danh mục món,Huy Phạm,Done
+Manager,Inventory Audit,Tạo/Xem phiếu kiểm kê kho,Thành Đạt,Done
+Manager,Stock History,Xem lịch sử biến động kho,Thành Đạt,Done
+Manager,Ingredient Usage Report,Báo cáo thống kê nguyên liệu sử dụng theo kỳ,Thành Đạt,Done
+Manager,VAT Config,"Cấu hình VAT: bật/tắt, % VAT, hiệu lực",Phạm Phước,Done
+Manager,Discount Code Management,Tạo/sửa/disable mã giảm giá + giới hạn lượt dùng,Phạm Phước,Done
+Manager,Loyalty Program Config,"Cấu hình tích điểm (tỷ lệ, mốc đổi, hạn điểm)",Phạm Phước,Done
+Manager,Order History,Quản lý lịch sử các order (danh sách order theo ngày/bàn/trạng thái + chi tiết order),Phạm Phước,Done
+Manager,Loyalty Transaction History,Lịch sử cộng/trừ điểm theo hóa đơn,Phạm Phước,Done
+Staff,Reservation Create,Nhân viên tạo đặt bàn cho khách,Ngọc Tuấn,Done
+Staff,Reservation List,Danh sách đặt bàn theo ngày/khung giờ,Ngọc Tuấn,Done
+Staff,Reservation Detail,Chi tiết đặt bàn + confirm/cancel,Ngọc Tuấn,Done
+Staff,Check-in Reservation,Check-in khách đến & gán bàn,Ngọc Tuấn,Done
+Staff,Walk-in Assign Table,Gán bàn cho khách đến trực tiếp,Ngọc Tuấn,Done
+Staff,Table Transfer,Chuyển bàn (chuyển order sang bàn khác),Ngọc Tuấn,Done
+Staff,Select Table / Open Order,Mở order cho bàn,Huy Phạm,Doing
+Staff,Add/Update Order Items,Thêm món/sửa số lượng/ghi chú món,Huy Phạm,Doing
+Staff,Cancel Item (With Reason),Hủy món kèm lý do (policy),Huy Phạm,Doing
+Staff,Send to Kitchen,Gửi món xuống bếp,Huy Phạm,Doing
+Staff,Checkout / Payment,Thanh toán/Checkout hỗ trợ bởi Nhân viên,Phạm Phước,Doing
+Staff,Blog Post List,Danh sách bài viết blog (hiển thị hình ảnh thay URL),Phạm Phước,Done
+Staff,Create Blog Post,"Tạo bài viết (tiêu đề, nội dung, upload Cloudinary ảnh bìa)",Phạm Phước,Done
+Staff,Edit Blog Post,"Chỉnh sửa nội dung, upload ảnh từ Cloudinary",Phạm Phước,Done
+Staff,Delete / Unpublish Blog Post,Xoá hoặc ẩn bài viết khỏi giao diện khách,Phạm Phước,Done
+Staff,Blog Category Management,Quản lý danh mục bài viết blog,Phạm Phước,Done
+Staff,Slider List,Danh sách banner/slider với hỗ trợ ảnh Cloudinary,Phạm Phước,Done
+Staff,Create / Edit Slider,"Upload slider thẳng lên CLoudinary, chỉnh thứ tự hiển thị",Phạm Phước,Done
+Staff,Delete / Toggle Slider,Xoá hoặc bật/tắt hiển thị slider,Phạm Phước,Done
+Cashier,Reservation List,Danh sách đặt bàn (Thu ngân),Ngọc Tuấn,Done
+Cashier,Check-in Reservation,Check-in khách đến & gán bàn (Thu ngân),Ngọc Tuấn,Done
+Cashier,Walk-in Assign Table,Khách vãng lai trực tiếp tại quầy,Ngọc Tuấn,Done
+Cashier,Table Transfer,Chuyển bàn (Thu ngân),Ngọc Tuấn,Done
+Cashier,Merge Orders,Gộp hóa đơn giữa các bàn,Phạm Phước,Done
+Cashier,Select Table / Open Order,Sơ đồ bàn và Mở order cho bàn,Ngọc Tuấn,Done
+Cashier,Add/Update Order Items,Quản lý Order (Thêm món/sửa số lượng),Huy Phạm,Doing
+Cashier,Bill Preview,"Xem hóa đơn: món, tạm tính, discount, VAT, tổng",Phạm Phước,Doing
+Cashier,Apply Discount Code,Nhập & áp dụng mã giảm giá,Phạm Phước,Doing
+Cashier,Customer Lookup/Create (Cashier),Tra cứu/tạo khách theo SĐT tại quầy,Phạm Phước,Doing
+Cashier,Redeem Loyalty Points,Đổi điểm theo mốc (nếu đủ),Phạm Phước,Doing
+Cashier,Checkout / Payment,"Thanh toán: phương thức, tiền nhận, tiền thừa",Phạm Phước,Doing
+Cashier,Receipt View/Print,Xem/in hóa đơn sau thanh toán,Phạm Phước,Doing
+Kitchen,Kitchen Queue,Danh sách món cần chế biến,Phạm Phước,NA
+Kitchen,Update Item Status,Cập nhật trạng thái món,Phạm Phước,NA
+Kitchen,Kitchen History,Lịch sử món đã chế biến thành công,Phạm Phước,NA
+Kitchen,Stock History,Lịch sử sử dụng nguyên liệu của bếp,Thành Đạt,NA
+Kitchen,Ingredient Usage Report,Báo cáo sử dụng nguyên liệu (bếp),Thành Đạt,NA
+Warehouse,Ingredient Master List,"Danh sách nguyên liệu (đơn vị tính, tồn tối thiểu)",Thành Đạt,Done
+Warehouse,Create/Edit Ingredient,Tạo/sửa nguyên liệu,Thành Đạt,Done
+Warehouse,Stock In Create,Tạo phiếu nhập kho,Thành Đạt,Done
+Warehouse,Stock In List/Detail,Danh sách & chi tiết phiếu nhập,Thành Đạt,Done
+Warehouse,Inventory On-hand,Xem tồn kho hiện tại,Thành Đạt,Done
+Warehouse,Inventory Transactions,Lịch sử nhập/xuất/điều chỉnh kho,Thành Đạt,Done
+Warehouse,Low Stock Alert,Cảnh báo nguyên liệu sắp hết,Thành Đạt,Done
+Warehouse,Manual Stock Adjustment,Điều chỉnh tồn kho thủ công (kèm lý do),Thành Đạt,Done
+Warehouse,Daily Ingredient Estimation,Định lượng nguyên liệu tự động theo ngày,Thành Đạt,Done
+Customer,Customer Profile,"Xem/cập nhật hồ sơ (tên, sđt, email)",Huy Vũ,NA
+Customer,Reservation Create (Customer),"Khách tự đặt bàn (thời gian, số người, ghi chú) qua cổng Booking",Ngọc Tuấn,Done
+Customer,Reservation List (Customer),Khách xem lịch sử đặt bàn,Ngọc Tuấn,Done
+Customer,Reservation Cancel (Customer),Khách hủy đặt bàn theo chính sách,Ngọc Tuấn,Done
+Customer,About Page,Trang thông tin giới thiệu nhà hàng,Huy Phạm,Done
+Customer,Cart / Pre-Order Items,Khách chọn món (Order tại bàn),Huy Phạm,Done
+Customer,Place Order Request,Khách gửi yêu cầu order (gắn với reservation hoặc table code),Huy Phạm,Doing
+Customer,Order Status Tracking,Khách theo dõi trạng thái món/đơn (Pending/InProgress/Done),Huy Phạm,Doing
+Customer,Loyalty Points Overview,"Khách xem điểm hiện tại, mốc đổi, lịch sử điểm",Phạm Phước,Done
+Customer,Applied Discounts History,Khách xem lịch sử ưu đãi đã dùng (optional),Phạm Phước,Done
+Guest,Customer Register,Đăng ký tài khoản khách hàng,Huy Vũ,NA
+Guest,Customer Login,Đăng nhập khách hàng,Huy Vũ,NA
+Guest,Browse Menu (Customer),"Khách xem menu, lọc theo danh mục",Huy Phạm,Done
+Guest,Blog List (Customer),Khách xem danh sách bài viết / tin tức nhà hàng,Phạm Phước,NA
+Guest,Blog Detail (Customer),Khách đọc chi tiết bài viết,Phạm Phước,NA
