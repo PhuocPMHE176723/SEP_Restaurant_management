@@ -12,6 +12,7 @@ import {
 } from "../../../lib/api/reservation";
 import Modal from "../../../components/Modal/Modal";
 import EditPreorderModal from "../../../components/EditPreorderModal/EditPreorderModal";
+import Pagination from "../../../components/Pagination";
 import styles from "./page.module.css";
 
 export default function ReservationsPage() {
@@ -33,6 +34,10 @@ export default function ReservationsPage() {
   const [modalType, setModalType] = useState<"success" | "error">("success");
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     setMounted(true);
@@ -162,7 +167,9 @@ export default function ReservationsPage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {reservations.map((reservation) => (
+              {reservations
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((reservation) => (
                 <div key={reservation.reservationId} className={styles.card}>
                   <div className={styles.cardHeader}>
                     <span
@@ -254,6 +261,16 @@ export default function ReservationsPage() {
                   </div>
                 </div>
               ))}
+
+              <div style={{ marginTop: '1rem' }}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(reservations.length / itemsPerPage)}
+                  totalItems={reservations.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           )}
         </div>
