@@ -46,6 +46,12 @@ export default function ReservationsPage() {
   const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
   const [activeTab, setActiveTab] = useState<'points' | 'discounts'>('points');
 
+  // Filtering
+  const [filterDate, setFilterDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -146,6 +152,12 @@ export default function ReservationsPage() {
     return classMap[status] || "";
   }
 
+  const filteredReservations = reservations.filter((res) => {
+    if (!filterDate) return true;
+    const resDate = new Date(res.reservedAt).toISOString().split("T")[0];
+    return resDate === filterDate;
+  });
+
   if (!mounted || loading) {
     return (
       <>
@@ -165,9 +177,36 @@ export default function ReservationsPage() {
       <Header />
       <main className={styles.main}>
         <div className="container">
-          <div className={styles.header}>
-            <h1 className={styles.title}>Lịch sử đặt bàn</h1>
             <p className={styles.subtitle}>Quản lý các đơn đặt bàn của bạn</p>
+          </div>
+
+          <div className={styles.filterBar}>
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Lọc theo ngày:</label>
+              <input 
+                type="date" 
+                className={styles.dateInput}
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+              {filterDate && (
+                <button 
+                  className={styles.clearBtn}
+                  onClick={() => {
+                    setFilterDate("");
+                    setCurrentPage(1);
+                  }}
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
+            <div className={styles.filterInfo}>
+              Tìm thấy <strong>{filteredReservations.length}</strong> đơn đặt bàn
+            </div>
           </div>
 
           {/* Loyalty Section */}
@@ -270,7 +309,7 @@ export default function ReservationsPage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {reservations
+              {filteredReservations
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((reservation) => (
                 <div key={reservation.reservationId} className={styles.card}>
@@ -368,8 +407,8 @@ export default function ReservationsPage() {
               <div style={{ marginTop: '1rem' }}>
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={Math.ceil(reservations.length / itemsPerPage)}
-                  totalItems={reservations.length}
+                  totalPages={Math.ceil(filteredReservations.length / itemsPerPage)}
+                  totalItems={filteredReservations.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
                 />
