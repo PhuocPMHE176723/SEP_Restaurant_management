@@ -120,19 +120,11 @@ export default function EditBlogPostPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className={styles.formGroup}>
               <label style={{ fontWeight: 600, color: '#475569' }}>Danh mục *</label>
-              <select
-                className={styles.select}
+              <BlogCategorySelect
                 value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: parseInt(e.target.value) })}
+                onChange={(id) => setFormData({ ...formData, categoryId: id })}
                 required
-              >
-                <option value={0}>Chọn danh mục</option>
-                {categories.map((cat) => (
-                  <option key={cat.categoryId} value={cat.categoryId}>
-                    {cat.categoryName}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className={styles.formGroup}>
