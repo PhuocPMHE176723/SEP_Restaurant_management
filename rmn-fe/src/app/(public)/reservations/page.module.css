@@ -674,17 +674,11 @@
 }
 
 .clearFilterBtn {
-    font-size: 0.8rem !important;
+    font-size: 0.85rem !important;
     height: auto !important;
-    padding: var(--space-1-5) var(--space-3) !important;
-    color: var(--text-tertiary) !important;
-    border: 1px solid var(--border) !important;
-}
-
-.clearFilterBtn:hover {
-    color: var(--brand-primary) !important;
-    border-color: var(--brand-primary) !important;
-    background: var(--brand-primary-light) !important;
+    padding: var(--space-2) var(--space-5) !important;
+    border-radius: var(--radius-full) !important;
+    font-weight: 700 !important;
 }
 
 .filterInfo {

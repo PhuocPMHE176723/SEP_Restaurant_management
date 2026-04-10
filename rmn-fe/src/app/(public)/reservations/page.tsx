@@ -211,7 +211,7 @@ export default function ReservationsPage() {
               />
               {filterDate && (
                 <button 
-                  className={`btn btn-ghost ${styles.clearFilterBtn}`}
+                  className={`btn btn-primary ${styles.clearFilterBtn}`}
                   onClick={() => {
                     setFilterDate("");
                     setCurrentPage(1);
