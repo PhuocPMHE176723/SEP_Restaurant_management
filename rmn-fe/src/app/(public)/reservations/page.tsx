@@ -46,6 +46,11 @@ export default function ReservationsPage() {
   const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
   const [activeTab, setActiveTab] = useState<'points' | 'discounts'>('points');
 
+  // History Pagination
+  const [pointsPage, setPointsPage] = useState(1);
+  const [discountsPage, setDiscountsPage] = useState(1);
+  const historyItemsPerPage = 5;
+
   // Filtering
   const [filterDate, setFilterDate] = useState<string>(() => {
     const today = new Date();
@@ -158,6 +163,16 @@ export default function ReservationsPage() {
     return resDate === filterDate;
   });
 
+  const getCurrentTierId = () => {
+    if (!loyaltyProfile || tiers.length === 0) return null;
+    const achievedTiers = tiers
+      .filter(t => loyaltyProfile.totalPoints >= t.minPoints)
+      .sort((a, b) => b.minPoints - a.minPoints);
+    return achievedTiers.length > 0 ? achievedTiers[0].tierId : null;
+  };
+
+  const currentTierId = getCurrentTierId();
+
   if (!mounted || loading) {
     return (
       <>
@@ -196,7 +211,7 @@ export default function ReservationsPage() {
               />
               {filterDate && (
                 <button 
-                  className={styles.clearBtn}
+                  className={`btn btn-ghost ${styles.clearFilterBtn}`}
                   onClick={() => {
                     setFilterDate("");
                     setCurrentPage(1);
@@ -234,7 +249,12 @@ export default function ReservationsPage() {
                           key={tier.tierId} 
                           className={`${styles.milestoneItem} ${loyaltyProfile.totalPoints >= tier.minPoints ? styles.milestoneReached : ""}`}
                         >
-                          <span className={styles.milestoneName}>{tier.tierName} (Giảm {tier.discountRate}%)</span>
+                          <div className={styles.milestoneInfoContainer}>
+                            <span className={styles.milestoneName}>{tier.tierName} (Giảm {tier.discountRate}%)</span>
+                            {tier.tierId === currentTierId && (
+                              <span className={styles.currentTierLabel}>Cấp độ hiện tại</span>
+                            )}
+                          </div>
                           <span className={styles.milestonePoints}>{tier.minPoints.toLocaleString()} điểm</span>
                         </div>
                       ))}
@@ -260,42 +280,72 @@ export default function ReservationsPage() {
                 </div>
 
                 {activeTab === 'points' ? (
-                  <div className={styles.historyList}>
-                    {loyaltyProfile.pointHistory.length === 0 ? (
-                      <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử tích điểm</div>
-                    ) : (
-                      loyaltyProfile.pointHistory.map(entry => (
-                        <div key={entry.ledgerId} className={styles.historyItem}>
-                          <div className={styles.historyInfo}>
-                            <span className={styles.historyNote}>{entry.note || "Tích điểm đơn hàng"}</span>
-                            <span className={styles.historyDate}>{formatDate(entry.createdAt)} {formatTime(entry.createdAt)}</span>
+                  <>
+                    <div className={styles.historyList}>
+                      {loyaltyProfile.pointHistory.length === 0 ? (
+                        <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử tích điểm</div>
+                      ) : (
+                        loyaltyProfile.pointHistory
+                          .slice((pointsPage - 1) * historyItemsPerPage, pointsPage * historyItemsPerPage)
+                          .map(entry => (
+                          <div key={entry.ledgerId} className={styles.historyItem}>
+                            <div className={styles.historyInfo}>
+                              <span className={styles.historyNote}>{entry.note || "Tích điểm đơn hàng"}</span>
+                              <span className={styles.historyDate}>{formatDate(entry.createdAt)} {formatTime(entry.createdAt)}</span>
+                            </div>
+                            <div className={`${styles.historyChange} ${entry.pointsChange > 0 ? styles.changePositive : styles.changeNegative}`}>
+                              {entry.pointsChange > 0 ? "+" : ""}{entry.pointsChange}
+                            </div>
                           </div>
-                          <div className={`${styles.historyChange} ${entry.pointsChange > 0 ? styles.changePositive : styles.changeNegative}`}>
-                            {entry.pointsChange > 0 ? "+" : ""}{entry.pointsChange}
-                          </div>
-                        </div>
-                      ))
+                        ))
+                      )}
+                    </div>
+                    {loyaltyProfile.pointHistory.length > historyItemsPerPage && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <Pagination 
+                          currentPage={pointsPage}
+                          totalPages={Math.ceil(loyaltyProfile.pointHistory.length / historyItemsPerPage)}
+                          totalItems={loyaltyProfile.pointHistory.length}
+                          itemsPerPage={historyItemsPerPage}
+                          onPageChange={setPointsPage}
+                        />
+                      </div>
                     )}
-                  </div>
+                  </>
                 ) : (
-                  <div className={styles.historyList}>
-                    {loyaltyProfile.discountHistory.length === 0 ? (
-                      <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử sử dụng ưu đãi</div>
-                    ) : (
-                      loyaltyProfile.discountHistory.map(history => (
-                        <div key={history.invoiceId} className={styles.discountItem}>
-                          <div className={styles.discountHeader}>
-                            <span>Đơn hàng {history.invoiceCode}</span>
-                            <span className={styles.discountAmount}>-{history.discountAmount.toLocaleString()}đ</span>
+                  <>
+                    <div className={styles.historyList}>
+                      {loyaltyProfile.discountHistory.length === 0 ? (
+                        <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử sử dụng ưu đãi</div>
+                      ) : (
+                        loyaltyProfile.discountHistory
+                          .slice((discountsPage - 1) * historyItemsPerPage, discountsPage * historyItemsPerPage)
+                          .map(history => (
+                          <div key={history.invoiceId} className={styles.discountItem}>
+                            <div className={styles.discountHeader}>
+                              <span>Đơn hàng {history.invoiceCode}</span>
+                              <span className={styles.discountAmount}>-{history.discountAmount.toLocaleString()}đ</span>
+                            </div>
+                            <div className={styles.discountMeta}>
+                              <span>Ngày: {formatDate(history.issuedAt)}</span>
+                              <span>Tổng đơn: {history.totalAmount.toLocaleString()}đ</span>
+                            </div>
                           </div>
-                          <div className={styles.discountMeta}>
-                            <span>Ngày: {formatDate(history.issuedAt)}</span>
-                            <span>Tổng đơn: {history.totalAmount.toLocaleString()}đ</span>
-                          </div>
-                        </div>
-                      ))
+                        ))
+                      )}
+                    </div>
+                    {loyaltyProfile.discountHistory.length > historyItemsPerPage && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <Pagination 
+                          currentPage={discountsPage}
+                          totalPages={Math.ceil(loyaltyProfile.discountHistory.length / historyItemsPerPage)}
+                          totalItems={loyaltyProfile.discountHistory.length}
+                          itemsPerPage={historyItemsPerPage}
+                          onPageChange={setDiscountsPage}
+                        />
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
