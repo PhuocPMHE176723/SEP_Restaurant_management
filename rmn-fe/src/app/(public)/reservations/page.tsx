@@ -10,6 +10,9 @@ import {
   cancelReservation,
   type ReservationDTO,
 } from "../../../lib/api/reservation";
+import { customerApi, type CustomerProfileResponse } from "../../../lib/api/customer";
+import { getLoyaltyTiers } from "../../../lib/api/promotion";
+import { type LoyaltyTier } from "../../../types/models/promotion";
 import Modal from "../../../components/Modal/Modal";
 import EditPreorderModal from "../../../components/EditPreorderModal/EditPreorderModal";
 import Pagination from "../../../components/Pagination";
@@ -35,9 +38,12 @@ export default function ReservationsPage() {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Loyalty Data
+  const [loyaltyProfile, setLoyaltyProfile] = useState<CustomerProfileResponse | null>(null);
+  const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -50,20 +56,26 @@ export default function ReservationsPage() {
     }
 
     if (mounted && isLoggedIn) {
-      loadReservations();
+      loadData();
     }
   }, [mounted, isLoggedIn, router]);
-
-  async function loadReservations() {
+ 
+  async function loadData() {
     try {
       setLoading(true);
-      const data = await getMyReservations();
-      setReservations(data);
+      const [reservData, profileData, tiersData] = await Promise.all([
+        getMyReservations(),
+        customerApi.getMyProfile(),
+        getLoyaltyTiers()
+      ]);
+      setReservations(reservData);
+      setLoyaltyProfile(profileData);
+      setTiers(tiersData.filter(t => t.isActive));
     } catch (error: any) {
-      console.error("Failed to load reservations:", error);
+      console.error("Failed to load data:", error);
       setModalType("error");
       setModalTitle("Lỗi");
-      setModalMessage(error.message || "Không thể tải danh sách đặt bàn");
+      setModalMessage(error.message || "Không thể tải thông tin tài khoản");
       setModalOpen(true);
     } finally {
       setLoading(false);
@@ -83,7 +95,7 @@ export default function ReservationsPage() {
       setModalOpen(true);
 
       setCancelId(null);
-      loadReservations();
+      loadData();
     } catch (error: any) {
       setModalType("error");
       setModalTitle("Lỗi");
@@ -333,7 +345,7 @@ export default function ReservationsPage() {
             setModalTitle("Cập nhật thành công");
             setModalMessage("Danh sách món ăn của bạn đã được cập nhật.");
             setModalOpen(true);
-            loadReservations();
+            loadData();
           }}
         />
       )}
