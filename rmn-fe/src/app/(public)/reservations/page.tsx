@@ -10,9 +10,6 @@ import {
   cancelReservation,
   type ReservationDTO,
 } from "../../../lib/api/reservation";
-import { customerApi, type CustomerProfileResponse } from "../../../lib/api/customer";
-import { getLoyaltyTiers } from "../../../lib/api/promotion";
-import { type LoyaltyTier } from "../../../types/models/promotion";
 import Modal from "../../../components/Modal/Modal";
 import EditPreorderModal from "../../../components/EditPreorderModal/EditPreorderModal";
 import Pagination from "../../../components/Pagination";
@@ -41,21 +38,12 @@ export default function ReservationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Loyalty Data
-  const [loyaltyProfile, setLoyaltyProfile] = useState<CustomerProfileResponse | null>(null);
-  const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
-  const [activeTab, setActiveTab] = useState<'points' | 'discounts'>('points');
-
-  // History Pagination
-  const [pointsPage, setPointsPage] = useState(1);
-  const [discountsPage, setDiscountsPage] = useState(1);
-  const historyItemsPerPage = 5;
-
   // Filtering
   const [filterDate, setFilterDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
   });
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
   useEffect(() => {
     setMounted(true);
@@ -75,19 +63,13 @@ export default function ReservationsPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const [reservData, profileData, tiersData] = await Promise.all([
-        getMyReservations(),
-        customerApi.getMyProfile(),
-        getLoyaltyTiers()
-      ]);
-      setReservations(reservData);
-      setLoyaltyProfile(profileData);
-      setTiers(tiersData.filter(t => t.isActive));
+      const data = await getMyReservations();
+      setReservations(data);
     } catch (error: any) {
-      console.error("Failed to load data:", error);
+      console.error("Failed to load reservations:", error);
       setModalType("error");
       setModalTitle("Lỗi");
-      setModalMessage(error.message || "Không thể tải thông tin tài khoản");
+      setModalMessage(error.message || "Không thể tải danh sách đặt bàn");
       setModalOpen(true);
     } finally {
       setLoading(false);
@@ -158,20 +140,10 @@ export default function ReservationsPage() {
   }
 
   const filteredReservations = reservations.filter((res) => {
-    if (!filterDate) return true;
-    const resDate = new Date(res.reservedAt).toISOString().split("T")[0];
-    return resDate === filterDate;
+    const matchesDate = !filterDate || new Date(res.reservedAt).toISOString().split("T")[0] === filterDate;
+    const matchesStatus = filterStatus === "ALL" || res.status === filterStatus;
+    return matchesDate && matchesStatus;
   });
-
-  const getCurrentTierId = () => {
-    if (!loyaltyProfile || tiers.length === 0) return null;
-    const achievedTiers = tiers
-      .filter(t => loyaltyProfile.totalPoints >= t.minPoints)
-      .sort((a, b) => b.minPoints - a.minPoints);
-    return achievedTiers.length > 0 ? achievedTiers[0].tierId : null;
-  };
-
-  const currentTierId = getCurrentTierId();
 
   if (!mounted || loading) {
     return (
@@ -199,21 +171,41 @@ export default function ReservationsPage() {
 
           <div className={styles.filterBar}>
             <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Lọc theo ngày:</label>
-              <input 
-                type="date" 
-                className={styles.dateInput}
-                value={filterDate}
-                onChange={(e) => {
-                  setFilterDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-              {filterDate && (
+              <div className={styles.filterField}>
+                <label className={styles.filterLabel}>Ngày:</label>
+                <input 
+                  type="date" 
+                  className={styles.dateInput}
+                  value={filterDate}
+                  onChange={(e) => {
+                    setFilterDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className={styles.filterField}>
+                <label className={styles.filterLabel}>Trạng thái:</label>
+                <select 
+                  className={styles.statusSelect}
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="PENDING">Chờ xác nhận</option>
+                  <option value="CONFIRMED">Đã xác nhận</option>
+                  <option value="COMPLETED">Hoàn thiện</option>
+                  <option value="CANCELLED">Đã hủy</option>
+                </select>
+              </div>
+              {(filterDate || filterStatus !== "ALL") && (
                 <button 
                   className={`btn btn-primary ${styles.clearFilterBtn}`}
                   onClick={() => {
                     setFilterDate("");
+                    setFilterStatus("ALL");
                     setCurrentPage(1);
                   }}
                 >
@@ -225,131 +217,6 @@ export default function ReservationsPage() {
               Tìm thấy <strong>{filteredReservations.length}</strong> đơn đặt bàn
             </div>
           </div>
-
-          {/* Loyalty Section */}
-          {loyaltyProfile && (
-            <div className={styles.loyaltySection}>
-              <div className={styles.loyaltyCard}>
-                <div className={styles.loyaltyMain}>
-                  <div className={styles.currentTier}>{loyaltyProfile.currentTier}</div>
-                  <div className={styles.totalPoints}>
-                    {loyaltyProfile.totalPoints.toLocaleString()}
-                    <span className={styles.pointsLabel}>điểm</span>
-                  </div>
-                </div>
-
-                <div className={styles.loyaltyDetails}>
-                  <div className={styles.milestones}>
-                    <div className={styles.milestoneHeader}>
-                      <span className={styles.milestoneTitle}>Mốc đổi & Ưu đãi</span>
-                    </div>
-                    <div className={styles.milestoneList}>
-                      {tiers.map(tier => (
-                        <div 
-                          key={tier.tierId} 
-                          className={`${styles.milestoneItem} ${loyaltyProfile.totalPoints >= tier.minPoints ? styles.milestoneReached : ""}`}
-                        >
-                          <div className={styles.milestoneInfoContainer}>
-                            <span className={styles.milestoneName}>{tier.tierName} (Giảm {tier.discountRate}%)</span>
-                            {tier.tierId === currentTierId && (
-                              <span className={styles.currentTierLabel}>Cấp độ hiện tại</span>
-                            )}
-                          </div>
-                          <span className={styles.milestonePoints}>{tier.minPoints.toLocaleString()} điểm</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.historyCard} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)' }}>
-                <div className={styles.tabs}>
-                  <button 
-                    className={`${styles.tabBtn} ${activeTab === 'points' ? styles.tabActive : ""}`}
-                    onClick={() => setActiveTab('points')}
-                  >
-                    Lịch sử điểm
-                  </button>
-                  <button 
-                    className={`${styles.tabBtn} ${activeTab === 'discounts' ? styles.tabActive : ""}`}
-                    onClick={() => setActiveTab('discounts')}
-                  >
-                    Lịch sử ưu đãi
-                  </button>
-                </div>
-
-                {activeTab === 'points' ? (
-                  <>
-                    <div className={styles.historyList}>
-                      {loyaltyProfile.pointHistory.length === 0 ? (
-                        <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử tích điểm</div>
-                      ) : (
-                        loyaltyProfile.pointHistory
-                          .slice((pointsPage - 1) * historyItemsPerPage, pointsPage * historyItemsPerPage)
-                          .map(entry => (
-                          <div key={entry.ledgerId} className={styles.historyItem}>
-                            <div className={styles.historyInfo}>
-                              <span className={styles.historyNote}>{entry.note || "Tích điểm đơn hàng"}</span>
-                              <span className={styles.historyDate}>{formatDate(entry.createdAt)} {formatTime(entry.createdAt)}</span>
-                            </div>
-                            <div className={`${styles.historyChange} ${entry.pointsChange > 0 ? styles.changePositive : styles.changeNegative}`}>
-                              {entry.pointsChange > 0 ? "+" : ""}{entry.pointsChange}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {loyaltyProfile.pointHistory.length > historyItemsPerPage && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <Pagination 
-                          currentPage={pointsPage}
-                          totalPages={Math.ceil(loyaltyProfile.pointHistory.length / historyItemsPerPage)}
-                          totalItems={loyaltyProfile.pointHistory.length}
-                          itemsPerPage={historyItemsPerPage}
-                          onPageChange={setPointsPage}
-                        />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.historyList}>
-                      {loyaltyProfile.discountHistory.length === 0 ? (
-                        <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '1rem' }}>Chưa có lịch sử sử dụng ưu đãi</div>
-                      ) : (
-                        loyaltyProfile.discountHistory
-                          .slice((discountsPage - 1) * historyItemsPerPage, discountsPage * historyItemsPerPage)
-                          .map(history => (
-                          <div key={history.invoiceId} className={styles.discountItem}>
-                            <div className={styles.discountHeader}>
-                              <span>Đơn hàng {history.invoiceCode}</span>
-                              <span className={styles.discountAmount}>-{history.discountAmount.toLocaleString()}đ</span>
-                            </div>
-                            <div className={styles.discountMeta}>
-                              <span>Ngày: {formatDate(history.issuedAt)}</span>
-                              <span>Tổng đơn: {history.totalAmount.toLocaleString()}đ</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {loyaltyProfile.discountHistory.length > historyItemsPerPage && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <Pagination 
-                          currentPage={discountsPage}
-                          totalPages={Math.ceil(loyaltyProfile.discountHistory.length / historyItemsPerPage)}
-                          totalItems={loyaltyProfile.discountHistory.length}
-                          itemsPerPage={historyItemsPerPage}
-                          onPageChange={setDiscountsPage}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
 
           {reservations.length === 0 ? (
             <div className={styles.empty}>
