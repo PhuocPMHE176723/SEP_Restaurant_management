@@ -16,7 +16,7 @@ const CASHIER_NAV = [
   { href: "/cashier/merge-orders", label: "Gộp hóa đơn" },
 ];
 
-export default function ReceptionistLayout({
+export default function CashierLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -37,7 +37,6 @@ export default function ReceptionistLayout({
     }
     const allowed =
       user?.roles.includes("Cashier") ||
-      user?.roles.includes("Receptionist") ||
       user?.roles.includes("Manager") ||
       user?.roles.includes("Admin");
     if (!allowed) {
@@ -47,7 +46,6 @@ export default function ReceptionistLayout({
 
   const allowed =
     user?.roles.includes("Cashier") ||
-    user?.roles.includes("Receptionist") ||
     user?.roles.includes("Manager") ||
     user?.roles.includes("Admin");
 

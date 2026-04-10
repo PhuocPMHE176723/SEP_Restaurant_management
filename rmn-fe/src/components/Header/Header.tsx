@@ -39,7 +39,6 @@ export default function Header() {
   const isWarehouse = user?.roles.includes("Warehouse");
   const isStaff = user?.roles.includes("Staff");
   const isKitchen = user?.roles.includes("Kitchen");
-  const isReceptionist = user?.roles.includes("Receptionist");
   const isCashier = user?.roles.includes("Cashier");
   const isCustomer = user?.roles.includes("Customer");
 
@@ -161,8 +160,8 @@ export default function Header() {
                 </Link>
               )}
 
-              {/* Unified Cashier/Receptionist portal shortcut */}
-              {(isReceptionist || isCashier) && (
+              {/* Cashier portal shortcut */}
+              {isCashier && (
                 <Link
                   href="/cashier"
                   className={`btn btn-ghost ${styles.adminBtn}`}
@@ -325,7 +324,7 @@ export default function Header() {
                       Cổng Nhà bếp
                     </Link>
                   )}
-                  {(isReceptionist || isCashier) && (
+                  {isCashier && (
                     <Link
                       href="/cashier"
                       className={styles.dropdownItem}
