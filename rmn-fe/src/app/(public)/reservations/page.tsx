@@ -177,6 +177,8 @@ export default function ReservationsPage() {
       <Header />
       <main className={styles.main}>
         <div className="container">
+          <div className={styles.header}>
+            <h1 className={styles.title}>Lịch sử đặt bàn</h1>
             <p className={styles.subtitle}>Quản lý các đơn đặt bàn của bạn</p>
           </div>
 
