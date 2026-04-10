@@ -24,7 +24,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> GetAllOrders([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
     {
         var query = _context.Orders
@@ -78,7 +78,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> GetOrder(long id)
     {
         var order = await _context
@@ -122,7 +122,7 @@ public class OrderController : BaseController
     }
 
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> UpdateOrderStatus(
         long id,
         UpdateOrderStatusRequest request
@@ -187,7 +187,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("{id}/items")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> AddOrderItem(long id, AddOrderItemRequest request)
     {
         var order = await _context.Orders.FindAsync(id);
@@ -226,7 +226,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("walkin")]
-    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> CreateWalkinOrder(CreateWalkinOrderRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -299,7 +299,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("transfer")]
-    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> TransferTable(TransferTableRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -472,7 +472,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("{id}/confirm-items")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> ConfirmGuestItems(long id, [FromBody] ConfirmItemsRequest request)
     {
         var order = await _context.Orders.FindAsync(id);
@@ -505,7 +505,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("merge")]
-    [Authorize(Roles = "Staff,Receptionist,Manager,Admin,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> MergeOrders([FromBody] MergeOrdersRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();

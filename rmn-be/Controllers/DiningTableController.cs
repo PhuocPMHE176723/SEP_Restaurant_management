@@ -31,7 +31,7 @@ public class DiningTableController : BaseController
     }
 
     
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -41,7 +41,7 @@ public class DiningTableController : BaseController
 
     
     [HttpGet("with-orders")]
-    [Authorize(Roles = "Staff,Manager,Admin,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> GetAllWithOrders()
     {
         var tables = await _tableService.GetAllWithOrdersAsync();
@@ -49,7 +49,7 @@ public class DiningTableController : BaseController
     }
 
  
-    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Receptionist,Cashier")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
