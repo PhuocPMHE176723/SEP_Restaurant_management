@@ -1,4 +1,5 @@
 using AutoMapper;
+using rmn_be.Core.DTOs;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
 
@@ -49,6 +50,16 @@ public class MappingProfile : Profile
         
         CreateMap<Slider, SliderDTO>().ReverseMap();
         CreateMap<CreateSliderDTO, Slider>();
+
+        // Staff
+        CreateMap<Staff, StaffDTO>().ReverseMap();
+        CreateMap<CreateStaffDTO, Staff>();
+        CreateMap<UpdateStaffDTO, Staff>();
+
+        // Customer
+        CreateMap<Customer, CustomerDTO>().ReverseMap();
+        CreateMap<CreateCustomerDTO, Customer>();
+        CreateMap<UpdateCustomerDTO, Customer>();
     }
 }
 

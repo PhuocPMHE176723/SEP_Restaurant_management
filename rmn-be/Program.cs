@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using rmn_be.Core.Data;
 using SEP_Restaurant_management.Core.Data;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.ProgramConfig;
@@ -13,9 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 // ─────────────────────────────────────────────────────────────
 //  DATABASE
 // ─────────────────────────────────────────────────────────────
-builder.Services.AddDbContext<SepDatabaseContext>(options =>
+builder.Services.AddDbContext<SepDatabaseContext>((sp, options) =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn"));
+    options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>()); //Sửa để auditlog
 });
 
 // ─────────────────────────────────────────────────────────────
