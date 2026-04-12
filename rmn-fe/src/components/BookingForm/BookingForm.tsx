@@ -14,17 +14,24 @@ import { isValidVNPhone } from "../../lib/validation";
 import Modal from "../Modal/Modal";
 import styles from "./BookingForm.module.css";
 
-// Generate time slots every 15 minutes from 10:00 to 22:00
+// Generate time slots every 15 minutes from 11:00 to 21:30
 function generateTimeSlots(): string[] {
   const slots: string[] = [];
-  for (let h = 10; h <= 22; h++) {
+  // Lunch: 11:00 - 14:00
+  for (let h = 11; h <= 14; h++) {
     for (let m = 0; m < 60; m += 15) {
-      if (h === 22 && m > 0) break;
-      const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-      slots.push(time);
+      if (h === 14 && m > 0) break;
+      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
     }
   }
-  return slots;
+  // Dinner: 17:00 - 21:30
+  for (let h = 17; h <= 21; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      if (h === 21 && m > 30) break;
+      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+    }
+  }
+  return Array.from(new Set(slots)).sort();
 }
 
 const TIME_SLOTS = generateTimeSlots();
@@ -533,8 +540,8 @@ export default function BookingForm() {
               required
             >
               <option value="">-- Chọn giờ --</option>
-              <optgroup label="Buổi sáng/trưa (10:00 – 14:00)">
-                {TIME_SLOTS.filter((t) => t >= "10:00" && t < "14:00").map(
+              <optgroup label="Khung giờ Trưa (11:00 – 14:00)">
+                {TIME_SLOTS.filter((t) => t >= "11:00" && t <= "14:00").map(
                   (t) => (
                     <option key={t} value={t}>
                       {t}
@@ -542,17 +549,8 @@ export default function BookingForm() {
                   ),
                 )}
               </optgroup>
-              <optgroup label="Buổi chiều (14:00 – 17:00)">
-                {TIME_SLOTS.filter((t) => t >= "14:00" && t < "17:00").map(
-                  (t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ),
-                )}
-              </optgroup>
-              <optgroup label="Buổi tối (17:00 – 22:00)">
-                {TIME_SLOTS.filter((t) => t >= "17:00").map((t) => (
+              <optgroup label="Khung giờ Tối (17:00 – 21:30)">
+                {TIME_SLOTS.filter((t) => t >= "17:00" && t <= "21:30").map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -563,7 +561,7 @@ export default function BookingForm() {
               <p className={styles.error}>{errors.timeSlot}</p>
             )}
             <p className={styles.hint}>
-              Khung giờ cách nhau 15 phút · phục vụ 10:00 – 22:00
+              Khung giờ cách nhau 15 phút · Trưa (11:00-14:00) · Tối (17:00-21:30)
             </p>
           </div>
         </div>

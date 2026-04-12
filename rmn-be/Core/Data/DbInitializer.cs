@@ -89,6 +89,12 @@ public static class DbInitializer
 
         // Seed testing data (Reservations, Orders)
         await SeedTestingData(serviceProvider);
+
+        // Seed Recipes (Linking MenuItems to Ingredients)
+        await SeedRecipes(serviceProvider);
+
+        // Seed Daily Prep/Estimation for Today
+        await SeedDailyAllocations(serviceProvider);
     }
 
     private static async Task SeedUser(
@@ -119,30 +125,9 @@ public static class DbInitializer
                     $"\n[DbInitializer] Successfully created user: {email} with role: {role}"
                 );
             }
-            else
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                await System.IO.File.AppendAllTextAsync(
-                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-                    $"\n[DbInitializer] Failed to create user {email}: {errors}"
-                );
-            }
+
         }
-        else
-        {
-            if (!await userManager.IsInRoleAsync(existingUser, role))
-            {
-                await userManager.AddToRoleAsync(existingUser, role);
-                await System.IO.File.AppendAllTextAsync(
-                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-                    $"\n[DbInitializer] Successfully added role: {role} to existing user: {email}"
-                );
-            }
-            await System.IO.File.AppendAllTextAsync(
-                "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-                $"\n[DbInitializer] User already exists: {email}. Role check completed."
-            );
-        }
+
     }
 
     private static async Task SeedSystemConfig(IServiceProvider serviceProvider)
@@ -279,6 +264,21 @@ public static class DbInitializer
                 new Ingredient { IngredientName = "Eggs", Unit = "pcs" },
                 new Ingredient { IngredientName = "Sugar", Unit = "kg" },
                 new Ingredient { IngredientName = "Premium Rice", Unit = "kg" },
+                new Ingredient { IngredientName = "Sticky Rice", Unit = "kg" },
+                new Ingredient { IngredientName = "Shrimp", Unit = "kg" },
+                new Ingredient { IngredientName = "Lobster", Unit = "kg" },
+                new Ingredient { IngredientName = "Pork Ribs", Unit = "kg" },
+                new Ingredient { IngredientName = "Pork Belly", Unit = "kg" },
+                new Ingredient { IngredientName = "Squid", Unit = "kg" },
+                new Ingredient { IngredientName = "Clams", Unit = "kg" },
+                new Ingredient { IngredientName = "Butter", Unit = "kg" },
+                new Ingredient { IngredientName = "Cheese", Unit = "kg" },
+                new Ingredient { IngredientName = "Rice Noodle", Unit = "kg" },
+                new Ingredient { IngredientName = "Salad Greens", Unit = "kg" },
+                new Ingredient { IngredientName = "Tomato", Unit = "kg" },
+                new Ingredient { IngredientName = "Cucumber", Unit = "kg" },
+                new Ingredient { IngredientName = "Lotus Root", Unit = "kg" },
+                new Ingredient { IngredientName = "BBQ Sauce", Unit = "l" },
             };
             context.Ingredients.AddRange(ingredients);
             await context.SaveChangesAsync();
@@ -804,5 +804,124 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
         }
+    private static async Task SeedRecipes(IServiceProvider serviceProvider)
+    {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+        var menuItems = await context.MenuItems.ToListAsync();
+        var ingredients = await context.Ingredients.ToListAsync();
+
+        Func<string, long?> getIngId = (name) => ingredients.FirstOrDefault(i => i.IngredientName.ToLower().Contains(name.ToLower()))?.IngredientId;
+        Func<string, long?> getMenuId = (name) => menuItems.FirstOrDefault(m => m.ItemName.ToLower().Contains(name.ToLower()))?.ItemId;
+
+        var recipesToAdd = new List<MenuItemIngredient>();
+
+        void AddRecipeIfNotExists(long itemId, long ingId, decimal qty)
+        {
+            if (!context.MenuItemIngredients.Any(mi => mi.ItemId == itemId && mi.IngredientId == ingId))
+            {
+                recipesToAdd.Add(new MenuItemIngredient { ItemId = itemId, IngredientId = ingId, Quantity = qty });
+            }
+        }
+
+        // 1. Salad Dầu Giấm
+        var saladId = getMenuId("Salad Dầu Giấm");
+        if (saladId.HasValue)
+        {
+            AddRecipeIfNotExists(saladId.Value, getIngId("Salad Greens") ?? 0, 0.2m);
+            AddRecipeIfNotExists(saladId.Value, getIngId("Tomato") ?? 0, 0.1m);
+            AddRecipeIfNotExists(saladId.Value, getIngId("Cucumber") ?? 0, 0.1m);
+            AddRecipeIfNotExists(saladId.Value, getIngId("Olive Oil") ?? 0, 0.02m);
+        }
+
+        // 2. Gỏi Ngó Sen Tôm Thịt
+        var goiId = getMenuId("Gỏi Ngó Sen");
+        if (goiId.HasValue)
+        {
+            AddRecipeIfNotExists(goiId.Value, getIngId("Lotus Root") ?? 0, 0.3m);
+            AddRecipeIfNotExists(goiId.Value, getIngId("Shrimp") ?? 0, 0.15m);
+            AddRecipeIfNotExists(goiId.Value, getIngId("Pork Belly") ?? 0, 0.1m);
+            AddRecipeIfNotExists(goiId.Value, getIngId("Sugar") ?? 0, 0.05m);
+        }
+
+        // 3. Gà Bó Xôi
+        var gaId = getMenuId("Gà Bó Xôi");
+        if (gaId.HasValue)
+        {
+            AddRecipeIfNotExists(gaId.Value, getIngId("Chicken Breast") ?? 0, 1.2m);
+            AddRecipeIfNotExists(gaId.Value, getIngId("Sticky Rice") ?? 0, 0.5m);
+            AddRecipeIfNotExists(gaId.Value, getIngId("Salt") ?? 0, 0.02m);
+        }
+
+        // 4. Tôm Hùm Nướng Phô Mai
+        var tomHumId = getMenuId("Tôm Hùm Nướng");
+        if (tomHumId.HasValue)
+        {
+            AddRecipeIfNotExists(tomHumId.Value, getIngId("Lobster") ?? 0, 1.0m);
+            AddRecipeIfNotExists(tomHumId.Value, getIngId("Cheese") ?? 0, 0.1m);
+            AddRecipeIfNotExists(tomHumId.Value, getIngId("Butter") ?? 0, 0.05m);
+        }
+
+        // 5. Bò Lúc Lắc
+        var boId = getMenuId("Bò Lúc Lắc");
+        if (boId.HasValue)
+        {
+            AddRecipeIfNotExists(boId.Value, getIngId("Beef Ribeye") ?? 0, 0.3m);
+            AddRecipeIfNotExists(boId.Value, getIngId("Onion") ?? 0, 0.1m);
+            AddRecipeIfNotExists(boId.Value, getIngId("Garlic") ?? 0, 0.01m);
+        }
+
+        // 6. Lẩu Thái Hải Sản
+        var lauId = getMenuId("Lẩu Thái");
+        if (lauId.HasValue)
+        {
+            AddRecipeIfNotExists(lauId.Value, getIngId("Shrimp") ?? 0, 0.2m);
+            AddRecipeIfNotExists(lauId.Value, getIngId("Squid") ?? 0, 0.2m);
+            AddRecipeIfNotExists(lauId.Value, getIngId("Clams") ?? 0, 0.3m);
+            AddRecipeIfNotExists(lauId.Value, getIngId("Rice Noodle") ?? 0, 0.5m);
+        }
+
+        // 7. Sườn Nướng BBQ
+        var suonId = getMenuId("Sườn Nướng");
+        if (suonId.HasValue)
+        {
+            AddRecipeIfNotExists(suonId.Value, getIngId("Pork Ribs") ?? 0, 0.8m);
+            AddRecipeIfNotExists(suonId.Value, getIngId("BBQ Sauce") ?? 0, 0.1m);
+            AddRecipeIfNotExists(suonId.Value, getIngId("Garlic") ?? 0, 0.02m);
+        }
+
+        if (recipesToAdd.Any())
+        {
+            context.MenuItemIngredients.AddRange(recipesToAdd.Where(r => r.IngredientId > 0));
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private static async Task SeedDailyAllocations(IServiceProvider serviceProvider)
+    {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+        var today = DateTimeHelper.VietnamNow().Date;
+
+        if (context.DailyIngredientAllocations.Any(d => d.Date == today)) return;
+
+        var ingredients = await context.Ingredients.ToListAsync();
+        Func<string, long?> getIngId = (name) => ingredients.FirstOrDefault(i => i.IngredientName.ToLower().Contains(name.ToLower()))?.IngredientId;
+
+        var dailyData = new List<DailyIngredientAllocation>
+        {
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Beef Ribeye") ?? 0, AllocatedQuantity = 5.0m, Note = "Seed data chuẩn bị cho ngày hôm nay" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Chicken Breast") ?? 0, AllocatedQuantity = 10.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Salmon Fillet") ?? 0, AllocatedQuantity = 3.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Shrimp") ?? 0, AllocatedQuantity = 5.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Lobster") ?? 0, AllocatedQuantity = 2.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Pork Ribs") ?? 0, AllocatedQuantity = 8.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Sticky Rice") ?? 0, AllocatedQuantity = 5.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Salad Greens") ?? 0, AllocatedQuantity = 3.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Tomato") ?? 0, AllocatedQuantity = 2.0m, Note = "Seed data" },
+            new DailyIngredientAllocation { Date = today, IngredientId = getIngId("Cucumber") ?? 0, AllocatedQuantity = 2.0m, Note = "Seed data" }
+        };
+
+        context.DailyIngredientAllocations.AddRange(dailyData.Where(d => d.IngredientId > 0));
+        await context.SaveChangesAsync();
     }
 }
+

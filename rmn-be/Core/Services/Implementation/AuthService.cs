@@ -15,7 +15,11 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly SepDatabaseContext _context;
 
-    public AuthService(UserManager<UserIdentity> userManager, IConfiguration configuration, SepDatabaseContext context)
+    public AuthService(
+        UserManager<UserIdentity> userManager,
+        IConfiguration configuration,
+        SepDatabaseContext context
+    )
     {
         _userManager = userManager;
         _configuration = configuration;
@@ -29,11 +33,13 @@ public class AuthService : IAuthService
     {
         // 1. Tìm user theo email
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null) return null;
+        if (user == null)
+            return null;
 
         // 2. Kiểm tra password
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!isPasswordValid) return null;
+        if (!isPasswordValid)
+            return null;
 
         // 3. Lấy danh sách roles
         var roles = (await _userManager.GetRolesAsync(user)).ToList();
@@ -43,36 +49,65 @@ public class AuthService : IAuthService
         var token = GenerateJwtToken(user, roles, expireMinutes);
 
         // 5. Tính thời gian hết hạn theo giờ Việt Nam (UTC+7)
-        var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        TimeZoneInfo vnTimeZone;
+        try
+        {
+            // Windows timezone id
+            vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // macOS/Linux typically use IANA ids
+            vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        }
         var expiresAtVn = TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.UtcNow.AddMinutes(expireMinutes), vnTimeZone);
+            DateTime.UtcNow.AddMinutes(expireMinutes),
+            vnTimeZone
+        );
 
         return new LoginResponseDTO
         {
-            AccessToken  = token,
-            TokenType    = "Bearer",
-            ExpiresAt    = expiresAtVn,
-            Email        = user.Email!,
-            FullName     = user.FullName ?? string.Empty,
-            PhoneNumber  = user.PhoneNumber,
-            Roles        = roles
+            AccessToken = token,
+            TokenType = "Bearer",
+            ExpiresAt = expiresAtVn,
+            Email = user.Email!,
+            FullName = user.FullName ?? string.Empty,
+            PhoneNumber = user.PhoneNumber,
+            Roles = roles,
         };
     }
 
     // ─────────────────────────────────────────────
     //  REGISTER
     // ─────────────────────────────────────────────
-    public async Task<(bool Succeeded, List<string> Errors)> RegisterAsync(RegisterRequestDTO request)
+    public async Task<(bool Succeeded, List<string> Errors)> RegisterAsync(
+        RegisterRequestDTO request
+    )
     {
         // Chỉ các role hợp lệ mới được phép đăng ký
         var validRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Admin", "Staff", "Customer", "Warehouse", "Kitchen", "Cashier"
+            "Admin",
+            "Staff",
+            "Customer",
+            "Warehouse",
+            "Kitchen",
+            "Cashier",
         };
 
         if (!validRoles.Contains(request.Role))
         {
-            return (false, new List<string> { $"Role '{request.Role}' is not valid. Allowed: Admin, Staff, Customer, Warehouse, Kitchen, Cashier." });
+            return (
+                false,
+                new List<string>
+                {
+                    $"Role '{request.Role}' is not valid. Allowed: Admin, Staff, Customer, Warehouse, Kitchen, Cashier.",
+                }
+            );
         }
 
         var user = new UserIdentity
@@ -81,7 +116,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             FullName = request.FullName,
             PhoneNumber = request.Phone,
-            EmailConfirmed = true
+            EmailConfirmed = true,
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -103,7 +138,7 @@ public class AuthService : IAuthService
                 Phone = request.Phone,
                 Email = request.Email,
                 TotalPoints = 0,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             _context.Customers.Add(customer);
@@ -118,7 +153,8 @@ public class AuthService : IAuthService
     // ─────────────────────────────────────────────
     private string GenerateJwtToken(UserIdentity user, IList<string> roles, int expireMinutes)
     {
-        var jwtKey = _configuration["Jwt:Key"]
+        var jwtKey =
+            _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("JWT Key is not configured.");
         var issuer = _configuration["Jwt:Issuer"];
         var audience = _configuration["Jwt:Audience"];
@@ -129,11 +165,11 @@ public class AuthService : IAuthService
         // Xây dựng claims
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub,   user.Id),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name,               user.UserName!),
-            new Claim("fullName",                    user.FullName ?? string.Empty),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Name, user.UserName!),
+            new Claim("fullName", user.FullName ?? string.Empty),
         };
 
         // Add staffId if user is linked to a Staff record

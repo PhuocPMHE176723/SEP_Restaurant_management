@@ -105,3 +105,13 @@ export async function createInventoryAudit(data: { note?: string; items: { ingre
 export async function getConsumptionReport(startDate: string, endDate: string) {
     return fetchWithAuth(`/Stock/consumption-report?startDate=${startDate}&endDate=${endDate}`);
 }
+
+// ----- Daily Estimation -----
+export async function getDailyAllocations(date: string) {
+    return fetchWithAuth(`/DailyEstimation?date=${date}`);
+}
+
+export async function upsertDailyAllocation(data: { date: string; ingredientId: number; allocatedQuantity: number; note?: string }) {
+    return fetchWithAuth("/DailyEstimation", { method: "POST", body: JSON.stringify(data) });
+}
+

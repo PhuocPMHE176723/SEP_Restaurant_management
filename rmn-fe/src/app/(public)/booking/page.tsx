@@ -43,7 +43,7 @@ export default function BookingPage() {
                     <li className={styles.infoItem}>
                       <div>
                         <p className={styles.infoLabel}>Địa chỉ</p>
-                        <p className={styles.infoValue}>123 Đống Đa, Hà Nội</p>
+                        <p className={styles.infoValue}>123 Phố Huế, Hai Bà Trưng</p>
                       </div>
                     </li>
                     <li className={styles.infoItem}>

@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { blogApi } from "@/lib/api/blog";
 import { BlogCategory } from "@/types/models/content";
 import Modal from "@/components/Modal/Modal";
-import styles from "../../manager/manager.module.css";
+import styles from "../../../manager/manager.module.css";
 import { PlusCircle, Edit2, Trash2, Check, X } from "lucide-react";
 
 interface CategorySelectProps {

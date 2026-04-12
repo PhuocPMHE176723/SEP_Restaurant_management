@@ -1,6 +1,6 @@
 .main {
     min-height: calc(100vh - 200px);
-    padding: var(--space-12) 0 var(--space-20);
+    padding: var(--space-32) 0 var(--space-20);
     background: var(--bg-page);
 }
 
@@ -385,5 +385,88 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--space-1);
+    }
+}
+
+/* Filter Bar */
+.filterBar {
+    max-width: 900px;
+    margin: 0 auto var(--space-8);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: var(--space-4) var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.filterGroup {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+}
+
+.filterField {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.filterLabel {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dateInput, .statusSelect {
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: all var(--t-fast);
+    background: #fff;
+    min-width: 180px;
+}
+
+.dateInput:focus, .statusSelect:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.clearFilterBtn {
+    font-size: 0.85rem !important;
+    height: auto !important;
+    padding: var(--space-2) var(--space-5) !important;
+    border-radius: var(--radius-full) !important;
+    font-weight: 700 !important;
+}
+
+.filterInfo {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.filterInfo strong {
+    color: var(--brand-primary);
+}
+
+@media (max-width: 640px) {
+    .filterBar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filterInfo {
+        width: 100%;
+        text-align: right;
+        font-size: 0.8rem;
     }
 }

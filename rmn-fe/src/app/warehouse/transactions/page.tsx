@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { getStockMovements, createManualAdjustment, getIngredients } from "../../../lib/api/warehouse";
 import { exportTransactionsPDF } from "../../../lib/exportPDF";
-import styles from "../../manager/manager.module.css";
+import managerStyles from "../../manager/manager.module.css";
+import styles from "../warehouse.module.css";
 import { showSuccess, showError, showConfirm, showWarning } from "../../../lib/ui/alerts";
+import { format } from "date-fns";
+import { Calendar, Search, Filter } from "lucide-react";
 
 import { StockMovementResponse as Movement } from "../../../types/models";
 
@@ -18,6 +21,7 @@ export default function TransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
     const [filterIngredient, setFilterIngredient] = useState("ALL");
+    const [filterDate, setFilterDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
@@ -38,11 +42,15 @@ export default function TransactionsPage() {
 
     // Derived state
     const filteredItems = items.filter(c => {
+        const itemDateStr = format(new Date(c.movedAt), "yyyy-MM-dd");
+        
         const matchSearch = c.ingredientName.toLowerCase().includes(searchTerm.toLowerCase()) 
                          || (c.note || "").toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = filterType === "ALL" || c.movementType === filterType;
         const matchIngredient = filterIngredient === "ALL" || c.ingredientName === filterIngredient;
-        return matchSearch && matchType && matchIngredient;
+        const matchDate = !filterDate || itemDateStr === filterDate;
+        
+        return matchSearch && matchType && matchIngredient && matchDate;
     });
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
@@ -69,40 +77,49 @@ export default function TransactionsPage() {
     }
 
     return (
-        <div className={styles.contentCard}>
-            <div className={styles.cardHeader}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <h1 className={styles.cardTitle}>Lịch sử xuất nhập kho</h1>
-                        <p className={styles.pageSubtitle}>Biến động kho và điều chỉnh thủ công</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <button 
-                            className={styles.btnAdd} 
-                            style={{ background: "#dc2626" }}
-                            onClick={() => exportTransactionsPDF(filteredItems)}
-                        >
-                            ↓ Xuất PDF
-                        </button>
-                        <button className={styles.btnAdd} onClick={() => setModal(true)}>
-                            + Điều chỉnh tồn kho
-                        </button>
-                    </div>
+        <div className={managerStyles.pageContainer}>
+            <header className={styles.pageHeader}>
+                <div className={styles.titleGroup}>
+                    <h1 className={styles.pageTitle}>Lịch sử kho</h1>
+                    <p className={styles.pageSubtitle}>Biến động kho và điều chỉnh thủ công</p>
                 </div>
-            </div>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                    <button 
+                        className={managerStyles.btnAdd} 
+                        style={{ background: "#dc2626", boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)' }}
+                        onClick={() => exportTransactionsPDF(filteredItems)}
+                    >
+                        <Search size={18} style={{ marginRight: '4px' }} /> Xuất PDF
+                    </button>
+                    <button className={managerStyles.btnAdd} onClick={() => setModal(true)}>
+                        + Điều chỉnh tồn kho
+                    </button>
+                </div>
+            </header>
 
-            <div className={styles.cardBody}>
-                <div className={styles.filterBar}>
+            <div className={styles.premiumFilterBar}>
+                <div className={styles.searchGroup}>
+                    <Search size={20} />
                     <input 
                         type="text" 
-                        className={styles.searchInput}
-                        placeholder="Tìm nguyên liệu, ghi chú..." 
+                        placeholder="Tìm theo nguyên liệu hoặc ghi chú..." 
                         value={searchTerm} 
                         onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
                     />
+                </div>
+                
+                <div className={`${styles.searchGroup} ${styles.dateGroup}`}>
+                    <Calendar size={20} />
+                    <input 
+                        type="date" 
+                        value={filterDate} 
+                        onChange={e => { setFilterDate(e.target.value); setCurrentPage(1); }}
+                    />
+                </div>
+
+                <div className={`${styles.searchGroup} ${styles.selectGroup}`}>
+                    <Filter size={20} />
                     <select 
-                        className={styles.input} 
-                        style={{ width: "auto" }}
                         value={filterType} 
                         onChange={e => { setFilterType(e.target.value); setCurrentPage(1); }}
                     >
@@ -110,9 +127,11 @@ export default function TransactionsPage() {
                         <option value="IN">Nhập kho (IN)</option>
                         <option value="OUT">Xuất/Giảm kho (OUT)</option>
                     </select>
+                </div>
+
+                <div className={`${styles.searchGroup} ${styles.selectGroup}`}>
+                    <Filter size={20} />
                     <select 
-                        className={styles.input} 
-                        style={{ width: "auto" }}
                         value={filterIngredient} 
                         onChange={e => { setFilterIngredient(e.target.value); setCurrentPage(1); }}
                     >
@@ -122,88 +141,92 @@ export default function TransactionsPage() {
                         ))}
                     </select>
                 </div>
-
-                <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Thời gian</th>
-                                <th>Loại</th>
-                                <th>Nguyên liệu</th>
-                                <th>Số lượng</th>
-                                <th>Loại tham chiếu</th>
-                                <th>Người tạo</th>
-                                <th>Ghi chú</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? <tr><td colSpan={7} className={styles.loading}>Đang tải...</td></tr> :
-                                paginatedItems.length === 0 ? <tr><td colSpan={7} className={styles.empty}>Không có dữ liệu phù hợp</td></tr> :
-                                paginatedItems.map((m) => (
-                                    <tr key={m.movementId}>
-                                        <td>{new Date(m.movedAt).toLocaleString("vi-VN")}</td>
-                                        <td>
-                                            <span style={{ color: m.movementType === "IN" ? "#10b981" : "#ef4444", fontWeight: "bold" }}>
-                                                {m.movementType === "IN" ? "Nhập" : "Xuất/Giảm"}
-                                            </span>
-                                        </td>
-                                        <td>{m.ingredientName}</td>
-                                        <td>{m.quantity} {m.unit}</td>
-                                        <td>{m.refType}</td>
-                                        <td>{m.createdByStaffName || "Hệ thống"}</td>
-                                        <td>{m.note}</td>
-                                    </tr>
-                                ))
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                {totalPages > 1 && (
-                    <div className={styles.pagination}>
-                        <div className={styles.pageInfo}>
-                            Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} kết quả
-                        </div>
-                        <div className={styles.paginationControls}>
-                            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                Trước
-                            </button>
-                            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                Sau
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
+            <div className={styles.premiumTableCard}>
+                <table className={styles.premiumTable}>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Loại</th>
+                            <th>Nguyên liệu</th>
+                            <th>Số lượng</th>
+                            <th>Loại tham chiếu</th>
+                            <th>Người tạo</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Đang tải...</td></tr> :
+                            paginatedItems.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Không có dữ liệu phù hợp</td></tr> :
+                            paginatedItems.map((m) => (
+                                <tr key={m.movementId}>
+                                    <td style={{ fontWeight: 600, color: '#475569' }}>
+                                        {format(new Date(m.movedAt), "HH:mm:ss")}<br/>
+                                        <small style={{ fontWeight: 500, opacity: 0.7 }}>{format(new Date(m.movedAt), "dd/MM/yyyy")}</small>
+                                    </td>
+                                    <td>
+                                        <span className={`${styles.badge} ${m.movementType === "IN" ? styles.badgeSuccess : styles.badgeDanger}`}>
+                                            {m.movementType === "IN" ? "NHẬP KHO" : "XUẤT / GIẢM"}
+                                        </span>
+                                    </td>
+                                    <td><strong style={{ color: '#0f172a' }}>{m.ingredientName}</strong></td>
+                                    <td><span style={{ fontWeight: 800, color: '#0f172a' }}>{m.quantity}</span> <small style={{ fontWeight: 700, color: '#64748b' }}>{m.unit}</small></td>
+                                    <td><span className={`${styles.badge} ${styles.badgeInfo}`}>{m.refType || "Hệ thống"}</span></td>
+                                    <td><span style={{ fontWeight: 600 }}>{m.createdByStaffName || "Hệ thống"}</span></td>
+                                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#64748b' }}>{m.note}</td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            {totalPages > 1 && (
+                <div className={managerStyles.pagination}>
+                    <div className={managerStyles.pageInfo}>
+                        Hiển thị <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> đến <strong>{Math.min(currentPage * itemsPerPage, filteredItems.length)}</strong> trong <strong>{filteredItems.length}</strong> kết quả
+                    </div>
+                    <div className={managerStyles.paginationControls}>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                            Trước
+                        </button>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                            Sau
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {modal && (
-                <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setModal(false)}>
-                    <div className={styles.modal}>
-                        <div className={styles.modalHead}>
-                            <span className={styles.modalTitle}>Điều chỉnh tồn kho</span>
-                            <button className={styles.modalClose} onClick={() => setModal(false)}>✕</button>
+                <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setModal(false)}>
+                    <div className={managerStyles.modal}>
+                        <div className={managerStyles.modalHead}>
+                            <span className={managerStyles.modalTitle}>Điều chỉnh tồn kho</span>
+                            <button className={managerStyles.modalClose} onClick={() => setModal(false)}>✕</button>
                         </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Nguyên liệu</label>
-                                <select className={styles.input} value={form.ingredientId} onChange={e => setForm({ ...form, ingredientId: Number(e.target.value) })}>
+                        <div className={managerStyles.modalBody}>
+                            <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Nguyên liệu</label>
+                                <select className={managerStyles.input} value={form.ingredientId} onChange={e => setForm({ ...form, ingredientId: Number(e.target.value) })}>
                                     <option value={0}>-- Chọn nguyên liệu --</option>
                                     {ingredients.filter(i => i.isActive).map(i => <option key={i.ingredientId} value={i.ingredientId}>{i.ingredientName} ({i.unit})</option>)}
                                 </select>
                             </div>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Loại biến động</label>
-                                <select className={styles.input} value={form.movementType} onChange={e => setForm({ ...form, movementType: e.target.value })}>
+                            <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Loại biến động</label>
+                                <select className={managerStyles.input} value={form.movementType} onChange={e => setForm({ ...form, movementType: e.target.value })}>
                                     <option value="IN">Nhập thêm (IN)</option>
                                     <option value="OUT">Giảm trừ (OUT)</option>
                                 </select>
                             </div>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Số lượng</label>
+                            <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Số lượng</label>
                                 {(() => {
                                     const selectedIng = ingredients.find(i => i.ingredientId === form.ingredientId);
                                     const isPcs = selectedIng?.unit === "pcs";
                                     return (
-                                        <input className={styles.input} type="number" min={isPcs ? 1 : 0.01} step={isPcs ? 1 : 0.01} value={form.quantity} 
+                                        <input className={managerStyles.input} type="number" min={isPcs ? 1 : 0.01} step={isPcs ? 1 : 0.01} value={form.quantity} 
                                             onFocus={e => e.target.select()}
                                             onChange={e => {
                                                 const val = e.target.value === "" ? 0 : (isPcs ? parseInt(e.target.value) || 0 : parseFloat(e.target.value));
@@ -213,14 +236,14 @@ export default function TransactionsPage() {
                                     );
                                 })()}
                             </div>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Lý do</label>
-                                <input className={styles.input} placeholder="VD: Hàng hư hỏng, Nhập thiếu..." value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
+                            <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Lý do</label>
+                                <input className={managerStyles.input} placeholder="VD: Hàng hư hỏng, Nhập thiếu..." value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
                             </div>
                         </div>
-                        <div className={styles.modalFoot}>
-                            <button className={styles.btnCancel} onClick={() => setModal(false)}>Huỷ</button>
-                            <button className={styles.btnSave} onClick={handleAdjust}>Xác nhận</button>
+                        <div className={managerStyles.modalFoot}>
+                            <button className={managerStyles.btnCancel} onClick={() => setModal(false)}>Huỷ</button>
+                            <button className={managerStyles.btnSave} onClick={handleAdjust}>Xác nhận</button>
                         </div>
                     </div>
                 </div>

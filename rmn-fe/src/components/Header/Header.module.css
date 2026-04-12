@@ -139,6 +139,54 @@
     display: flex;
     align-items: center;
     text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    animation: buttonPulse 2s infinite ease-in-out;
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    transition: all var(--t-normal);
+}
+
+.bookingBtn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+    animation: none; /* Stop pulsing on hover for a stable feel */
+}
+
+/* Shimmer/Shine effect */
+.bookingBtn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(30deg);
+    animation: buttonShine 4s infinite linear;
+}
+
+@keyframes buttonPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    }
+}
+
+@keyframes buttonShine {
+    0% {
+        left: -60%;
+    }
+    20% {
+        left: 130%;
+    }
+    100% {
+        left: 130%;
+    }
 }
 
 /* ── User wrap (relative container for dropdown) ── */

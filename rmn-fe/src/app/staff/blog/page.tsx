@@ -162,7 +162,6 @@ export default function BlogPage() {
                       )}
                       <div>
                         <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.title}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Quản trị viên</div>
                       </div>
                     </div>
                   </td>
@@ -177,6 +176,9 @@ export default function BlogPage() {
                   <td>{new Date(post.createdAt).toLocaleDateString("vi-VN")}</td>
                   <td style={{ textAlign: 'right' }}>
                     <div className={styles.btnRow} style={{ justifyContent: 'flex-end' }}>
+                      <Link href={`/blog/${post.postId}`} target="_blank" className={styles.btnEdit} style={{ background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd' }}>
+                        Xem
+                      </Link>
                       <Link href={`/staff/blog/edit/${post.postId}`} className={styles.btnEdit}>
                         Sửa
                       </Link>

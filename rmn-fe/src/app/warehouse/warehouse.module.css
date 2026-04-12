@@ -1,1 +1,307 @@
-/* Copying the styles from admin.module.css so we have independent design scope if needed, but for simplicity let's re-use admin.module.css inside our layout. */
+.premiumFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: #f8fafc;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.searchGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: #ffffff;
+  padding: 0.625rem 1.125rem;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  min-width: 240px;
+  flex: 1;
+}
+
+.searchGroup:focus-within {
+  border-color: #f97316;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12), 0 4px 12px rgba(249, 115, 22, 0.08);
+  transform: translateY(-1px);
+}
+
+.searchGroup svg {
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.searchGroup:focus-within svg {
+  color: #f97316;
+}
+
+.searchGroup input,
+.searchGroup select {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  width: 100%;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.searchGroup input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.selectGroup {
+  max-width: 220px;
+}
+
+.dateGroup {
+  max-width: 180px;
+}
+
+.premiumTableCard {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.premiumTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.premiumTable th {
+  background: #fcfcfd;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* Header spacing like the image */
+  color: #334155;
+  border-bottom: 2px solid #f1f5f9;
+  text-align: left;
+}
+
+.premiumTable td {
+  padding: 1.125rem 1.5rem;
+  font-size: 0.9375rem;
+  color: #334155;
+  border-bottom: 1px dotted #f1f5f9;
+  transition: background 0.15s;
+}
+
+.premiumTable tr:hover td {
+  background: #fdfaf9;
+}
+
+.premiumTable tr:last-child td {
+  border-bottom: none;
+}
+
+.premiumStatGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.premiumStatCard {
+  background: white;
+  padding: 1.75rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premiumStatCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.06);
+  border-color: #f9731633;
+}
+
+.premiumStatCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #f97316;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.premiumStatCard:hover::before {
+  opacity: 1;
+}
+
+.premiumStatIcon {
+  width: 56px;
+  height: 56px;
+  padding: 14px;
+  background: #f8fafc;
+  color: #f97316;
+  border-radius: 16px;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.premiumStatCard:hover .premiumStatIcon {
+  background: #fff7ed;
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.statInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+/* Standardized Status Badges (Refined to match user photo) */
+.statusBadge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* More pronounced shadow like the image */
+  border: 1px solid transparent;
+  line-height: 1;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  min-width: 120px; /* Ensure uniform look */
+}
+
+.statusBadge:hover,
+.badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+}
+
+.badgeSuccess,
+.statusSuccess,
+.statusPublished {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.badgeDanger,
+.statusDanger,
+.statusArchived,
+.statusCancelled {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border-color: #fecaca !important;
+}
+
+.badgeWarning,
+.statusWarning,
+.statusPending,
+.statusDraft {
+  background: #fffbeb !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+
+.badgeInfo,
+.statusInfo,
+.statusPrimary {
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  border-color: #bfdbfe !important;
+}
+
+.badgeDefault {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+
+
+/* Standardized Semantic Colors (Text only) */
+.textSuccess { color: #166534 !important; }
+.textWarning { color: #92400e !important; }
+.textDanger { color: #991b1b !important; }
+.textInfo { color: #1e40af !important; }
+
+/* Table Content Refinement */
+.stockValue {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums; /* Ensure numbers don't jump */
+  letter-spacing: -0.01em;
+}
+
+.unitLabel {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: lowercase;
+}
+
+/* Page Header Standardized */
+.pageHeader {
+  margin-bottom: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+}

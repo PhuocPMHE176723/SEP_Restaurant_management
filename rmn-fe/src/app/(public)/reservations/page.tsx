@@ -12,6 +12,7 @@ import {
 } from "../../../lib/api/reservation";
 import Modal from "../../../components/Modal/Modal";
 import EditPreorderModal from "../../../components/EditPreorderModal/EditPreorderModal";
+import Pagination from "../../../components/Pagination";
 import styles from "./page.module.css";
 
 export default function ReservationsPage() {
@@ -34,6 +35,16 @@ export default function ReservationsPage() {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Filtering
+  const [filterDate, setFilterDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -45,11 +56,11 @@ export default function ReservationsPage() {
     }
 
     if (mounted && isLoggedIn) {
-      loadReservations();
+      loadData();
     }
   }, [mounted, isLoggedIn, router]);
-
-  async function loadReservations() {
+ 
+  async function loadData() {
     try {
       setLoading(true);
       const data = await getMyReservations();
@@ -78,7 +89,7 @@ export default function ReservationsPage() {
       setModalOpen(true);
 
       setCancelId(null);
-      loadReservations();
+      loadData();
     } catch (error: any) {
       setModalType("error");
       setModalTitle("Lỗi");
@@ -128,6 +139,12 @@ export default function ReservationsPage() {
     return classMap[status] || "";
   }
 
+  const filteredReservations = reservations.filter((res) => {
+    const matchesDate = !filterDate || new Date(res.reservedAt).toISOString().split("T")[0] === filterDate;
+    const matchesStatus = filterStatus === "ALL" || res.status === filterStatus;
+    return matchesDate && matchesStatus;
+  });
+
   if (!mounted || loading) {
     return (
       <>
@@ -152,6 +169,55 @@ export default function ReservationsPage() {
             <p className={styles.subtitle}>Quản lý các đơn đặt bàn của bạn</p>
           </div>
 
+          <div className={styles.filterBar}>
+            <div className={styles.filterGroup}>
+              <div className={styles.filterField}>
+                <label className={styles.filterLabel}>Ngày:</label>
+                <input 
+                  type="date" 
+                  className={styles.dateInput}
+                  value={filterDate}
+                  onChange={(e) => {
+                    setFilterDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className={styles.filterField}>
+                <label className={styles.filterLabel}>Trạng thái:</label>
+                <select 
+                  className={styles.statusSelect}
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="PENDING">Chờ xác nhận</option>
+                  <option value="CONFIRMED">Đã xác nhận</option>
+                  <option value="COMPLETED">Hoàn thiện</option>
+                  <option value="CANCELLED">Đã hủy</option>
+                </select>
+              </div>
+              {(filterDate || filterStatus !== "ALL") && (
+                <button 
+                  className={`btn btn-primary ${styles.clearFilterBtn}`}
+                  onClick={() => {
+                    setFilterDate("");
+                    setFilterStatus("ALL");
+                    setCurrentPage(1);
+                  }}
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
+            <div className={styles.filterInfo}>
+              Tìm thấy <strong>{filteredReservations.length}</strong> đơn đặt bàn
+            </div>
+          </div>
+
           {reservations.length === 0 ? (
             <div className={styles.empty}>
               <h3>Chưa có đặt bàn nào</h3>
@@ -162,7 +228,9 @@ export default function ReservationsPage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {reservations.map((reservation) => (
+              {filteredReservations
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((reservation) => (
                 <div key={reservation.reservationId} className={styles.card}>
                   <div className={styles.cardHeader}>
                     <span
@@ -254,6 +322,16 @@ export default function ReservationsPage() {
                   </div>
                 </div>
               ))}
+
+              <div style={{ marginTop: '1rem' }}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredReservations.length / itemsPerPage)}
+                  totalItems={filteredReservations.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -316,7 +394,7 @@ export default function ReservationsPage() {
             setModalTitle("Cập nhật thành công");
             setModalMessage("Danh sách món ăn của bạn đã được cập nhật.");
             setModalOpen(true);
-            loadReservations();
+            loadData();
           }}
         />
       )}

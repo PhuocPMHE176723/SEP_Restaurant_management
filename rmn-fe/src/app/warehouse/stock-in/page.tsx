@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { getPurchaseReceipts, getIngredients, createPurchaseReceipt, updatePurchaseReceiptStatus } from "../../../lib/api/warehouse";
 import { exportReceiptsPDF } from "../../../lib/exportPDF";
-import styles from "../../manager/manager.module.css";
+import managerStyles from "../../manager/manager.module.css";
+import styles from "../warehouse.module.css";
 import { showSuccess, showError, showConfirm, showWarning } from "../../../lib/ui/alerts";
 import { PurchaseReceiptResponse as Receipt } from "../../../types/models";
+import { Search, Filter, Calendar, FileText } from "lucide-react";
+import { format } from "date-fns";
 
 export default function StockInPage() {
     const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -72,43 +75,43 @@ export default function StockInPage() {
     }
 
     return (
-        <div className={styles.contentCard}>
-            <div className={styles.cardHeader}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <h1 className={styles.cardTitle}>Phiếu nhập kho</h1>
-                        <p className={styles.pageSubtitle}>Quản lý nhập hàng từ nhà cung cấp</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <button 
-                            className={styles.btnAdd} 
-                            style={{ background: "#dc2626" }}
-                            onClick={() => exportReceiptsPDF(filteredItems)}
-                        >
-                            ↓ Xuất PDF
-                        </button>
-                        <button className={styles.btnAdd} onClick={() => {
-                            setForm({ note: "", status: "RECEIVED", items: [{ ingredientId: 0, quantity: 1, unitCost: 0 }] });
-                            setModal(true);
-                        }}>
-                            + Tạo phiếu nhập
-                        </button>
-                    </div>
+        <div className={managerStyles.pageContainer}>
+            <header className={styles.pageHeader}>
+                <div className={styles.titleGroup}>
+                    <h1 className={styles.pageTitle}>Phiếu nhập kho</h1>
+                    <p className={styles.pageSubtitle}>Quản lý nhập hàng từ nhà cung cấp</p>
                 </div>
-            </div>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                    <button 
+                        className={managerStyles.btnAdd} 
+                        style={{ background: "#dc2626" }}
+                        onClick={() => exportReceiptsPDF(filteredItems)}
+                    >
+                        <Search size={18} style={{ marginRight: '4px' }} /> Xuất PDF
+                    </button>
+                    <button className={managerStyles.btnAdd} onClick={() => {
+                        setForm({ note: "", status: "RECEIVED", items: [{ ingredientId: 0, quantity: 1, unitCost: 0 }] });
+                        setModal(true);
+                    }}>
+                        + Tạo phiếu nhập
+                    </button>
+                </div>
+            </header>
 
-            <div className={styles.cardBody}>
-                <div className={styles.filterBar}>
+            <div className={styles.premiumFilterBar}>
+                <div className={styles.searchGroup}>
+                    <Search size={20} />
                     <input 
                         type="text" 
-                        className={styles.searchInput}
                         placeholder="Tìm theo mã phiếu..." 
                         value={searchTerm} 
                         onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
                     />
+                </div>
+                
+                <div className={`${styles.searchGroup} ${styles.selectGroup}`}>
+                    <Filter size={20} />
                     <select 
-                        className={styles.input} 
-                        style={{ width: "auto" }}
                         value={filterStatus} 
                         onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                     >
@@ -118,89 +121,90 @@ export default function StockInPage() {
                         <option value="CANCELLED">Đã huỷ</option>
                     </select>
                 </div>
-
-                <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Mã phiếu</th>
-                                <th>Ngày lập</th>
-                                <th>Tổng tiền</th>
-                                <th>Người lập</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? <tr><td colSpan={6} className={styles.loading}>Đang tải...</td></tr> :
-                                paginatedItems.length === 0 ? <tr><td colSpan={6} className={styles.empty}>Không có dữ liệu phù hợp</td></tr> :
-                                paginatedItems.map((r) => (
-                                    <tr key={r.receiptId}>
-                                        <td><strong>{r.receiptCode}</strong></td>
-                                        <td>{new Date(r.receiptDate).toLocaleString("vi-VN")}</td>
-                                        <td>{r.totalAmount.toLocaleString("vi-VN")} đ</td>
-                                        <td>{r.createdByStaffName}</td>
-                                        <td>
-                                            <span className={`${styles.badge} ${r.status === "RECEIVED" ? styles.badgeActive : styles.badgeInactive}`}>
-                                                {r.status === "RECEIVED" ? "Đã nhập" : r.status === "DRAFT" ? "Nháp" : "Đã huỷ"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {r.status === "DRAFT" && (
-                                                <button className={styles.btnSave} onClick={() => handleReceive(r.receiptId)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}>Nhập kho</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                {totalPages > 1 && (
-                    <div className={styles.pagination}>
-                        <div className={styles.pageInfo}>
-                            Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} kết quả
-                        </div>
-                        <div className={styles.paginationControls}>
-                            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                Trước
-                            </button>
-                            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                Sau
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
+            <div className={styles.premiumTableCard}>
+                <table className={styles.premiumTable}>
+                    <thead>
+                        <tr>
+                            <th>Mã phiếu</th>
+                            <th>Ngày lập</th>
+                            <th>Tổng tiền</th>
+                            <th>Người lập</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Đang tải...</td></tr> :
+                            paginatedItems.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Không có dữ liệu phù hợp</td></tr> :
+                            paginatedItems.map((r) => (
+                                <tr key={r.receiptId}>
+                                    <td><span className={`${styles.badge} ${styles.badgeDefault}`}># {r.receiptCode}</span></td>
+                                    <td><span style={{ color: '#64748b' }}>{format(new Date(r.receiptDate), "dd/MM/yyyy HH:mm")}</span></td>
+                                    <td><span className={styles.stockValue}>{r.totalAmount.toLocaleString("vi-VN")}</span> <small className={styles.unitLabel}>đ</small></td>
+                                    <td><span style={{ fontWeight: 600 }}>{r.createdByStaffName}</span></td>
+                                    <td>
+                                        <span className={`${styles.badge} ${r.status === "RECEIVED" ? styles.badgeSuccess : r.status === "DRAFT" ? styles.badgeWarning : styles.badgeDanger}`}>
+                                            {r.status === "RECEIVED" ? "Toàn bộ" : r.status === "DRAFT" ? "Bản nháp" : "Đã huỷ"}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {r.status === "DRAFT" && (
+                                            <button className={managerStyles.btnEdit} onClick={() => handleReceive(r.receiptId)}>Nhập kho</button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            {totalPages > 1 && (
+                <div className={managerStyles.pagination}>
+                    <div className={managerStyles.pageInfo}>
+                        Hiển thị <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> đến <strong>{Math.min(currentPage * itemsPerPage, filteredItems.length)}</strong> trong <strong>{filteredItems.length}</strong> kết quả
+                    </div>
+                    <div className={managerStyles.paginationControls}>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                            Trước
+                        </button>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                            Sau
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {modal && (
-                <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setModal(false)}>
-                    <div className={styles.modal} style={{ width: '600px', maxWidth: '90vw' }}>
-                        <div className={styles.modalHead}>
-                            <span className={styles.modalTitle}>Tạo phiếu nhập mới</span>
-                            <button className={styles.modalClose} onClick={() => setModal(false)}>✕</button>
+                <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setModal(false)}>
+                    <div className={managerStyles.modal} style={{ width: '600px', maxWidth: '90vw' }}>
+                        <div className={managerStyles.modalHead}>
+                            <span className={managerStyles.modalTitle}>Tạo phiếu nhập mới</span>
+                            <button className={managerStyles.modalClose} onClick={() => setModal(false)}>✕</button>
                         </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Ghi chú</label>
-                                <input className={styles.input} placeholder="Nội dung nhập..." value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
+                        <div className={managerStyles.modalBody}>
+                             <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Ghi chú</label>
+                                <input className={managerStyles.input} placeholder="Nội dung nhập..." value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
                             </div>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Nhập vào kho ngay hay lưu nháp?</label>
-                                <select className={styles.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                            <div className={managerStyles.field}>
+                                <label className={managerStyles.label}>Nhập vào kho ngay hay lưu nháp?</label>
+                                <select className={managerStyles.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
                                     <option value="RECEIVED">Nhập vào tồn kho luôn</option>
                                     <option value="DRAFT">Lưu nháp (chưa tính vào tồn)</option>
                                 </select>
                             </div>
 
-                            <hr style={{ margin: "1rem 0", borderColor: "#e2e8f0" }} />
-                            <h4 style={{ marginBottom: "0.5rem" }}>Chi tiết các mặt hàng</h4>
+                            <hr style={{ margin: "1rem 0", borderColor: "#f1f5f9" }} />
+                            <h4 style={{ marginBottom: "0.5rem", fontSize: '0.9rem', color: '#475569' }}>Chi tiết các mặt hàng</h4>
 
                             {form.items.map((item, idx) => (
                                 <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "flex-end" }}>
                                     <div style={{ flex: 2 }}>
-                                        <small style={{ color: "#64748b" }}>Nguyên liệu</small>
-                                        <select className={styles.input} value={item.ingredientId} onChange={e => {
+                                        <small style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Nguyên liệu</small>
+                                        <select className={managerStyles.input} value={item.ingredientId} onChange={e => {
                                             const n = [...form.items]; n[idx].ingredientId = Number(e.target.value); setForm({ ...form, items: n });
                                         }}>
                                             <option value={0}>-- Chọn --</option>
@@ -208,12 +212,12 @@ export default function StockInPage() {
                                         </select>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <small style={{ color: "#64748b" }}>Số lượng</small>
+                                        <small style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Số lượng</small>
                                         {(() => {
                                             const selectedIng = ingredients.find(i => i.ingredientId === item.ingredientId);
                                             const isPcs = selectedIng?.unit === "pcs";
                                             return (
-                                                <input className={styles.input} type="number" min={isPcs ? 1 : 0.01} step={isPcs ? 1 : 0.01} value={item.quantity} onFocus={e => e.target.select()} onChange={e => {
+                                                <input className={managerStyles.input} type="number" min={isPcs ? 1 : 0.01} step={isPcs ? 1 : 0.01} value={item.quantity} onFocus={e => e.target.select()} onChange={e => {
                                                     const val = e.target.value === "" ? 0 : (isPcs ? parseInt(e.target.value) || 0 : parseFloat(e.target.value));
                                                     const n = [...form.items]; n[idx].quantity = val; setForm({ ...form, items: n });
                                                 }} />
@@ -221,24 +225,24 @@ export default function StockInPage() {
                                         })()}
                                     </div>
                                     <div style={{ flex: 1.5 }}>
-                                        <small style={{ color: "#64748b" }}>Đơn giá</small>
-                                        <input className={styles.input} type="number" min={0} value={item.unitCost} onFocus={e => e.target.select()} onChange={e => {
+                                        <small style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Đơn giá</small>
+                                        <input className={managerStyles.input} type="number" min={0} value={item.unitCost} onFocus={e => e.target.select()} onChange={e => {
                                             const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
                                             const n = [...form.items]; n[idx].unitCost = val; setForm({ ...form, items: n });
                                         }} />
                                     </div>
                                     <button onClick={() => {
                                         const n = [...form.items]; n.splice(idx, 1); setForm({ ...form, items: n });
-                                    }} style={{ background: "#ef4444", color: "white", border: "none", borderRadius: "4px", padding: "10px", cursor: "pointer", height: "39px" }}>X</button>
+                                    }} style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px", cursor: "pointer", height: "45px" }}>✕</button>
                                 </div>
                             ))}
                             
-                            <button onClick={() => setForm({ ...form, items: [...form.items, { ingredientId: 0, quantity: 1, unitCost: 0 }] })} style={{ background: "#f8fafc", border: "1px dashed #cbd5e1", width: "100%", padding: "10px", borderRadius: "6px", cursor: "pointer" }}>+ Thêm mặt hàng</button>
+                            <button onClick={() => setForm({ ...form, items: [...form.items, { ingredientId: 0, quantity: 1, unitCost: 0 }] })} style={{ background: "#f8fafc", border: "1.5px dashed #cbd5e1", width: "100%", padding: "12px", borderRadius: "10px", color: '#475569', fontWeight: 600, cursor: "pointer", marginTop: '0.5rem' }}>+ Thêm mặt hàng</button>
 
                         </div>
-                        <div className={styles.modalFoot}>
-                            <button className={styles.btnCancel} onClick={() => setModal(false)}>Huỷ</button>
-                            <button className={styles.btnSave} onClick={handleSave}>Hoàn tất</button>
+                        <div className={managerStyles.modalFoot}>
+                            <button className={managerStyles.btnCancel} onClick={() => setModal(false)}>Huỷ</button>
+                            <button className={managerStyles.btnAdd} onClick={handleSave}>Hoàn tất</button>
                         </div>
                     </div>
                 </div>
