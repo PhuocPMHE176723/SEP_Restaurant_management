@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Image as ImageIcon, Type, FileText, Tag, Layers } from
 import Link from "next/link";
 import { ImageUpload } from "../../../../components/common/ImageUpload";
 import { BlogCategorySelect } from "../components/BlogCategorySelect";
+import RichEditor from "../../../../components/common/RichEditor";
 
 export default function CreateBlogPostPage() {
   const router = useRouter();
@@ -134,13 +135,10 @@ export default function CreateBlogPostPage() {
 
           <div className={styles.formGroup}>
             <label style={{ fontWeight: 600, color: '#475569' }}>Nội dung chi tiết *</label>
-            <textarea
-              className={styles.textarea}
-              placeholder="Nhập nội dung bài viết..."
-              style={{ minHeight: '400px' }}
+            <RichEditor
               value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              required
+              onChange={(content) => setFormData({ ...formData, content })}
+              placeholder="Nhập nội dung bài viết..."
             />
           </div>
 

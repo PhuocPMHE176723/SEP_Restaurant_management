@@ -1,0 +1,48 @@
+.editorWrapper {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.editorWrapper :global(.ql-toolbar) {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.editorWrapper :global(.ql-container) {
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+  min-height: 400px;
+}
+
+.editorWrapper :global(.ql-editor) {
+  min-height: 400px;
+  max-height: 800px;
+  overflow-y: auto;
+  line-height: 1.6;
+  padding: 1rem;
+}
+
+.editorWrapper :global(.ql-editor.ql-blank::before) {
+  color: #94a3b8;
+  font-style: normal;
+}
+
+.loadingEditor {
+  height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
