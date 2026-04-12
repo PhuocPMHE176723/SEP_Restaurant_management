@@ -67,6 +67,9 @@ export default function Header() {
             <Link href="/menu" className={styles.navLink}>
               Thực đơn
             </Link>
+            <Link href="/blog" className={styles.navLink}>
+              Tin tức
+            </Link>
             <Link href="/about" className={styles.navLink}>
               Giới thiệu
             </Link>
@@ -119,6 +122,9 @@ export default function Header() {
           </Link>
           <Link href="/menu" className={styles.navLink}>
             Thực đơn
+          </Link>
+          <Link href="/blog" className={styles.navLink}>
+            Tin tức
           </Link>
           <Link href="/about" className={styles.navLink}>
             Giới thiệu
