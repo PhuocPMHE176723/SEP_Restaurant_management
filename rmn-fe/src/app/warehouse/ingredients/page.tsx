@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getIngredients, createIngredient, updateIngredient, deleteIngredient, getIngredientPriceHistory } from "../../../lib/api/warehouse";
-import styles from "../../manager/manager.module.css";
+import managerStyles from "../../manager/manager.module.css";
+import localStyles from "../warehouse.module.css";
 import { showSuccess, showError, showInfo } from "../../../lib/ui/alerts";
-
+import { Search, Filter, Plus } from "lucide-react";
 import { IngredientResponse as Ingredient } from "../../../types/models";
 
 type PriceBatch = { date: string; receiptCode: string; quantity: number; unitCost: number; };
@@ -257,108 +258,111 @@ export default function IngredientsPage() {
 
     return (
         <>
-            <div className={styles.contentCard}>
-                <div className={styles.cardHeader}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                            <h1 className={styles.cardTitle}>Danh sách nguyên liệu</h1>
-                            <p className={styles.pageSubtitle}>Quản lý danh sách các nguyên liệu nhập kho</p>
-                        </div>
-                        <button className={styles.btnAdd} onClick={() => setModal({ type: "create" })}>
-                            + Thêm nguyên liệu
+        <div className={managerStyles.pageContainer}>
+            <header className={localStyles.pageHeader}>
+                <div className={localStyles.titleGroup}>
+                    <h1 className={localStyles.pageTitle}>Danh sách nguyên liệu</h1>
+                    <p className={localStyles.pageSubtitle}>Quản lý danh sách các nguyên liệu nhập kho</p>
+                </div>
+                <button className={managerStyles.btnAdd} onClick={() => setModal({ type: "create" })}>
+                    <Plus size={18} style={{ marginRight: '4px' }} /> Thêm nguyên liệu
+                </button>
+            </header>
+
+            <div className={localStyles.premiumFilterBar}>
+                <div className={localStyles.searchGroup}>
+                    <Search size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Tìm nguyên liệu..." 
+                        value={searchTerm} 
+                        onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                    />
+                </div>
+                
+                <div className={`${localStyles.searchGroup} ${localStyles.selectGroup}`}>
+                    <Filter size={20} />
+                    <select 
+                        value={filterStatus} 
+                        onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                    >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="ACTIVE">Đang sử dụng</option>
+                        <option value="INACTIVE">Ngừng sử dụng</option>
+                    </select>
+                </div>
+
+                <div className={`${localStyles.searchGroup} ${localStyles.selectGroup}`}>
+                    <Filter size={20} />
+                    <select 
+                        value={filterUnit} 
+                        onChange={e => { setFilterUnit(e.target.value); setCurrentPage(1); }}
+                    >
+                        <option value="ALL">Tất cả đơn vị tính</option>
+                        {[...new Set(items.map(i => i.unit))].sort().map(u => (
+                            <option key={u} value={u}>{u}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className={localStyles.premiumTableCard}>
+                <table className={localStyles.premiumTable}>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Mã</th>
+                            <th>Tên nguyên liệu</th>
+                            <th>Đơn vị tính</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Đang tải...</td></tr>
+                        ) : paginatedItems.length === 0 ? (
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Chưa có nguyên liệu nào phù hợp</td></tr>
+                        ) : paginatedItems.map((c, i) => (
+                            <tr key={c.ingredientId}>
+                                <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                                <td><span className={`${localStyles.badge} ${localStyles.badgeDefault}`} style={{ minWidth: '100px' }}>NL-{c.ingredientId.toString().padStart(4, "0")}</span></td>
+                                <td><strong style={{ color: '#0f172a' }}>{c.ingredientName}</strong></td>
+                                <td>{c.unit}</td>
+                                <td>
+                                    <span className={`${localStyles.badge} ${c.isActive ? localStyles.badgeSuccess : localStyles.badgeDanger}`}>
+                                        {c.isActive ? "SỬ DỤNG" : "NGỪNG DÙNG"}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className={managerStyles.btnRow}>
+                                        <button className={managerStyles.btnEdit} onClick={() => setModal({ type: "price", item: c })}>Giá</button>
+                                        <button className={managerStyles.btnEdit} style={{ background: '#f8fafc', color: '#475569', borderColor: '#e2e8f0' }} onClick={() => setModal({ type: "edit", item: c })}>Sửa</button>
+                                        {c.isActive && <button className={managerStyles.btnDelete} onClick={() => setModal({ type: "delete", item: c })}>Xoá</button>}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {totalPages > 1 && (
+                <div className={managerStyles.pagination}>
+                    <div className={managerStyles.pageInfo}>
+                        Hiển thị <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> đến <strong>{Math.min(currentPage * itemsPerPage, filteredItems.length)}</strong> trong <strong>{filteredItems.length}</strong> kết quả
+                    </div>
+                    <div className={managerStyles.paginationControls}>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                            Trước
+                        </button>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                            Sau
                         </button>
                     </div>
                 </div>
-
-                <div className={styles.cardBody}>
-                    <div className={styles.filterBar}>
-                        <input 
-                            type="text" 
-                            className={styles.searchInput}
-                            placeholder="Tìm nguyên liệu..." 
-                            value={searchTerm} 
-                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-                        />
-                        <select 
-                            className={styles.input} 
-                            style={{ width: "auto" }}
-                            value={filterStatus} 
-                            onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                        >
-                            <option value="ALL">Tất cả trạng thái</option>
-                            <option value="ACTIVE">Đang sử dụng</option>
-                            <option value="INACTIVE">Ngừng sử dụng</option>
-                        </select>
-                        <select 
-                            className={styles.input} 
-                            style={{ width: "auto" }}
-                            value={filterUnit} 
-                            onChange={e => { setFilterUnit(e.target.value); setCurrentPage(1); }}
-                        >
-                            <option value="ALL">Tất cả đơn vị tính</option>
-                            {[...new Set(items.map(i => i.unit))].sort().map(u => (
-                                <option key={u} value={u}>{u}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className={styles.tableWrap}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>ID</th>
-                                    <th>Tên nguyên liệu</th>
-                                    <th>Đơn vị tính (ĐVT)</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr><td colSpan={6} className={styles.loading}>Đang tải...</td></tr>
-                                ) : paginatedItems.length === 0 ? (
-                                    <tr><td colSpan={6} className={styles.empty}>Chưa có nguyên liệu nào phù hợp</td></tr>
-                                ) : paginatedItems.map((c, i) => (
-                                    <tr key={c.ingredientId}>
-                                        <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
-                                        <td>NL-{c.ingredientId.toString().padStart(4, "0")}</td>
-                                        <td><strong>{c.ingredientName}</strong></td>
-                                        <td>{c.unit}</td>
-                                        <td>
-                                            <span className={`${styles.badge} ${c.isActive ? styles.badgeActive : styles.badgeInactive}`}>
-                                                {c.isActive ? "Sử dụng" : "Ngừng sử dụng"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className={styles.btnRow}>
-                                                <button style={{ background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: "0.82rem", fontWeight: 600 }} onClick={() => setModal({ type: "price", item: c })}>Lịch sử giá</button>
-                                                <button className={styles.btnEdit} onClick={() => setModal({ type: "edit", item: c })}>Sửa</button>
-                                                {c.isActive && <button className={styles.btnDelete} onClick={() => setModal({ type: "delete", item: c })}>Xoá</button>}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {totalPages > 1 && (
-                        <div className={styles.pagination}>
-                            <div className={styles.pageInfo}>
-                                Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong {filteredItems.length} nguyên liệu
-                            </div>
-                            <div className={styles.paginationControls}>
-                                <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                    Trước
-                                </button>
-                                <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                    Sau
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+            )}
+        </div>
 
             {modal?.type === "create" && <CreateModal onClose={() => setModal(null)} onSaved={load} />}
             {modal?.type === "edit" && modal.item && <EditModal i={modal.item} onClose={() => setModal(null)} onSaved={load} />}

@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { getInventoryOnHand } from "../../../lib/api/warehouse";
 import { exportInventoryPDF } from "../../../lib/exportPDF";
-import styles from "../../manager/manager.module.css";
+import managerStyles from "../../manager/manager.module.css";
+import localStyles from "../warehouse.module.css";
+import { Search, Filter, Download } from "lucide-react";
+import { format } from "date-fns";
 
 import { InventoryOnHandResponse as Inventory } from "../../../types/models";
 
@@ -61,46 +64,48 @@ export default function InventoryPage() {
     const paginatedItems = displayItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <div className={styles.contentCard}>
-            <div className={styles.cardHeader}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                    <div>
-                        <h1 className={styles.cardTitle}>Kho nguyên liệu</h1>
-                        <p className={styles.pageSubtitle}>Tồn kho hiện tại &amp; cảnh báo</p>
-                    </div>
-                    <button 
-                        className={styles.btnAdd} 
-                        style={{ background: "#dc2626" }}
-                        onClick={() => exportInventoryPDF(displayItems.map(c => ({ ...c, status: getStatus(c) === "HET" ? "Het" : getStatus(c) === "SAP_HET" ? "Sap het" : "On dinh" })))}
-                    >
-                        ↓ Xuất PDF
-                    </button>
+        <div className={managerStyles.pageContainer}>
+            <header className={localStyles.pageHeader}>
+                <div className={localStyles.titleGroup}>
+                    <h1 className={localStyles.pageTitle}>Kho nguyên liệu</h1>
+                    <p className={localStyles.pageSubtitle}>Tồn kho hiện tại & cảnh báo</p>
                 </div>
-            </div>
+                <button 
+                    className={managerStyles.btnAdd} 
+                    style={{ background: "#dc2626", boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)' }}
+                    onClick={() => exportInventoryPDF(displayItems.map(c => ({ ...c, status: getStatus(c) === "HET" ? "Het" : getStatus(c) === "SAP_HET" ? "Sap het" : "On dinh" })))}
+                >
+                    <Download size={18} style={{ marginRight: '4px' }} /> Xuất PDF
+                </button>
+            </header>
 
-            <div className={styles.cardBody}>
-                <div className={styles.filterBar}>
+            <div className={localStyles.premiumFilterBar}>
+                <div className={localStyles.searchGroup}>
+                    <Search size={20} />
                     <input 
                         type="text" 
-                        className={styles.searchInput}
                         placeholder="Tìm nguyên liệu..." 
                         value={searchTerm} 
                         onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
                     />
+                </div>
+                
+                <div className={`${localStyles.searchGroup} ${localStyles.selectGroup}`}>
+                    <Filter size={20} />
                     <select 
-                        className={styles.input} 
-                        style={{ width: "auto" }}
                         value={filterStatus} 
                         onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                     >
                         <option value="ALL">Tất cả tồn kho</option>
-                        <option value="ON_DINH">Ổn định (&gt;20% số giao nhận)</option>
+                        <option value="ON_DINH">Ổn định ({'>'}20%)</option>
                         <option value="SAP_HET">Sắp hết (≤20%)</option>
                         <option value="HET">Hết kho (0)</option>
                     </select>
+                </div>
+
+                <div className={`${localStyles.searchGroup} ${localStyles.selectGroup}`}>
+                    <Filter size={20} />
                     <select 
-                        className={styles.input} 
-                        style={{ width: "auto" }}
                         value={filterIngredient} 
                         onChange={e => { setFilterIngredient(e.target.value); setCurrentPage(1); }}
                     >
@@ -110,64 +115,66 @@ export default function InventoryPage() {
                         ))}
                     </select>
                 </div>
-
-                <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nguyên liệu</th>
-                                <th>Số lượng tồn</th>
-                                <th>ĐVT</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan={5} className={styles.loading}>Đang tải...</td></tr>
-                            ) : paginatedItems.length === 0 ? (
-                                <tr><td colSpan={5} className={styles.empty}>Không có dữ liệu phù hợp</td></tr>
-                            ) : paginatedItems.map((c, i) => (
-                                <tr key={c.ingredientId}>
-                                    <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
-                                    <td><strong>{c.ingredientName}</strong></td>
-                                    <td>
-                                        {(() => {
-                                            const status = getStatus(c);
-                                            const color = status === "HET" ? "#ef4444" : status === "SAP_HET" ? "#f59e0b" : "#10b981";
-                                            return <span style={{ color, fontWeight: "bold" }}>{c.currentStock.toLocaleString("vi-VN")}</span>;
-                                        })()}
-                                    </td>
-                                    <td>{c.unit}</td>
-                                    <td>
-                                        {(() => {
-                                            const status = getStatus(c);
-                                            if (status === "HET") return <span className={`${styles.badge} ${styles.badgeInactive}`} style={{ background: "#ef4444", color: "#fff" }}>Hết</span>;
-                                            if (status === "SAP_HET") return <span className={`${styles.badge} ${styles.badgeInactive}`}>Sắp hết</span>;
-                                            return <span className={`${styles.badge} ${styles.badgeActive}`}>Ổn định</span>;
-                                        })()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                {totalPages > 1 && (
-                    <div className={styles.pagination}>
-                        <div className={styles.pageInfo}>
-                            Hiển thị từ {(currentPage - 1) * itemsPerPage + 1} đến {Math.min(currentPage * itemsPerPage, displayItems.length)} trong {displayItems.length} kết quả
-                        </div>
-                        <div className={styles.paginationControls}>
-                            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                Trước
-                            </button>
-                            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                Sau
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
+
+            <div className={localStyles.premiumTableCard}>
+                <table className={localStyles.premiumTable}>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nguyên liệu</th>
+                            <th style={{ textAlign: 'right' }}>Số lượng tồn</th>
+                            <th>ĐVT</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Đang tải...</td></tr>
+                        ) : paginatedItems.length === 0 ? (
+                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Không có dữ liệu phù hợp</td></tr>
+                        ) : paginatedItems.map((c, i) => (
+                            <tr key={c.ingredientId}>
+                                <td>{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                                <td><strong style={{ color: '#0f172a' }}>{c.ingredientName}</strong></td>
+                                <td style={{ textAlign: 'right' }}>
+                                    {(() => {
+                                        const status = getStatus(c);
+                                        const badgeClass = status === "HET" ? localStyles.textDanger : status === "SAP_HET" ? localStyles.textWarning : localStyles.textSuccess;
+                                        return <span className={`${localStyles.stockValue} ${badgeClass}`}>{c.currentStock.toLocaleString("vi-VN")}</span>;
+                                    })()}
+                                </td>
+                                <td><span className={localStyles.unitLabel}>{c.unit}</span></td>
+                                <td>
+                                    {(() => {
+                                        const status = getStatus(c);
+                                        const badgeClass = status === "HET" ? localStyles.badgeDanger : status === "SAP_HET" ? localStyles.badgeWarning : localStyles.badgeSuccess;
+                                        return <span className={`${localStyles.badge} ${badgeClass}`}>
+                                            {status === "HET" ? "HẾT KHO" : status === "SAP_HET" ? "SẮP HẾT" : "ỔN ĐỊNH"}
+                                        </span>;
+                                    })()}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {totalPages > 1 && (
+                <div className={managerStyles.pagination}>
+                    <div className={managerStyles.pageInfo}>
+                        Hiển thị <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> đến <strong>{Math.min(currentPage * itemsPerPage, displayItems.length)}</strong> trong <strong>{displayItems.length}</strong> kết quả
+                    </div>
+                    <div className={managerStyles.paginationControls}>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                            Trước
+                        </button>
+                        <button className={managerStyles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                            Sau
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
