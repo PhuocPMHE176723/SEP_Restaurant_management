@@ -169,6 +169,8 @@ if (!app.Environment.IsDevelopment())
 app.UseCors();
 app.UseAuthentication(); // Phải đứng TRƯỚC UseAuthorization
 app.UseAuthorization();
+
+app.MapControllers();
 // ─────────────────────────────────────────────────────────────
 //  SEED DATA
 // ─────────────────────────────────────────────────────────────
