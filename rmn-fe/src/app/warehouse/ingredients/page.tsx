@@ -27,13 +27,13 @@ function PriceHistoryModal({ ingredient, onClose }: { ingredient: Ingredient; on
     }, [ingredient.ingredientId]);
 
     return (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modal} style={{ maxWidth: 620, width: "95%" }}>
-                <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Lịch sử giá - {ingredient.ingredientName}</span>
-                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+        <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className={managerStyles.modal} style={{ maxWidth: 620, width: "95%" }}>
+                <div className={managerStyles.modalHead}>
+                    <span className={managerStyles.modalTitle}>Lịch sử giá - {ingredient.ingredientName}</span>
+                    <button className={managerStyles.modalClose} onClick={onClose}>✕</button>
                 </div>
-                <div className={styles.modalBody}>
+                <div className={managerStyles.modalBody}>
                     {loading ? <p>Đang tải...</p> : batches.length === 0 ? (
                         <p style={{ color: "#94a3b8", textAlign: "center" }}>Chưa có lần nhập kho nào được ghi nhận</p>
                     ) : (
@@ -42,7 +42,7 @@ function PriceHistoryModal({ ingredient, onClose }: { ingredient: Ingredient; on
                                 <span style={{ color: "#166534", fontWeight: 600 }}>Giá trung bình hiện tại</span>
                                 <span style={{ color: "#166534", fontWeight: 700, fontSize: "1.1rem" }}>{avg.toLocaleString("vi-VN")} ₫</span>
                             </div>
-                            <table className={styles.table}>
+                            <table className={managerStyles.table}>
                                 <thead><tr>
                                     <th>#</th>
                                     <th>Mã phiếu</th>
@@ -65,8 +65,8 @@ function PriceHistoryModal({ ingredient, onClose }: { ingredient: Ingredient; on
                         </>
                     )}
                 </div>
-                <div className={styles.modalFoot}>
-                    <button className={styles.btnCancel} onClick={onClose}>Đóng</button>
+                <div className={managerStyles.modalFoot}>
+                    <button className={managerStyles.btnCancel} onClick={onClose}>Đóng</button>
                 </div>
             </div>
         </div>
@@ -94,22 +94,22 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
     }
 
     return (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modal}>
-                <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Thêm nguyên liệu mới</span>
-                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+        <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className={managerStyles.modal}>
+                <div className={managerStyles.modalHead}>
+                    <span className={managerStyles.modalTitle}>Thêm nguyên liệu mới</span>
+                    <button className={managerStyles.modalClose} onClick={onClose}>✕</button>
                 </div>
-                <div className={styles.modalBody}>
-                    {error && <div className={styles.modalError}>{error}</div>}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Tên nguyên liệu *</label>
-                        <input className={styles.input} placeholder="VD: Gạo ST25"
+                <div className={managerStyles.modalBody}>
+                    {error && <div className={managerStyles.modalError}>{error}</div>}
+                    <div className={managerStyles.field}>
+                        <label className={managerStyles.label}>Tên nguyên liệu *</label>
+                        <input className={managerStyles.input} placeholder="VD: Gạo ST25"
                             value={form.ingredientName} onChange={(e) => setForm({ ...form, ingredientName: e.target.value })} />
                     </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Đơn vị tính *</label>
-                        <select className={styles.input} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
+                    <div className={managerStyles.field}>
+                        <label className={managerStyles.label}>Đơn vị tính *</label>
+                        <select className={managerStyles.input} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
                             <option value="kg">kg</option>
                             <option value="g">gram</option>
                             <option value="l">lít</option>
@@ -118,9 +118,9 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
                         </select>
                     </div>
                 </div>
-                <div className={styles.modalFoot}>
-                    <button className={styles.btnCancel} onClick={onClose}>Huỷ</button>
-                    <button className={styles.btnSave} onClick={handleSave} disabled={saving}>
+                <div className={managerStyles.modalFoot}>
+                    <button className={managerStyles.btnCancel} onClick={onClose}>Huỷ</button>
+                    <button className={managerStyles.btnSave} onClick={handleSave} disabled={saving}>
                         {saving ? "Đang lưu..." : "Lưu"}
                     </button>
                 </div>
@@ -149,22 +149,22 @@ function EditModal({ i, onClose, onSaved }: { i: Ingredient; onClose: () => void
     }
 
     return (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modal}>
-                <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Sửa nguyên liệu</span>
-                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+        <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className={managerStyles.modal}>
+                <div className={managerStyles.modalHead}>
+                    <span className={managerStyles.modalTitle}>Sửa nguyên liệu</span>
+                    <button className={managerStyles.modalClose} onClick={onClose}>✕</button>
                 </div>
-                <div className={styles.modalBody}>
-                    {error && <div className={styles.modalError}>{error}</div>}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Tên nguyên liệu</label>
-                        <input className={styles.input} value={form.ingredientName}
+                <div className={managerStyles.modalBody}>
+                    {error && <div className={managerStyles.modalError}>{error}</div>}
+                    <div className={managerStyles.field}>
+                        <label className={managerStyles.label}>Tên nguyên liệu</label>
+                        <input className={managerStyles.input} value={form.ingredientName}
                             onChange={(e) => setForm({ ...form, ingredientName: e.target.value })} />
                     </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Đơn vị tính</label>
-                        <select className={styles.input} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
+                    <div className={managerStyles.field}>
+                        <label className={managerStyles.label}>Đơn vị tính</label>
+                        <select className={managerStyles.input} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
                             <option value="kg">kg</option>
                             <option value="g">gram</option>
                             <option value="l">lít</option>
@@ -172,14 +172,14 @@ function EditModal({ i, onClose, onSaved }: { i: Ingredient; onClose: () => void
                             <option value="pcs">cái / quả / chai</option>
                         </select>
                     </div>
-                    <label className={styles.checkRow}>
+                    <label className={managerStyles.checkRow}>
                         <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
                         Còn sử dụng
                     </label>
                 </div>
-                <div className={styles.modalFoot}>
-                    <button className={styles.btnCancel} onClick={onClose}>Huỷ</button>
-                    <button className={styles.btnSave} onClick={handleSave} disabled={saving}>
+                <div className={managerStyles.modalFoot}>
+                    <button className={managerStyles.btnCancel} onClick={onClose}>Huỷ</button>
+                    <button className={managerStyles.btnSave} onClick={handleSave} disabled={saving}>
                         {saving ? "Đang lưu..." : "Lưu"}
                     </button>
                 </div>
@@ -203,19 +203,19 @@ function DeleteModal({ i, onClose, onSaved }: { i: Ingredient; onClose: () => vo
         finally { setSaving(false); }
     }
     return (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modal}>
-                <div className={styles.modalHead}>
-                    <span className={styles.modalTitle}>Xác nhận ngừng sử dụng</span>
-                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+        <div className={managerStyles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className={managerStyles.modal}>
+                <div className={managerStyles.modalHead}>
+                    <span className={managerStyles.modalTitle}>Xác nhận ngừng sử dụng</span>
+                    <button className={managerStyles.modalClose} onClick={onClose}>✕</button>
                 </div>
-                <div className={styles.deleteBody}>
-                    <div className={styles.deleteIcon}>⚠️</div>
-                    <p className={styles.deleteMsg}>Bạn chắc muốn ngừng sử dụng nguyên liệu <strong>{i.ingredientName}</strong>?</p>
+                <div className={managerStyles.deleteBody}>
+                    <div className={managerStyles.deleteIcon}>⚠️</div>
+                    <p className={managerStyles.deleteMsg}>Bạn chắc muốn ngừng sử dụng nguyên liệu <strong>{i.ingredientName}</strong>?</p>
                 </div>
-                <div className={styles.modalFoot}>
-                    <button className={styles.btnCancel} onClick={onClose}>Huỷ</button>
-                    <button className={styles.btnDanger} onClick={handleDelete} disabled={saving}>{saving ? "Đang xử lý..." : "Xác nhận"}</button>
+                <div className={managerStyles.modalFoot}>
+                    <button className={managerStyles.btnCancel} onClick={onClose}>Huỷ</button>
+                    <button className={managerStyles.btnDanger} onClick={handleDelete} disabled={saving}>{saving ? "Đang xử lý..." : "Xác nhận"}</button>
                 </div>
             </div>
         </div>
