@@ -52,6 +52,8 @@ public class OrderItemDTO
 
 public class CreateReservationRequest
 {
+    public int? TableId { get; set; }
+
     [Required]
     public DateTime ReservedAt { get; set; }
 

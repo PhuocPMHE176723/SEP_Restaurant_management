@@ -53,6 +53,7 @@ public class ReservationService : IReservationService
                 ContactEmail = request.ContactEmail ?? customer.User?.Email,
                 CreatedAt = DateTimeHelper.VietnamNow(),
                 CreatedByStaffId = null,
+                TableId = request.TableId,
             };
 
             _context.Reservations.Add(reservation);
@@ -130,7 +131,7 @@ public class ReservationService : IReservationService
 
             // Minimum deposit is 200,000 VND to ensure booking quality
             const decimal minDeposit = 200000;
-            reservation.DepositAmount = Math.Max(minDeposit, totalOrderAmount * 0.5m);
+            reservation.DepositAmount = Math.Max(minDeposit, totalOrderAmount * 0.2m);
             
             await _context.SaveChangesAsync();
             return _mapper.Map<ReservationDTO>(reservation);
