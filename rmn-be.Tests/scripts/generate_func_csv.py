@@ -125,7 +125,24 @@ def build_csv_for_function(func, tests, template_rows, max_len):
         set_row_value(row, 2, func["code"])
         set_row_value(row, 10, func["method"])
 
-    req_idx = find_row_index(rows, "Test requirement")
+        # Insert extra info rows after header
+        info_rows = [
+            ["Module:", func.get("module", ""), "", "Class:", func.get("class", "")],
+            ["Method:", func.get("method", "")],
+            ["Description:", func.get("description", "")],
+            ["Pre-Condition:", func.get("precondition", "")],
+        ]
+        for i, info_row in enumerate(info_rows):
+            # Pad to max_len
+            if len(info_row) < max_len:
+                info_row.extend([""] * (max_len - len(info_row)))
+            rows.insert(header_idx + 1 + i, info_row)
+
+        # Adjust req_idx and other indices due to row insertions
+        req_idx = find_row_index(rows, "Test requirement")
+    else:
+        req_idx = find_row_index(rows, "Test requirement")
+
     if req_idx >= 0:
         set_row_value(rows[req_idx], 2, func["description"])
 

@@ -1,0 +1,46 @@
+,,,,,,,
+,,,,Function List,,,
+,,,,,,,
+Project Name,,,,Khoi Que Restaurant Management System,,,
+Project Code,,,,KhoiQueRMS,,,
+Test Environment Setup Description,,,,"1. Web Browser: Chrome 
+2. Database: SQL Server
+3. Back-end: .Net 
+4. Front-end: Nextjs",,,
+,,,,,,,
+,,,,,,,
+No,Module Name,Class Name,Function Name, Function Code,Sheet Name,Description,Pre-Condition
+1,Authentication,AuthService,LoginAsync,FUNC01,FUNC_01,Authenticate credentials and issue JWT access token.,User account exists and is active; JWT configuration available.
+,,,RegisterAsync,FUNC02,FUNC_02,Register new user account; create Customer record when role is Customer.,Registration payload valid; role is allowed; email/username unique.
+,,,,,,,
+,,,,,,,
+2,Catalog,CategoryService,CreateCategoryAsync,FUNC03,FUNC_03,Create a new category.,Database available; required data seeded.
+,,,DeleteCategoryAsync,FUNC04,FUNC_04,Deactivate (soft delete) a category.,Database available; required data seeded.
+,,,UpdateCategoryAsync,FUNC05,FUNC_05,Update an existing category.,Database available; required data seeded.
+3,System,CleanupService,DoDailyCleanupAsync,FUNC06,FUNC_06,"Run daily cleanup jobs (release tables/cancel unpaid reservations, etc.).",Database available; required data seeded.
+4,Dining,DiningTableService,CreateAsync,FUNC07,FUNC_07,Create a dining table.,Database available; required data seeded.
+,,,DeleteAsync,FUNC08,FUNC_08,Deactivate (soft delete) a dining table.,Database available; required data seeded.
+,,,UpdateAsync,FUNC09,FUNC_09,Update dining table information.,Database available; required data seeded.
+5,Inventory,IngredientService,CreateAsync,FUNC10,FUNC_10,Create a new ingredient.,Database available; required data seeded.
+,,,DeleteAsync,FUNC11,FUNC_11,Deactivate (soft delete) an ingredient.,Database available; required data seeded.
+,,,UpdateAsync,FUNC12,FUNC_12,Update an existing ingredient.,Database available; required data seeded.
+6,Invoice,InvoiceService,ProcessCheckoutAsync,FUNC13,FUNC_13,Process checkout and create invoice; apply discounts/points and update statuses.,Order/reservation exists and is eligible for checkout.
+7,Kitchen,KitchenService,UpdateItemStatusAsync,FUNC14,FUNC_14,Update kitchen item status and update order status when all items are served/cancelled.,Order and order items exist; item belongs to the order.
+8,Menu,MenuCategoryService,CreateAsync,FUNC15,FUNC_15,Create a menu category.,Database available; required data seeded.
+,,MenuCategoryService,DeleteAsync,FUNC16,FUNC_16,Deactivate (soft delete) a menu category.,Database available; required data seeded.
+,,MenuCategoryService,UpdateAsync,FUNC17,FUNC_17,Update a menu category.,Database available; required data seeded.
+,,MenuItemService,CreateAsync,FUNC18,FUNC_18,Create a menu item.,Database available; required data seeded.
+,,MenuItemService,DeleteAsync,FUNC19,FUNC_19,Deactivate (soft delete) a menu item.,Database available; required data seeded.
+,,MenuItemService,UpdateAsync,FUNC20,FUNC_20,Update a menu item.,Database available; required data seeded.
+9,Promotions,PromotionService,CreateDiscountCodeAsync,FUNC21,FUNC_21,Create a discount code.,Database available; required data seeded.
+,,PromotionService,DeleteDiscountCodeAsync,FUNC22,FUNC_22,Deactivate (soft delete) a discount code.,Database available; required data seeded.
+,,PromotionService,ToggleDiscountCodeAsync,FUNC23,FUNC_23,Enable/disable a discount code.,Database available; required data seeded.
+,,PromotionService,UpdateDiscountCodeAsync,FUNC24,FUNC_24,Update a discount code.,Database available; required data seeded.
+10,Inventory,PurchaseReceiptService,CreateAsync,FUNC25,FUNC_25,Create a purchase receipt; if RECEIVED then generate stock IN movements.,Ingredients exist; receipt items provided.
+,,PurchaseReceiptService,UpdateStatusAsync,FUNC26,FUNC_26,Update purchase receipt status; process stock IN on RECEIVED.,Receipt exists and is not already RECEIVED/CANCELLED.
+11,Reservation,ReservationService,CancelReservationAsync,FUNC27,FUNC_27,Cancel reservation and release related resources.,Database available; required data seeded.
+,,ReservationService,CancelUnpaidReservationAsync,FUNC28,FUNC_28,Cancel unpaid reservation(s) by policy.,Database available; required data seeded.
+,,ReservationService,CreateReservationAsync,FUNC29,FUNC_29,Create a reservation and set initial related states.,Customer/table/menu items exist when required.
+,,ReservationService,UpdateReservationItemsAsync,FUNC30,FUNC_30,Update reservation items and recompute amounts.,Database available; required data seeded.
+,,ReservationService,UpdateReservationStatusAsync,FUNC31,FUNC_31,Update reservation status and cascade changes.,Database available; required data seeded.
+12,Inventory,StockService,CreateManualAdjustmentAsync,FUNC32,FUNC_32,Create manual stock adjustment movement (IN/OUT).,Database available; required data seeded.
