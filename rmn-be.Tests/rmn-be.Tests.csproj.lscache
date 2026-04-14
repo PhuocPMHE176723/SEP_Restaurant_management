@@ -61,6 +61,20 @@ obj/Debug/net8.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
  rmn-be.Tests.AssemblyInfo.cs
  rmn-be.Tests.GlobalUsings.g.cs
+Tests/
+ AuthServiceTests.cs
+ CategoryServiceTests.cs
+ CleanupServiceTests.cs
+ DiningTableServiceTests.cs
+ IngredientServiceTests.cs
+ InvoiceServiceTests.cs
+ KitchenServiceTests.cs
+ MenuCategoryServiceTests.cs
+ MenuItemServiceTests.cs
+ PromotionServiceTests.cs
+ PurchaseReceiptServiceTests.cs
+ ReservationServiceTests.cs
+ StockServiceTests.cs
 
 [metadataReferences]
 ../rmn-be/obj/Debug/net8.0/ref/rmn-be.dll

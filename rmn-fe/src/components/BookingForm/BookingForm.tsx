@@ -253,11 +253,14 @@ export default function BookingForm() {
 
   function validate() {
     const e: { [key: string]: string } = {};
+    const missingNames: string[] = [];
+
     if (!isLoggedIn) {
       e.auth = "Vui lòng đăng nhập để đặt bàn";
     }
     if (!form.date) {
       e.date = "Vui lòng chọn ngày";
+      missingNames.push("Ngày đến");
     } else {
       const selectedDate = new Date(form.date);
       const todayStart = new Date(
@@ -272,20 +275,46 @@ export default function BookingForm() {
         e.date = "Chỉ có thể đặt bàn trong vòng 7 ngày tới";
       }
     }
+
     if (!form.timeSlot) {
       e.timeSlot = "Vui lòng chọn giờ";
+      missingNames.push("Giờ đến");
     }
-    if (!form.phone || !isValidVNPhone(form.phone)) {
+
+    if (!form.phone) {
+      e.phone = "Vui lòng nhập số điện thoại";
+      missingNames.push("Số điện thoại");
+    } else if (!isValidVNPhone(form.phone)) {
       e.phone = "Vui lòng nhập số điện thoại hợp lệ (ví dụ: 0912345678)";
     }
+
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       e.email = "Email không hợp lệ";
     }
+
     if (form.partySize < 1) {
       e.partySize = "Số khách phải từ 1 trở lên";
+      missingNames.push("Số lượng khách");
     } else if (form.partySize > MAX_PARTY_SIZE) {
       e.partySize = `Tối đa ${MAX_PARTY_SIZE} khách mỗi lần đặt`;
     }
+
+    if (missingNames.length > 0) {
+      Swal.fire({
+        title: "Thiếu thông tin",
+        text: `Vui lòng nhập đầy đủ: ${missingNames.join(", ")}`,
+        icon: "warning",
+        confirmButtonColor: "var(--brand-primary)",
+      });
+    } else if (Object.keys(e).length > 0) {
+      Swal.fire({
+        title: "Thông tin chưa đúng",
+        text: "Vui lòng kiểm tra các lỗi hiển thị trên form",
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }

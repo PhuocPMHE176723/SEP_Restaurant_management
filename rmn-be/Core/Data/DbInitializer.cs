@@ -9,10 +9,7 @@ public static class DbInitializer
 {
     public static async Task Initialize(IServiceProvider serviceProvider)
     {
-        await System.IO.File.WriteAllTextAsync(
-            "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-            "--- Seeding Started at " + DateTime.UtcNow + " ---\n"
-        );
+
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
 
@@ -107,10 +104,7 @@ public static class DbInitializer
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(user, role);
-                await System.IO.File.AppendAllTextAsync(
-                    "/Users/dotritrong/Desktop/G26/rmn-be/canary.txt",
-                    $"\n[DbInitializer] Successfully created user: {email} with role: {role}"
-                );
+
             }
 
         }
