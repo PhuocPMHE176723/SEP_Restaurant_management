@@ -61,6 +61,7 @@ obj/Debug/net8.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
  rmn-be.Tests.AssemblyInfo.cs
  rmn-be.Tests.GlobalUsings.g.cs
+<<<<<<< HEAD
 Tests/
  AuthServiceTests.cs
  CategoryServiceTests.cs
@@ -75,6 +76,8 @@ Tests/
  PurchaseReceiptServiceTests.cs
  ReservationServiceTests.cs
  StockServiceTests.cs
+=======
+>>>>>>> master
 
 [metadataReferences]
 ../rmn-be/obj/Debug/net8.0/ref/rmn-be.dll
