@@ -365,7 +365,7 @@ public class ReservationService : IReservationService
     {
         var reservation = await _context.Reservations
             .Include(r => r.Order)
-            .ThenInclude(o => o.OrderItems)
+            .ThenInclude(o => o!.OrderItems)
             .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.CustomerId == customerId);
 
         if (reservation == null || reservation.Status != "PENDING")
