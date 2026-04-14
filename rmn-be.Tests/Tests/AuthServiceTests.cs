@@ -11,6 +11,8 @@ using Moq;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Implementation;
+using Microsoft.Extensions.Caching.Memory;
+using SEP_Restaurant_management.Core.Services.Interface;
 using Xunit;
 
 namespace rmn_be.Tests;
@@ -57,6 +59,18 @@ public class AuthServicePostTests
         );
     }
 
+    private static Mock<RoleManager<IdentityRole>> CreateRoleManagerMock()
+    {
+        var store = new Mock<IRoleStore<IdentityRole>>();
+        return new Mock<RoleManager<IdentityRole>>(
+            store.Object,
+            null!,
+            null!,
+            null!,
+            null!
+        );
+    }
+
     private static JwtSecurityToken ReadJwt(string token)
     {
         var handler = new JwtSecurityTokenHandler();
@@ -91,7 +105,10 @@ public class AuthServicePostTests
         um.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         um.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Customer" });
 
-        var service = new AuthService(um.Object, CreateJwtConfig(expireMinutes: 10), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(expireMinutes: 10), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "pw" }
@@ -127,7 +144,10 @@ public class AuthServicePostTests
         var um = CreateUserManagerMock();
         um.Setup(x => x.FindByEmailAsync("missing@b.com")).ReturnsAsync((UserIdentity?)null);
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "missing@b.com", Password = "pw" }
@@ -157,7 +177,10 @@ public class AuthServicePostTests
         um.Setup(x => x.FindByEmailAsync("a@b.com")).ReturnsAsync(user);
         um.Setup(x => x.CheckPasswordAsync(user, "wrong")).ReturnsAsync(false);
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "wrong" }
@@ -188,7 +211,10 @@ public class AuthServicePostTests
         um.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         um.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string>());
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "pw" }
@@ -232,7 +258,10 @@ public class AuthServicePostTests
         um.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         um.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Staff" });
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "s@b.com", Password = "pw" }
@@ -263,7 +292,10 @@ public class AuthServicePostTests
         um.Setup(x => x.AddToRoleAsync(It.IsAny<UserIdentity>(), "Customer"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -297,7 +329,10 @@ public class AuthServicePostTests
 
         var um = CreateUserManagerMock();
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -332,7 +367,10 @@ public class AuthServicePostTests
                 IdentityResult.Failed(new IdentityError { Description = "Create failed" })
             );
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -368,7 +406,10 @@ public class AuthServicePostTests
         um.Setup(x => x.AddToRoleAsync(It.IsAny<UserIdentity>(), "Staff"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var (ok, _) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -402,7 +443,10 @@ public class AuthServicePostTests
         um.Setup(x => x.AddToRoleAsync(It.IsAny<UserIdentity>(), "customer"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var service = new AuthService(um.Object, CreateJwtConfig(), context);
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO

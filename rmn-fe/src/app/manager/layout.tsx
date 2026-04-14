@@ -10,6 +10,7 @@ const NAV_ITEMS = [
     { href: "/manager/dining-tables", label: "Quản lý bàn ăn" },
     { href: "/manager/menu-categories", label: "Danh mục món" },
     { href: "/manager/menu-items", label: "Quản lý món ăn" },
+    { href: "/manager/userList", label: "Quản lý người dùng" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link href="/manager/discount-codes" className={styles.navItem}>Quản lý Mã giảm giá</Link>
                     <Link href="/manager/loyalty-config" className={styles.navItem}>Cấu hình Tích điểm</Link>
                     <Link href="/manager/loyalty-history" className={styles.navItem}>Lịch sử Điểm</Link>
+                    
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
                     <Link href="/manager/reservations" className={styles.navItem}>Lịch sử Đặt bàn</Link>

@@ -13,4 +13,13 @@ public interface IAuthService
     /// Đăng ký tài khoản mới
     /// </summary>
     Task<(bool Succeeded, List<string> Errors)> RegisterAsync(RegisterRequestDTO request);
+
+    /// Forgot password
+    Task ForgotPasswordAsync(ForgotPasswordRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> ResetPasswordAsync(ResetPasswordRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> ChangePasswordAsync(string userId, ChangePasswordRequestDTO request);
+
+    Task<(bool Succeeded, List<string> Errors)> NewRegisterAsync(RegisterRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> VerifyEmailOtpAsync(VerifyEmailOtpRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> ResendEmailOtpAsync(ResendOtpRequestDTO request);
 }

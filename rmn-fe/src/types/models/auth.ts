@@ -20,3 +20,15 @@ export interface LoginResponseDTO {
     phoneNumber: string | null;
     roles: string[];
 }
+
+//forgot password request body
+export interface ForgotPasswordRequestDTO {
+    email: string;
+}
+
+export interface ResetPasswordRequestDTO {
+    email: string;
+    token: string;
+    newPassword: string;
+    confirmPassword: string;
+}
