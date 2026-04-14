@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { resendOtpApi, verifyOtpApi } from "../../../lib/api/auth";
 import OtpInput from "../OtpInput";
 import styles from "../login/page.module.css";
 
-export default function VerifyOtpPage() {
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -246,5 +246,13 @@ export default function VerifyOtpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense>
+      <VerifyOtpContent />
+    </Suspense>
   );
 }

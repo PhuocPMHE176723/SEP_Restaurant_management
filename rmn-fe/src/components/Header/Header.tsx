@@ -41,6 +41,7 @@ export default function Header() {
   const isKitchen = user?.roles.includes("Kitchen");
   const isCashier = user?.roles.includes("Cashier");
   const isCustomer = user?.roles.includes("Customer");
+  const isAdmin = user?.roles.includes("Admin");
 
   if (!mounted) {
     return (
@@ -183,6 +184,15 @@ export default function Header() {
                   className={`btn btn-ghost ${styles.adminBtn}`}
                 >
                   Cổng Quản lý
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/manager"
+                  className={`btn btn-ghost ${styles.adminBtn}`}
+                >
+                  Cổng Quản trị
                 </Link>
               )}
 
@@ -340,6 +350,25 @@ export default function Header() {
                         <rect x="14" y="14" width="7" height="7" />
                       </svg>
                       Cổng Quản lý
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      href="/manager"
+                      className={styles.dropdownItem}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                      Cổng Quản trị
                     </Link>
                   )}
                   {isWarehouse && (
