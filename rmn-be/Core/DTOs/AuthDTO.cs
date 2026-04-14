@@ -52,3 +52,59 @@ public class LoginResponseDTO
     public string? PhoneNumber { get; set; }
     public List<string> Roles { get; set; } = new();
 }
+
+//DTO cho forgot pass
+public class ForgotPasswordRequestDTO
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+}
+public class ResetPasswordRequestDTO
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+
+    [Required]
+    public string Token { get; set; }
+
+    [Required]
+    public string NewPassword { get; set; }
+
+    [Required]
+    [Compare("NewPassword")]
+    public string ConfirmPassword { get; set; }
+}
+
+public class ChangePasswordRequestDTO
+{
+    [Required(ErrorMessage = "Current password is required")]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "New password is required")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Confirm password is required")]
+    [Compare("NewPassword", ErrorMessage = "Confirm password does not match")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+//DTO cho verify OTP
+public class VerifyEmailOtpRequestDTO
+{
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "OTP is required")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP must be exactly 6 digits")]
+    public string Otp { get; set; } = string.Empty;
+}
+
+public class ResendOtpRequestDTO
+{
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    public string Email { get; set; } = string.Empty;
+}

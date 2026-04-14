@@ -1,0 +1,373 @@
+.headerSpacer {
+  height: 116px;
+}
+
+.page {
+  min-height: calc(100vh - 200px);
+  background: #f8f3eb;
+  padding: 20px 0 48px;
+}
+
+.container {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.screenWrap {
+  width: 100%;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.pageModeTitle {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.pageModeSub {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.servingSub {
+  color: #0f9f6e;
+}
+
+.preorderSub {
+  color: #ff7d29;
+  font-style: italic;
+}
+
+.addButton {
+  border: none;
+  background: #ff842b;
+  color: #fff;
+  min-width: 144px;
+  height: 44px;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(255, 132, 43, 0.18);
+}
+
+.plus {
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.orderCard {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #ebe7df;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid #ece7df;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.metaLabel {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 0.04em;
+}
+
+.metaValue {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.highlightValue {
+  color: #ff7d29;
+}
+
+.metaRight {
+  text-align: right;
+}
+
+.itemsSection {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #f8f3eb;
+  border-radius: 12px;
+}
+
+.itemThumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.fakeThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #d9d9d9, #bdbdbd);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  box-shadow: none;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemName {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.itemQty {
+  margin-left: 4px;
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.itemSubtle {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.itemPrice {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ff7d29;
+  white-space: nowrap;
+}
+
+.bottomSection {
+  background: #fdf7ef;
+  border-top: 1px solid #efe3d2;
+  padding: 18px 20px 20px;
+}
+
+.bottomTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.noteText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7c8aa0;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.depositText {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #0f9f6e;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.totalBox {
+  text-align: right;
+}
+
+.totalLabel {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.totalValue {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  line-height: 1;
+  font-weight: 800;
+  color: #ff7d29;
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.primaryButton,
+.outlineButton,
+.grayButton {
+  height: 48px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.primaryButton {
+  border: none;
+  background: #ff842b;
+  color: #fff;
+}
+
+.primaryButton:hover {
+  background: #f6781f;
+}
+
+.outlineButton {
+  background: #fff;
+  color: #ff842b;
+  border: 1.5px solid #f5c9a1;
+}
+
+.outlineButton:hover {
+  background: #fff7f0;
+}
+
+.grayButton {
+  background: #f2f2f2;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.grayButton:hover {
+  background: #ebebeb;
+}
+
+.emptyState {
+  max-width: 640px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 56px 20px;
+  text-align: center;
+}
+
+.emptyState h3 {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+.emptyText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+/* Status tiếng Việt */
+.statusPending {
+  color: rgb(217, 119, 6);
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.statusInProgress {
+  color: rgb(37, 99, 235);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.statusCompleted {
+  color: rgb(22, 163, 74);
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.statusCancelled {
+  color: rgb(220, 38, 38);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.itemSubtle.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-style: normal;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .topBar,
+  .cardHeader,
+  .bottomTop,
+  .itemRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metaRight,
+  .totalBox {
+    text-align: left;
+  }
+
+  .actionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .addButton {
+    width: 100%;
+  }
+
+  .itemPrice {
+    white-space: normal;
+  }
+}

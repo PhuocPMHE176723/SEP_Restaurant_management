@@ -119,7 +119,8 @@ function LoginForm() {
 
           <p className={styles.switchLink}>
             Chưa có tài khoản?{" "}
-            <Link href="/register" className={styles.switchAnchor}>Đăng ký ngay</Link>
+            {/* <Link href="/register" className={styles.switchAnchor}>Đăng ký ngay</Link> */}
+            <Link href="/new-register" className={styles.switchAnchor}>Đăng ký ngay</Link>
           </p>
         </div>
       </div>
