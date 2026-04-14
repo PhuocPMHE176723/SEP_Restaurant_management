@@ -23,7 +23,6 @@ public class EmailService : IEmailService
             Credentials = new NetworkCredential(_mailSettings.Mail, _mailSettings.Password),
             EnableSsl = true
         };
-
         var mailMessage = new MailMessage
         {
             From = new MailAddress(_mailSettings.Mail, _mailSettings.DisplayName),
@@ -186,5 +185,62 @@ public class EmailService : IEmailService
             </div>";
 
         await SendEmailAsync(email, subject, htmlMessage);
+    }
+    // Test mail lỗi đăng nhập mail
+    public async Task SendEmailNewAsync(string toEmail, string subject, string htmlBody)
+    {
+        var fromEmail = "huyvu20704@gmail.com";
+        var appPassword = "dvcg taht jqvb fpcw";
+
+        using var client = new SmtpClient("smtp.gmail.com", 587)
+        {
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential(fromEmail, appPassword),
+            EnableSsl = true,
+            DeliveryMethod = SmtpDeliveryMethod.Network
+        };
+
+        using var message = new MailMessage
+        {
+            From = new MailAddress(fromEmail, "RMN Restaurant"),
+            Subject = subject,
+            Body = htmlBody,
+            IsBodyHtml = true
+        };
+
+        message.To.Add(toEmail);
+
+        await client.SendMailAsync(message);
+    }
+
+    public async Task SendEmailVerificationOtpAsync(string email, string fullName, string otpCode)
+    {
+        var subject = "[Nhà Hàng Khói Quê] Mã OTP xác nhận email";
+
+        var htmlMessage = $@"
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;'>
+            <div style='background: #f97316; color: white; padding: 20px; text-align: center;'>
+                <h2 style='margin: 0;'>Xác nhận đăng ký tài khoản</h2>
+            </div>
+            <div style='padding: 24px; color: #111827; line-height: 1.6;'>
+                <p>Xin chào <strong>{fullName}</strong>,</p>
+                <p>Bạn vừa đăng ký tài khoản tại Nhà Hàng Khói Quê.</p>
+                <p>Vui lòng nhập mã OTP bên dưới để xác thực email:</p>
+
+                <div style='margin: 24px 0; text-align: center;'>
+                    <div style='display: inline-block; font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #f97316; padding: 14px 24px; border: 2px dashed #fdba74; border-radius: 12px; background: #fff7ed;'>
+                        {otpCode}
+                    </div>
+                </div>
+
+                <p>Mã OTP có hiệu lực trong <strong>5 phút</strong>.</p>
+                <p>Nếu bạn không thực hiện thao tác này, vui lòng bỏ qua email.</p>
+            </div>
+            <div style='background: #f9fafb; padding: 14px; text-align: center; font-size: 12px; color: #6b7280;'>
+                Nhà Hàng Khói Quê
+            </div>
+        </div>";
+
+        await SendEmailNewAsync(email, subject, htmlMessage);
     }
 }
