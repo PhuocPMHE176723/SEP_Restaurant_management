@@ -62,6 +62,9 @@ obj/Debug/net8.0/
  rmn-be.Tests.AssemblyInfo.cs
  rmn-be.Tests.GlobalUsings.g.cs
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> master
 Tests/
  AuthServiceTests.cs
  CategoryServiceTests.cs
@@ -76,6 +79,9 @@ Tests/
  PurchaseReceiptServiceTests.cs
  ReservationServiceTests.cs
  StockServiceTests.cs
+<<<<<<< HEAD
+=======
+>>>>>>> master
 =======
 >>>>>>> master
 
