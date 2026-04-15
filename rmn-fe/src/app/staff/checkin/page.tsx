@@ -42,6 +42,13 @@ export default function CheckinPage() {
     fetchData();
   }, [selectedDate]);
 
+  const isCheckinTimeValid = (reservedAt: string) => {
+    const reservedTime = new Date(reservedAt).getTime();
+    const now = new Date().getTime();
+    const diffMinutes = Math.abs(now - reservedTime) / (1000 * 60);
+    return diffMinutes <= 30; // Within 30 minutes (before or after)
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -60,6 +67,13 @@ export default function CheckinPage() {
   };
 
   const handleCheckin = async (reservationId: number, tableId: number) => {
+    // Validate time
+    const res = reservations.find(r => r.reservationId === reservationId);
+    if (res && !isCheckinTimeValid(res.reservedAt)) {
+      showError("Lỗi", "Chỉ có thể check-in trong khoảng 30 phút so với giờ đặt bàn.");
+      return;
+    }
+    
     try {
       await adminReservationApi.updateReservationStatus(reservationId, {
         status: "CHECKED_IN",
@@ -76,6 +90,12 @@ export default function CheckinPage() {
   };
 
   const handleAutoCheckin = async (reservation: Reservation) => {
+    // Validate time
+    if (!isCheckinTimeValid(reservation.reservedAt)) {
+      showError("Lỗi", "Chỉ có thể check-in trong khoảng 30 phút so với giờ đặt bàn.");
+      return;
+    }
+
     const suitable = tables
       .filter((t) => t.status === "AVAILABLE" && t.capacity >= reservation.partySize)
       .sort((a, b) => a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode));
