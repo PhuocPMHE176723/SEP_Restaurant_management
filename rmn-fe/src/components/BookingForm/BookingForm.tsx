@@ -801,36 +801,24 @@ export default function BookingForm() {
                     <div
                       key={table.tableId}
                       className={cardClass}
-                      title={table.statusMessage}
                       onClick={() => {
                         if (!canSelect) return;
-                        if (tableSelectMode === 'manual') {
-                          setSelectedTableIds(prev =>
-                            prev.includes(table.tableId)
-                              ? prev.filter(id => id !== table.tableId)
-                              : [...prev, table.tableId]
-                          );
-                        } else {
-                          // In auto mode, click toggles individual
-                          setSelectedTableIds(prev =>
-                            prev.includes(table.tableId)
-                              ? prev.filter(id => id !== table.tableId)
-                              : [...prev, table.tableId]
-                          );
-                        }
+                        setSelectedTableIds(prev =>
+                          prev.includes(table.tableId)
+                            ? prev.filter(id => id !== table.tableId)
+                            : [...prev, table.tableId]
+                        );
                       }}
                     >
                       <div className={styles.tableDiagramName}>{table.tableName || table.tableCode}</div>
                       <div className={styles.tableDiagramCap}>{table.capacity} chỗ</div>
                       {!canSelect && (
-                        <>
-                          <div className={styles.tableDiagramStatus}>{table.statusMessage}</div>
-                          {table.customerName && (
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 500 }}>
-                              {table.customerName}
-                            </div>
-                          )}
-                        </>
+                        <div 
+                          className={styles.tableDiagramStatus}
+                          style={{ color: table.statusMessage.includes('Đã đặt') ? '#3b82f6' : '#ef4444' }}
+                        >
+                          {table.statusMessage.includes('Đã đặt') ? 'Đã đặt' : table.statusMessage}
+                        </div>
                       )}
                     </div>
                   );
@@ -1066,8 +1054,8 @@ export default function BookingForm() {
                   </div>
                   <div className={styles.pricingRow}>
                     <span className={styles.depositLabel}>
-                      Tiền cọc (50%):
-                      {totalAmount < 400000 && (
+                      Tiền cọc (20%):
+                      {totalAmount < 1000000 && (
                         <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px' }}>
                           (Áp dụng mức cọc tối thiểu 200.000đ)
                         </div>
@@ -1077,7 +1065,7 @@ export default function BookingForm() {
                       className={styles.pricingDeposit}
                       style={{ color: "var(--brand-primary)", fontWeight: "bold" }}
                     >
-                      {Math.max(200000, Math.round(totalAmount * 0.5)).toLocaleString("vi-VN")} đ
+                      {Math.max(200000, Math.round(totalAmount * 0.2)).toLocaleString("vi-VN")} đ
                     </span>
                   </div>
                   <div
@@ -1187,7 +1175,7 @@ export default function BookingForm() {
             }
           });
         }}
-        title="Thanh toán cọc (50%)"
+        title="Thanh toán cọc (20%)"
         showFooter={false}
       >
         <div className={styles.qrContainer}>

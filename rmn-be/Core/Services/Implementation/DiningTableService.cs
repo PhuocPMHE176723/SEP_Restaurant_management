@@ -135,8 +135,8 @@ public class DiningTableService : IDiningTableService
                 if (targetTime >= res.ReservedAt.AddMinutes(-90) && targetTime <= endTime)
                 {
                     dto.IsAvailable = false;
-                    dto.CustomerName = res.CustomerName;
-                    dto.StatusMessage = $"Đã đặt: {res.CustomerName} ({res.ReservedAt:HH:mm})";
+                    dto.CustomerName = null; // Privacy: Don't leak names to public API
+                    dto.StatusMessage = res.Status == "CHECKED_IN" ? "Đang có khách" : $"Đã đặt ({res.ReservedAt:HH:mm})";
                     break;
                 }
             }
