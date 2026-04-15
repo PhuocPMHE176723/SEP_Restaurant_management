@@ -448,7 +448,7 @@ public class ReservationService : IReservationService
         } else if (!reservation.Note.Contains(editNote)) {
             reservation.Note = reservation.Note.Trim() + " " + editNote;
         }
-        reservation.DepositAmount = total * 0.5m;
+        reservation.DepositAmount = Math.Max(200000, total * 0.2m);
         
         await _context.SaveChangesAsync();
         return true;
