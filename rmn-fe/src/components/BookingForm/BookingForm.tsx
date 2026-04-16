@@ -6,6 +6,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   createReservation,
   getPublicMenuItems,
+  getPublicTableAvailability,
+  type TableAvailability,
   type MenuItem,
   type OrderItemRequest,
 } from "../../lib/api/reservation";
@@ -112,6 +114,15 @@ export default function BookingForm() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [searchTerm, setSearchTerm] = useState("");
 
+  const [tables, setTables] = useState<TableAvailability[]>([]);
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
+  const [tableSelectMode, setTableSelectMode] = useState<'auto' | 'manual'>('auto');
+
+  const totalAvailableCapacity = useMemo(() => {
+    return tables.filter(t => t.isAvailable).reduce((sum, t) => sum + t.capacity, 0);
+  }, [tables]);
+
   const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrAmount, setQrAmount] = useState(0);
@@ -182,6 +193,26 @@ export default function BookingForm() {
       set("email", user.email);
     }
   }, [user, form.email]);
+
+  useEffect(() => {
+    if (form.date && form.timeSlot) {
+      setLoadingTables(true);
+      getPublicTableAvailability(form.date, form.timeSlot)
+        .then(res => {
+          setTables(res);
+          // Auto remove selected tables if they are no longer available in the new timeslot
+          setSelectedTableIds(prev => {
+            const availableTableIds = new Set(res.filter(t => t.isAvailable).map(t => t.tableId));
+            return prev.filter(id => availableTableIds.has(id));
+          });
+        })
+        .catch(err => console.error("Failed to load tables:", err))
+        .finally(() => setLoadingTables(false));
+    } else {
+      setTables([]);
+      setSelectedTableIds([]);
+    }
+  }, [form.date, form.timeSlot]);
 
   function set(field: keyof typeof form, value: string | number) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -333,7 +364,17 @@ export default function BookingForm() {
         quantity,
       }));
       const phoneLine = form.phone ? `SĐT liên hệ: ${form.phone}` : "";
-      const noteCombined = [phoneLine, form.note].filter(Boolean).join("\n");
+      
+      let tablesNote = "";
+      if (selectedTableIds.length > 0) {
+        const tableNames = tables.filter(t => selectedTableIds.includes(t.tableId)).map(t => t.tableName).join(", ");
+        tablesNote = `Khách chọn thêm/ghép bàn: ${tableNames}`;
+      }
+      
+      const noteCombined = [phoneLine, tablesNote, form.note].filter(Boolean).join("\n");
+
+      // Bàn chính là bàn đầu tiên trong danh sách (dành cho TableId trong Reservation)
+      const primaryTableId = selectedTableIds.length > 0 ? selectedTableIds[0] : undefined;
 
       const result = await createReservation({
         reservedAt,
@@ -341,6 +382,7 @@ export default function BookingForm() {
         durationMinutes: 90,
         note: noteCombined || undefined,
         contactEmail: form.email || undefined,
+        tableId: primaryTableId,
         menuItems: orderItems,
       });
 
@@ -356,7 +398,7 @@ export default function BookingForm() {
       console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
 
       if (sepayConfig?.account) {
-        const depositAmount = Math.max(200000, Math.round(_totalAmount * 0.5)); // Min 200k or 50%
+        const depositAmount = Math.max(200000, Math.round(_totalAmount * 0.2)); // Min 200k or 20%
         console.log(`[BookingForm] Calculated depositAmount: ${depositAmount}`);
         setQrAmount(depositAmount);
         setCurrentReservationId(result.reservationId);
@@ -431,6 +473,7 @@ export default function BookingForm() {
           stopPaymentCheck(true, "Thanh toán cọc thành công! Email xác nhận chi tiết đã được gửi đến bạn.");
           setForm({ date: "", timeSlot: "", partySize: 8, phone: "", email: "", note: "" });
           setSelectedItems(new Map());
+          setSelectedTableIds([]);
         }
       } catch (err: any) {
         console.error("Lỗi kiểm tra thanh toán", err);
@@ -661,6 +704,11 @@ export default function BookingForm() {
           <p className={styles.hint}>
             Bạn chỉ cần nhập tổng khách, hệ thống tự gợi ý bàn 4/6/8 chỗ.
           </p>
+          {form.date && form.timeSlot && tables.length > 0 && form.partySize > totalAvailableCapacity && (
+            <p className={styles.error} style={{ marginTop: '0.5rem', background: '#fff1f2', padding: '0.5rem', borderRadius: '4px', border: '1px solid #fecaca' }}>
+              ⚠️ Rất tiếc, tổng sức chứa còn lại của các bàn trống vào {form.timeSlot} ngày {form.date} chỉ còn <strong>{totalAvailableCapacity} chỗ</strong>. Vui lòng giảm số khách hoặc chọn giờ khác.
+            </p>
+          )}
           {/* Table auto-calculation badge with 4/6/8-seat mix */}
           <div className={styles.tableBadge}>
             <span className={styles.tableBadgeIcon}></span>
@@ -676,6 +724,135 @@ export default function BookingForm() {
             </span>
           </div>
         </div>
+
+        {/* Sơ đồ bàn */}
+        {form.date && form.timeSlot && (
+          <div className={styles.tableSection}>
+            <div className={styles.tableSectionHeader}>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className={styles.label} style={{ marginBottom: 0 }}>Sơ đồ bàn</label>
+                  <a href="/reservations" className={styles.historyLink}>
+                    Lịch sử đặt bàn của bạn →
+                  </a>
+                </div>
+                <p className={styles.hint} style={{ marginTop: "0.25rem" }}>
+                  Gợi ý cần <strong>{numberOfTables} bàn</strong> cho <strong>{form.partySize} khách</strong>
+                </p>
+              </div>
+              <div className={styles.tableModeToggle}>
+                <button
+                  type="button"
+                  className={`${styles.tableModeBtn} ${tableSelectMode === 'auto' ? styles.tableModeBtnActive : ''}`}
+                  onClick={() => {
+                    setTableSelectMode('auto');
+                    // Auto select logic...
+                    const available = tables.filter(t => t.isAvailable);
+                    const sorted = [...available].sort((a, b) => b.capacity - a.capacity);
+                    const picked: number[] = [];
+                    let seated = 0;
+                    for (const t of sorted) {
+                      if (seated >= form.partySize) break;
+                      picked.push(t.tableId);
+                      seated += t.capacity;
+                    }
+                    setSelectedTableIds(picked);
+                  }}
+                >
+                  Tự động
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.tableModeBtn} ${tableSelectMode === 'manual' ? styles.tableModeBtnActive : ''}`}
+                  onClick={() => {
+                    setTableSelectMode('manual');
+                    setSelectedTableIds([]);
+                  }}
+                >
+                  Thủ công
+                </button>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className={styles.tableLegend}>
+              <span className={styles.legendDot} style={{ background: '#22c55e' }} /> Trống
+              <span className={styles.legendDot} style={{ background: '#3b82f6', marginLeft: '1rem' }} /> Đã đặt trước
+              <span className={styles.legendDot} style={{ background: '#ef4444', marginLeft: '1rem' }} /> Đang có khách
+              <span className={styles.legendDot} style={{ background: '#f97316', marginLeft: '1rem' }} /> Đang chọn
+            </div>
+
+            {loadingTables ? (
+              <div className={styles.tableLoadingWrap}>
+                <div className={styles.spinner} />
+                <span>Đang tải sơ đồ bàn...</span>
+              </div>
+            ) : tables.length > 0 ? (
+              <div className={styles.tableDiagram}>
+                {tables.map(table => {
+                  const isSelected = selectedTableIds.includes(table.tableId);
+                  const canSelect = table.isAvailable;
+                  let cardClass = styles.tableDiagramCard;
+                  if (isSelected) cardClass += ` ${styles.tableDiagramCardPicked}`;
+                  else if (!canSelect) cardClass += ` ${styles.tableDiagramCardUnavailable}`;
+                  else cardClass += ` ${styles.tableDiagramCardAvailable}`;
+
+                  return (
+                    <div
+                      key={table.tableId}
+                      className={cardClass}
+                      onClick={() => {
+                        if (!canSelect) return;
+                        setSelectedTableIds(prev =>
+                          prev.includes(table.tableId)
+                            ? prev.filter(id => id !== table.tableId)
+                            : [...prev, table.tableId]
+                        );
+                      }}
+                    >
+                      <div className={styles.tableDiagramName}>{table.tableName || table.tableCode}</div>
+                      <div className={styles.tableDiagramCap}>{table.capacity} chỗ</div>
+                      {!canSelect && (
+                        <div 
+                          className={styles.tableDiagramStatus}
+                          style={{ color: table.statusMessage.includes('Đã đặt') ? '#3b82f6' : '#ef4444' }}
+                        >
+                          {table.statusMessage.includes('Đã đặt') ? 'Đã đặt' : table.statusMessage}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.tableEmpty}>Không tải được danh sách bàn. Vui lòng chọn ngày/giờ khác.</div>
+            )}
+
+            {/* Summary */}
+            {selectedTableIds.length > 0 && (
+              <div className={styles.tableSelectionSummary}>
+                <div className={styles.tableSelectionInfo}>
+                  <span>Đã chọn <strong>{selectedTableIds.length} bàn</strong></span>
+                  <span style={{ color: '#64748b', marginLeft: '0.75rem' }}>
+                    ({tables.filter(t => selectedTableIds.includes(t.tableId)).map(t => t.tableName || t.tableCode).join(', ')})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.tableClearBtn}
+                  onClick={() => setSelectedTableIds([])}
+                >
+                  Bỏ chọn tất cả
+                </button>
+              </div>
+            )}
+            {selectedTableIds.length > 0 && selectedTableIds.reduce((sum, id) => sum + (tables.find(t => t.tableId === id)?.capacity ?? 0), 0) < form.partySize && (
+              <p className={styles.hint} style={{ color: '#f59e0b', marginTop: '0.5rem' }}>
+                ⚠️ Tổng sức chứa các bàn đang chọn ({selectedTableIds.reduce((sum, id) => sum + (tables.find(t => t.tableId === id)?.capacity ?? 0), 0)} chỗ) chưa đủ cho {form.partySize} khách. Nhân viên sẽ hỗ trợ sắp xếp thêm.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Step 3 – Menu */}
@@ -697,7 +874,7 @@ export default function BookingForm() {
           </svg>
           <div>
             <strong>Quy tắc đặt trước:</strong> Để đảm bảo giữ chỗ và chuẩn bị món ăn chu đáo, 
-            quý khách vui lòng <strong>thanh toán cọc tối thiểu 200.000đ</strong> (hoặc 50% tổng giá trị món ăn). 
+            quý khách vui lòng <strong>thanh toán cọc tối thiểu 200.000đ</strong> (hoặc 20% tổng giá trị món ăn đặt trước). 
             Tiền cọc sẽ được trừ trực tiếp vào hoá đơn khi quý khách thanh toán tại nhà hàng.
           </div>
         </div>
@@ -877,8 +1054,8 @@ export default function BookingForm() {
                   </div>
                   <div className={styles.pricingRow}>
                     <span className={styles.depositLabel}>
-                      Tiền cọc (50%):
-                      {totalAmount < 400000 && (
+                      Tiền cọc (20%):
+                      {totalAmount < 1000000 && (
                         <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px' }}>
                           (Áp dụng mức cọc tối thiểu 200.000đ)
                         </div>
@@ -888,7 +1065,7 @@ export default function BookingForm() {
                       className={styles.pricingDeposit}
                       style={{ color: "var(--brand-primary)", fontWeight: "bold" }}
                     >
-                      {Math.max(200000, Math.round(totalAmount * 0.5)).toLocaleString("vi-VN")} đ
+                      {Math.max(200000, Math.round(totalAmount * 0.2)).toLocaleString("vi-VN")} đ
                     </span>
                   </div>
                   <div
@@ -998,7 +1175,7 @@ export default function BookingForm() {
             }
           });
         }}
-        title="Thanh toán cọc (50%)"
+        title="Thanh toán cọc (20%)"
         showFooter={false}
       >
         <div className={styles.qrContainer}>

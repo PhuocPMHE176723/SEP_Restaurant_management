@@ -13,24 +13,26 @@ export default function CashierReservationsPage() {
     ReservationResponse[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("ALL");
+  const [filter, setFilter] = useState("PENDING");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState<string>("");
   const [sortConfig, setSortConfig] = useState<{ key: keyof ReservationResponse; direction: 'asc' | 'desc' } | null>({ key: 'reservationId', direction: 'desc' });
 
   useEffect(() => {
     fetchReservations();
-  }, []);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     filterReservations();
-  }, [reservations, filter, search, date, sortConfig]);
+  }, [reservations, filter, search, sortConfig]);
 
   const fetchReservations = async () => {
     try {
-      const data = await adminReservationApi.getAllReservations();
+      setLoading(true);
+      const data = await adminReservationApi.getAllReservations(startDate, endDate);
       setReservations(data);
       setLoading(false);
     } catch (error) {
@@ -45,12 +47,6 @@ export default function CashierReservationsPage() {
     if (filter !== "ALL") {
       filtered = filtered.filter(
         (reservation) => reservation.status === filter,
-      );
-    }
-
-    if (date) {
-      filtered = filtered.filter((reservation) => 
-        new Date(reservation.reservedAt).toISOString().split("T")[0] === date
       );
     }
 
@@ -154,30 +150,45 @@ export default function CashierReservationsPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Ngày:</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Từ ngày:</span>
           <input
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className={styles.input}
+            style={{ width: "160px", padding: '0.5rem' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Đến ngày:</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
             className={styles.input}
             style={{ width: "160px", padding: '0.5rem' }}
           />
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Trạng thái:</span>
-          <select 
-            value={filter} 
-            onChange={(e) => setFilter(e.target.value)}
-            className={styles.select}
-            style={{ width: "160px", padding: '0.5rem' }}
-          >
-            <option value="ALL">Tất cả</option>
-            <option value="PENDING">Đang chờ</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="CHECKED_IN">Đã check-in</option>
-            <option value="CANCELLED">Đã hủy</option>
-          </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Trạng thái:</span>
+          <div className={styles.statusButtonGroup}>
+            {[
+              { value: "ALL", label: "Tất cả" },
+              { value: "PENDING", label: "Đang chờ" },
+              { value: "CONFIRMED", label: "Đã xác nhận" },
+              { value: "CANCELLED", label: "Đã hủy" },
+            ].map((s) => (
+              <button
+                key={s.value}
+                onClick={() => setFilter(s.value)}
+                className={`${styles.statusBtn} ${filter === s.value ? styles.statusBtnActive : ""}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ flex: 1, minWidth: '200px', maxWidth: '400px', position: 'relative' }}>
@@ -232,7 +243,7 @@ export default function CashierReservationsPage() {
               {filteredReservations.length === 0 ? (
                 <tr>
                   <td colSpan={8} className={styles.empty}>
-                    {search || date
+                    {search || startDate || endDate
                       ? "Không tìm thấy đặt bàn nào"
                       : "Chưa có đặt bàn nào"}
                   </td>
@@ -278,19 +289,6 @@ export default function CashierReservationsPage() {
                             }
                           >
                             Xác nhận
-                          </button>
-                        )}
-                        {reservation.status === "CONFIRMED" && (
-                          <button
-                            className={styles.btnPrimary}
-                            onClick={() =>
-                              handleStatusUpdate(
-                                reservation.reservationId,
-                                "CHECKED_IN",
-                              )
-                            }
-                          >
-                            Check-in
                           </button>
                         )}
                         {(reservation.status === "PENDING" ||

@@ -6,12 +6,12 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Implementation;
-using Microsoft.Extensions.Caching.Memory;
 using SEP_Restaurant_management.Core.Services.Interface;
 using Xunit;
 
@@ -43,6 +43,21 @@ public class AuthServicePostTests
         return new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
     }
 
+    private static IConfiguration CreateConfigWithFrontendResetUrl(
+        string? resetPasswordUrl,
+        int expireMinutes = 120
+    )
+    {
+        var extra = new Dictionary<string, string?>();
+        if (resetPasswordUrl != null)
+            extra["Frontend:ResetPasswordUrl"] = resetPasswordUrl;
+
+        return new ConfigurationBuilder()
+            .AddConfiguration(CreateJwtConfig(expireMinutes))
+            .AddInMemoryCollection(extra)
+            .Build();
+    }
+
     private static Mock<UserManager<UserIdentity>> CreateUserManagerMock()
     {
         var store = new Mock<IUserStore<UserIdentity>>();
@@ -62,13 +77,7 @@ public class AuthServicePostTests
     private static Mock<RoleManager<IdentityRole>> CreateRoleManagerMock()
     {
         var store = new Mock<IRoleStore<IdentityRole>>();
-        return new Mock<RoleManager<IdentityRole>>(
-            store.Object,
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        return new Mock<RoleManager<IdentityRole>>(store.Object, null!, null!, null!, null!);
     }
 
     private static JwtSecurityToken ReadJwt(string token)
@@ -108,7 +117,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(expireMinutes: 10), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(expireMinutes: 10),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "pw" }
@@ -147,7 +163,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "missing@b.com", Password = "pw" }
@@ -180,7 +203,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "wrong" }
@@ -214,7 +244,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "a@b.com", Password = "pw" }
@@ -261,7 +298,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var resp = await service.LoginAsync(
             new LoginRequestDTO { Email = "s@b.com", Password = "pw" }
@@ -295,7 +339,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -332,7 +383,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -370,7 +428,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -409,7 +474,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var (ok, _) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -446,7 +518,14 @@ public class AuthServicePostTests
         var emailMock = new Mock<IEmailService>();
         var cacheMock = new Mock<IMemoryCache>();
         var roleMock = CreateRoleManagerMock();
-        var service = new AuthService(um.Object, CreateJwtConfig(), context, emailMock.Object, cacheMock.Object, roleMock.Object);
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
 
         var (ok, errors) = await service.RegisterAsync(
             new RegisterRequestDTO
@@ -462,5 +541,510 @@ public class AuthServicePostTests
         Assert.True(ok);
         Assert.Empty(errors);
         Assert.Equal(1, await context.Customers.CountAsync());
+    }
+
+    // ─────────────────────────────────────────────
+    //  FUNC: ForgotPasswordAsync (5 testcases)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ForgotPasswordAsync")]
+    [Trait("UTCID", "UTCID01")]
+    [Trait("Type", "N")]
+    public async Task UTCID01_ForgotPasswordAsync_UserExists_SendsResetEmailWithLink()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("token123");
+
+        var emailMock = new Mock<IEmailService>();
+        emailMock
+            .Setup(x =>
+                x.SendEmailNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())
+            )
+            .Returns(Task.CompletedTask);
+
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var config = CreateConfigWithFrontendResetUrl("https://frontend/reset");
+        var service = new AuthService(
+            um.Object,
+            config,
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        await service.ForgotPasswordAsync(
+            new ForgotPasswordRequestDTO { Email = "test@example.com" }
+        );
+
+        emailMock.Verify(
+            x =>
+                x.SendEmailNewAsync(
+                    "test@example.com",
+                    It.Is<string>(s =>
+                        s.Contains("đặt lại mật khẩu", StringComparison.OrdinalIgnoreCase)
+                    ),
+                    It.Is<string>(html =>
+                        html.Contains("https://frontend/reset", StringComparison.Ordinal)
+                    )
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ForgotPasswordAsync")]
+    [Trait("UTCID", "UTCID02")]
+    [Trait("Type", "A")]
+    public async Task UTCID02_ForgotPasswordAsync_UserNotFound_DoesNothing()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("missing@example.com")).ReturnsAsync((UserIdentity?)null);
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var config = CreateConfigWithFrontendResetUrl("https://frontend/reset");
+        var service = new AuthService(
+            um.Object,
+            config,
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        await service.ForgotPasswordAsync(
+            new ForgotPasswordRequestDTO { Email = "missing@example.com" }
+        );
+
+        um.Verify(x => x.GeneratePasswordResetTokenAsync(It.IsAny<UserIdentity>()), Times.Never);
+        emailMock.Verify(
+            x => x.SendEmailNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ForgotPasswordAsync")]
+    [Trait("UTCID", "UTCID03")]
+    [Trait("Type", "A")]
+    public async Task UTCID03_ForgotPasswordAsync_ResetUrlMissing_Throws()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("token123");
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var config = CreateConfigWithFrontendResetUrl(resetPasswordUrl: null);
+        var service = new AuthService(
+            um.Object,
+            config,
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ForgotPasswordAsync(new ForgotPasswordRequestDTO { Email = "test@example.com" })
+        );
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ForgotPasswordAsync")]
+    [Trait("UTCID", "UTCID04")]
+    [Trait("Type", "B")]
+    public async Task UTCID04_ForgotPasswordAsync_TokenHasSpecialChars_IsUrlEncodedInEmail()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+        var rawToken = "a/b+c==";
+        var expectedEncoded = Uri.EscapeDataString(rawToken);
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync(rawToken);
+
+        var emailMock = new Mock<IEmailService>();
+        emailMock
+            .Setup(x =>
+                x.SendEmailNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())
+            )
+            .Returns(Task.CompletedTask);
+
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var config = CreateConfigWithFrontendResetUrl("https://frontend/reset");
+        var service = new AuthService(
+            um.Object,
+            config,
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        await service.ForgotPasswordAsync(
+            new ForgotPasswordRequestDTO { Email = "test@example.com" }
+        );
+
+        emailMock.Verify(
+            x =>
+                x.SendEmailNewAsync(
+                    "test@example.com",
+                    It.IsAny<string>(),
+                    It.Is<string>(html =>
+                        html.Contains($"token={expectedEncoded}", StringComparison.Ordinal)
+                    )
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ForgotPasswordAsync")]
+    [Trait("UTCID", "UTCID05")]
+    [Trait("Type", "B")]
+    public async Task UTCID05_ForgotPasswordAsync_EmailHasPlus_IsUrlEncodedInLink()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var email = "user+1@example.com";
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = email,
+            UserName = email,
+        };
+        var expectedEmailEncoded = Uri.EscapeDataString(email);
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync(email)).ReturnsAsync(user);
+        um.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("token123");
+
+        var emailMock = new Mock<IEmailService>();
+        emailMock
+            .Setup(x =>
+                x.SendEmailNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())
+            )
+            .Returns(Task.CompletedTask);
+
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var config = CreateConfigWithFrontendResetUrl("https://frontend/reset");
+        var service = new AuthService(
+            um.Object,
+            config,
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        await service.ForgotPasswordAsync(new ForgotPasswordRequestDTO { Email = email });
+
+        emailMock.Verify(
+            x =>
+                x.SendEmailNewAsync(
+                    email,
+                    It.IsAny<string>(),
+                    It.Is<string>(html =>
+                        html.Contains($"email={expectedEmailEncoded}", StringComparison.Ordinal)
+                    )
+                ),
+            Times.Once
+        );
+    }
+
+    // ─────────────────────────────────────────────
+    //  FUNC: ResetPasswordAsync (5 testcases)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ResetPasswordAsync")]
+    [Trait("UTCID", "UTCID01")]
+    [Trait("Type", "N")]
+    public async Task UTCID01_ResetPasswordAsync_ValidRequest_DecodesToken_ResetsPassword()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+        var encodedToken = Uri.EscapeDataString("abc/def");
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.ResetPasswordAsync(user, "abc/def", "NewP@ssw0rd"))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        var (ok, errors) = await service.ResetPasswordAsync(
+            new ResetPasswordRequestDTO
+            {
+                Email = "test@example.com",
+                Token = encodedToken,
+                NewPassword = "NewP@ssw0rd",
+                ConfirmPassword = "NewP@ssw0rd",
+            }
+        );
+
+        Assert.True(ok);
+        Assert.Empty(errors);
+        um.Verify(x => x.ResetPasswordAsync(user, "abc/def", "NewP@ssw0rd"), Times.Once);
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ResetPasswordAsync")]
+    [Trait("UTCID", "UTCID02")]
+    [Trait("Type", "A")]
+    public async Task UTCID02_ResetPasswordAsync_UserNotFound_ReturnsFailure()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("missing@example.com")).ReturnsAsync((UserIdentity?)null);
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        var (ok, errors) = await service.ResetPasswordAsync(
+            new ResetPasswordRequestDTO
+            {
+                Email = "missing@example.com",
+                Token = "t",
+                NewPassword = "pw",
+                ConfirmPassword = "pw",
+            }
+        );
+
+        Assert.False(ok);
+        Assert.Contains(errors, e => e.Contains("User not found"));
+        um.Verify(
+            x =>
+                x.ResetPasswordAsync(
+                    It.IsAny<UserIdentity>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ResetPasswordAsync")]
+    [Trait("UTCID", "UTCID03")]
+    [Trait("Type", "A")]
+    public async Task UTCID03_ResetPasswordAsync_ResetFails_ReturnsErrors()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.ResetPasswordAsync(user, "token", "pw"))
+            .ReturnsAsync(
+                IdentityResult.Failed(new IdentityError { Description = "Reset failed" })
+            );
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        var (ok, errors) = await service.ResetPasswordAsync(
+            new ResetPasswordRequestDTO
+            {
+                Email = "test@example.com",
+                Token = Uri.EscapeDataString("token"),
+                NewPassword = "pw",
+                ConfirmPassword = "pw",
+            }
+        );
+
+        Assert.False(ok);
+        Assert.Contains(errors, e => e.Contains("Reset failed"));
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ResetPasswordAsync")]
+    [Trait("UTCID", "UTCID04")]
+    [Trait("Type", "B")]
+    public async Task UTCID04_ResetPasswordAsync_TokenIsEncoded_DecodesBeforeCallingUserManager()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+        var encodedToken = "abc%2Fdef";
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.ResetPasswordAsync(user, "abc/def", "pw"))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        var (ok, _) = await service.ResetPasswordAsync(
+            new ResetPasswordRequestDTO
+            {
+                Email = "test@example.com",
+                Token = encodedToken,
+                NewPassword = "pw",
+                ConfirmPassword = "pw",
+            }
+        );
+
+        Assert.True(ok);
+        um.Verify(x => x.ResetPasswordAsync(user, "abc/def", "pw"), Times.Once);
+    }
+
+    [Fact]
+    [Trait("CodeModule", "Auth")]
+    [Trait("Method", "ResetPasswordAsync")]
+    [Trait("UTCID", "UTCID05")]
+    [Trait("Type", "B")]
+    public async Task UTCID05_ResetPasswordAsync_PasswordBoundary_StillCallsReset()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var context = CreateContext(dbName);
+
+        var user = new UserIdentity
+        {
+            Id = "U1",
+            Email = "test@example.com",
+            UserName = "test@example.com",
+        };
+        var password = new string('A', 64) + "1!a";
+
+        var um = CreateUserManagerMock();
+        um.Setup(x => x.FindByEmailAsync("test@example.com")).ReturnsAsync(user);
+        um.Setup(x => x.ResetPasswordAsync(user, "token", password))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var emailMock = new Mock<IEmailService>();
+        var cacheMock = new Mock<IMemoryCache>();
+        var roleMock = CreateRoleManagerMock();
+        var service = new AuthService(
+            um.Object,
+            CreateJwtConfig(),
+            context,
+            emailMock.Object,
+            cacheMock.Object,
+            roleMock.Object
+        );
+
+        var (ok, _) = await service.ResetPasswordAsync(
+            new ResetPasswordRequestDTO
+            {
+                Email = "test@example.com",
+                Token = Uri.EscapeDataString("token"),
+                NewPassword = password,
+                ConfirmPassword = password,
+            }
+        );
+
+        Assert.True(ok);
+        um.Verify(x => x.ResetPasswordAsync(user, "token", password), Times.Once);
     }
 }

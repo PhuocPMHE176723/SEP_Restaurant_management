@@ -801,3 +801,277 @@
     color: #fff;
     box-shadow: 0 4px 8px rgba(255, 77, 79, 0.15);
 }
+
+.tableGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.tableCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tableCard:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.tableCard.tableCardSelected {
+  border-color: var(--brand-primary);
+  background: #fff8f3;
+  color: var(--brand-primary);
+  box-shadow: 0 0 0 1px var(--brand-primary);
+}
+
+.tableCard.tableCardDisabled {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.tableCardTitle {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.tableCardDisabled .tableCardTitle {
+  color: #94a3b8;
+}
+
+.tableCardDesc {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.tableCardStatus {
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+  font-weight: 500;
+}
+
+.textAvailable {
+  color: #10b981;
+}
+
+.textUnavailable {
+  color: #ef4444;
+}
+
+/* ── Table Diagram ─────────────────────────── */
+.tableSection {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.tableSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tableModeToggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tableModeBtn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: white;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tableModeBtn:hover {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.tableModeBtnActive {
+  background: #f97316;
+  border-color: #f97316;
+  color: white;
+}
+
+.tableLegend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.legendDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tableLoadingWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.tableDiagram {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.65rem;
+}
+
+.tableDiagramCard {
+  border-radius: 10px;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: 2px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.tableDiagramCardAvailable {
+  border-color: #22c55e;
+  border-left: 4px solid #22c55e;
+}
+
+.tableDiagramCardAvailable:hover {
+  background: #f0fdf4;
+  border-color: #16a34a;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+  transform: translateY(-2px);
+}
+
+.tableDiagramCardUnavailable {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.tableDiagramCardPicked {
+  border-color: #f97316 !important;
+  border-left: 4px solid #f97316 !important;
+  background: #fff8f3;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+  transform: translateY(-2px);
+}
+
+
+.tableDiagramName {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.tableDiagramCap {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.tableDiagramStatus {
+  font-size: 0.68rem;
+  color: #ef4444;
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+.tableEmpty {
+  padding: 1.5rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px dashed #e2e8f0;
+}
+
+.tableSelectionSummary {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fff8f3;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tableSelectionInfo {
+  font-size: 0.88rem;
+}
+
+.tableClearBtn {
+  font-size: 0.78rem;
+  color: #ef4444;
+  background: none;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 600;
+}
+
+.tableClearBtn:hover {
+  background: #fff5f5;
+}
+
+.historyLink {
+  font-size: 0.8rem;
+  color: #f97316;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  background: #fff8f3;
+  border: 1.5px solid #ffedd5;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.historyLink:hover {
+  background: #f97316;
+  color: white;
+  border-color: #f97316;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.1);
+}

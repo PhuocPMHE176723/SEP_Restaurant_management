@@ -88,4 +88,62 @@ public class DiningTableService : IDiningTableService
         _unitOfWork.DiningTables.Update(table);
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
+
+    public async Task<IEnumerable<TableAvailabilityDTO>> GetAvailabilityAsync(DateTime date, string timeSlot)
+    {
+        var tables = await _unitOfWork.DiningTables.GetActiveTablesAsync();
+        
+        if (!TimeSpan.TryParse(timeSlot, out var ts))
+        {
+            ts = date.TimeOfDay;
+        }
+        
+        var targetTime = date.Date.Add(ts);
+        
+        var reservations = await _unitOfWork.GetRepository<Reservation>()
+            .FindAsync(r => r.Status != "CANCELLED" && r.Status != "COMPLETED" && r.Status != "NO_SHOW" && r.TableId != null);
+            
+        var availabilityList = new List<TableAvailabilityDTO>();
+        
+        foreach (var table in tables)
+        {
+            var dto = new TableAvailabilityDTO
+            {
+                TableId = table.TableId,
+                TableCode = table.TableCode,
+                TableName = table.TableName ?? "",
+                Capacity = table.Capacity,
+                IsAvailable = true,
+                StatusMessage = "Trống"
+            };
+            
+            // Check status for targetTime on today
+            if (table.Status != "AVAILABLE")
+            {
+                if (targetTime.Date == DateTime.Now.Date && targetTime < DateTime.Now.AddHours(2))
+                {
+                    dto.IsAvailable = false;
+                    dto.StatusMessage = "Đang có khách/Bận";
+                }
+            }
+            
+            var tableReservations = reservations.Where(r => r.TableId == table.TableId);
+            foreach (var res in tableReservations)
+            {
+                var endTime = res.ReservedAt.AddMinutes(res.DurationMinutes);
+                // Giữ chỗ cho khách khác +- 90 phút
+                if (targetTime >= res.ReservedAt.AddMinutes(-90) && targetTime <= endTime)
+                {
+                    dto.IsAvailable = false;
+                    dto.CustomerName = null; // Privacy: Don't leak names to public API
+                    dto.StatusMessage = res.Status == "CHECKED_IN" ? "Đang có khách" : $"Đã đặt ({res.ReservedAt:HH:mm})";
+                    break;
+                }
+            }
+            
+            availabilityList.Add(dto);
+        }
+        
+        return availabilityList;
+    }
 }

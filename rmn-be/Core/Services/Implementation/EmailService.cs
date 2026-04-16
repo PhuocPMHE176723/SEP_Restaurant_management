@@ -144,7 +144,7 @@ public class EmailService : IEmailService
                 </div>
                 <div style='padding: 20px; color: #333; line-height: 1.6;'>
                     <p>Chào anh/chị <strong>{customerName}</strong>,</p>
-                    <p>Hệ thống đã ghi nhận đơn đặt bàn của anh/chị. Vui lòng thanh toán tiền cọc (50%) để hoàn tất xác thực đơn đặt bàn này. Dưới đây là thông tin chi tiết:</p>
+                    <p>Hệ thống đã ghi nhận đơn đặt bàn của anh/chị. Vui lòng thanh toán tiền cọc (tối thiểu 200.000đ hoặc 20% giá trị đơn hàng) để hoàn tất xác thực đơn đặt bàn này. Dưới đây là thông tin chi tiết:</p>
                     <table style='width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px;'>
                         <tr>
                             <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Mã đặt bàn:</strong></td>
@@ -169,7 +169,7 @@ public class EmailService : IEmailService
                         </tr>" : "")}
                         <tr>
                             <td style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>Tiền cọc cần thanh toán:</strong></td>
-                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; color: #d32f2f;'>{depositAmount:N0}đ (50%)</td>
+                            <td style='padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; color: #d32f2f;'>{depositAmount:N0}đ</td>
                         </tr>
                     </table>
                     {itemsHtml}
