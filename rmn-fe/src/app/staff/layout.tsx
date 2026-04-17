@@ -16,6 +16,8 @@ const NAV_ITEMS = [
   { href: "/staff/orders", label: "Order tại bàn" },
   { href: "/staff/dining-tables", label: "Danh sách bàn" },
   { href: "/staff/table-transfer", label: "Chuyển bàn" },
+  // Phục vụ tại bàn
+  { href: "/staff/serving_list", label: "Danh sách phục vụ" },
 
   // Content Management
   { href: "/staff/blog", label: "Quản lý Blog" },

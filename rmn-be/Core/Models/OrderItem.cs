@@ -29,7 +29,7 @@ public class OrderItem
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = "PENDING"; // PENDING/COOKING/SERVED/CANCELLED
+    public string Status { get; set; } = "PENDING"; // PENDING/COOKING/SERVED/CANCELLED/READY_SERVE
 
     [MaxLength(255)]
     public string? Note { get; set; }

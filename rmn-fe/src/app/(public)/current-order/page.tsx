@@ -11,6 +11,7 @@ import {
   type OrderDTO,
   type ReservationDTO,
 } from "../../../lib/api/myOrder";
+import { cancelReservation } from "../../../lib/api/reservation"; 
 import styles from "./page.module.css";
 
 function formatCurrency(value: number) {
@@ -24,15 +25,6 @@ function formatServingTime(value?: string | null) {
   const mm = date.getMinutes().toString().padStart(2, "0");
   return `${hh}:${mm} - Hôm nay`;
 }
-
-const statusMap = {
-  PENDING: "Chờ xử lý",
-  IN_PROGRESS: "Đang xử lý",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã huỷ"
-};
-
-
 
 function formatReservationTime(value?: string | null) {
   if (!value) return "--";
@@ -56,11 +48,6 @@ function ServingView({ order }: { order: OrderDTO }) {
             Phục vụ tại chỗ
           </p>
         </div>
-
-        <button className={styles.addButton}>
-          <span className={styles.plus}>+</span>
-          Thêm món
-        </button>
       </div>
 
       <div className={styles.orderCard}>
@@ -117,18 +104,29 @@ function ServingView({ order }: { order: OrderDTO }) {
               <p className={styles.totalValue}>{formatCurrency(order.totalAmount)}</p>
             </div>
           </div>
-
-          <div className={styles.actionRow}>
-            <button className={styles.primaryButton}>Thanh toán</button>
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PreorderView({ reservation }: { reservation: ReservationDTO }) {
+function PreorderView({
+  reservation,
+  onCancel,
+  canceling,
+}: {
+  reservation: ReservationDTO;
+  onCancel: (reservationId: number) => Promise<void>;
+  canceling: boolean;
+}) {
   const preorder = reservation.order;
+
+  const handleCancelClick = async () => {
+    const confirmed = window.confirm("Bạn có chắc muốn hủy đơn đặt trước không?");
+    if (!confirmed) return;
+
+    await onCancel(reservation.reservationId);
+  };
 
   return (
     <div className={styles.screenWrap}>
@@ -139,7 +137,6 @@ function PreorderView({ reservation }: { reservation: ReservationDTO }) {
             #{preorder?.orderCode || `KQ-PRE-${reservation.reservationId}`}
           </p>
         </div>
-
       </div>
 
       <div className={styles.orderCard}>
@@ -188,7 +185,9 @@ function PreorderView({ reservation }: { reservation: ReservationDTO }) {
         <div className={styles.bottomSection}>
           <div className={styles.bottomTop}>
             <div>
-              <p className={styles.depositText}>Đã đặt cọc:  {formatCurrency(reservation?.depositAmount ?? 0)}</p>
+              <p className={styles.depositText}>
+                Đã đặt cọc: {formatCurrency(reservation?.depositAmount ?? 0)}
+              </p>
             </div>
 
             <div className={styles.totalBox}>
@@ -200,7 +199,13 @@ function PreorderView({ reservation }: { reservation: ReservationDTO }) {
           </div>
 
           <div className={styles.actionRow}>
-            <button className={styles.primaryButton}>Hủy đơn</button>
+            <button
+              className={styles.primaryButton}
+              onClick={handleCancelClick}
+              disabled={canceling}
+            >
+              {canceling ? "Đang hủy..." : "Hủy đơn"}
+            </button>
           </div>
         </div>
       </div>
@@ -222,6 +227,7 @@ export default function OrdersPage() {
   const { isLoggedIn, user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [canceling, setCanceling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState<CustomerContextDTO | null>(null);
 
@@ -258,26 +264,44 @@ export default function OrdersPage() {
     }
   }
 
+  async function handleCancelReservation(reservationId: number) {
+    try {
+      setCanceling(true);
+      setError(null);
+
+      await cancelReservation(reservationId);
+      await loadContext();
+    } catch (err: any) {
+      setError(err.message || "Hủy đơn thất bại");
+    } finally {
+      setCanceling(false);
+    }
+  }
+
   return (
     <>
       <Header />
-        <div className={styles.headerSpacer} />
-        <div className={styles.container}>
-          {!mounted || loading ? (
-            <EmptyView />
-          ) : error ? (
-            <div className={styles.emptyState}>
-              <h3>Không thể tải dữ liệu</h3>
-              <p>{error}</p>
-            </div>
-          ) : context?.displayMode === "SERVING" && context.activeOrder ? (
-            <ServingView order={context.activeOrder} />
-          ) : context?.displayMode === "PREORDER" && context.activeReservation ? (
-            <PreorderView reservation={context.activeReservation} />
-          ) : (
-            <EmptyView />
-          )}
-        </div>
+      <div className={styles.headerSpacer} />
+      <div className={styles.container}>
+        {!mounted || loading ? (
+          <EmptyView />
+        ) : error ? (
+          <div className={styles.emptyState}>
+            <h3>Không thể tải dữ liệu</h3>
+            <p>{error}</p>
+          </div>
+        ) : context?.displayMode === "SERVING" && context.activeOrder ? (
+          <ServingView order={context.activeOrder} />
+        ) : context?.displayMode === "PREORDER" && context.activeReservation ? (
+          <PreorderView
+            reservation={context.activeReservation}
+            onCancel={handleCancelReservation}
+            canceling={canceling}
+          />
+        ) : (
+          <EmptyView />
+        )}
+      </div>
       <Footer />
     </>
   );

@@ -50,7 +50,8 @@ public class AuthService : IAuthService
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!isPasswordValid)
             return null;
-
+        if (!user.EmailConfirmed)
+        throw new InvalidOperationException("Email chưa được xác thực. Vui lòng nhập OTP.");
         // 3. Lấy danh sách roles
         var roles = (await _userManager.GetRolesAsync(user)).ToList();
 

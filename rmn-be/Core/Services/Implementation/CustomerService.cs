@@ -254,7 +254,7 @@ namespace rmn_be.Core.Services.Implementation
                     .ThenInclude(o => o!.OrderItems)
                         .ThenInclude(oi => oi.MenuItem)
                 .Where(r => r.CustomerId == customer.CustomerId
-                    && (r.Status == "PENDING" || r.Status == "CONFIRMED") && r.Order.Status == null)
+                    && (r.Status == "PENDING" || r.Status == "CONFIRMED") && r.Order.Status == "RESERVED")
                 .OrderBy(r => r.ReservedAt)
                 .FirstOrDefaultAsync();
 

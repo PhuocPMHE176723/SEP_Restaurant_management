@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { resendOtpApi, verifyOtpApi } from "../../../lib/api/auth";
 import OtpInput from "../OtpInput";
 import styles from "../login/page.module.css";
 
-function VerifyOtpContent() {
+export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -140,7 +140,9 @@ function VerifyOtpContent() {
                 <div className={styles.field}>
                   <label className={styles.label}>Nhập mã OTP *</label>
 
-                  <OtpInput value={otp} onChange={setOtp} />
+                  <div style={{ width: "100%", display: "block" }}>
+                    <OtpInput value={otp} onChange={setOtp} />
+                </div>
 
                   <small
                     style={{
@@ -246,13 +248,5 @@ function VerifyOtpContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function VerifyOtpPage() {
-  return (
-    <Suspense>
-      <VerifyOtpContent />
-    </Suspense>
   );
 }

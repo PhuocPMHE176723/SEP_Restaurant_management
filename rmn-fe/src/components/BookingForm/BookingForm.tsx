@@ -356,7 +356,7 @@ export default function BookingForm() {
       console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
 
       if (sepayConfig?.account) {
-        const depositAmount = Math.max(200000, Math.round(_totalAmount * 0.5)); // Min 200k or 50%
+        const depositAmount = Math.max(10000, Math.round(_totalAmount * 0.5)); // Min 200k or 50%
         console.log(`[BookingForm] Calculated depositAmount: ${depositAmount}`);
         setQrAmount(depositAmount);
         setCurrentReservationId(result.reservationId);
@@ -888,7 +888,7 @@ export default function BookingForm() {
                       className={styles.pricingDeposit}
                       style={{ color: "var(--brand-primary)", fontWeight: "bold" }}
                     >
-                      {Math.max(200000, Math.round(totalAmount * 0.5)).toLocaleString("vi-VN")} đ
+                      {Math.max(10000, Math.round(totalAmount * 0.5)).toLocaleString("vi-VN")} đ
                     </span>
                   </div>
                   <div

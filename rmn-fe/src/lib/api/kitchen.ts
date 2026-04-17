@@ -50,3 +50,48 @@ export const kitchenApi = {
     await handleResponse<void>(response);
   },
 };
+
+
+export type CookingListItem = {
+  itemId: number;
+  itemName: string;
+  thumbnail?: string | null;
+  unit?: string | null;
+  totalPreOrderQuantity: number;
+  mustCookQuantity: number;
+  cookingQuantity: number;
+  readyServeQuantity: number;
+  lastUpdatedAt?: string | null;
+};
+
+export const cookingApi = {
+  async getCookingList(): Promise<CookingListItem[]> {
+    const response = await fetch(`${apiBaseUrl}/api/Kitchen/cooking-list`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    });
+    return handleResponse<CookingListItem[]>(response);
+  },
+
+  async startCookingByItem(itemId: number): Promise<void> {
+    const response = await fetch(
+      `${apiBaseUrl}/api/Kitchen/cooking-list/${itemId}/start-cooking`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      }
+    );
+    await handleResponse<void>(response);
+  },
+
+  async markReadyByItem(itemId: number): Promise<void> {
+    const response = await fetch(
+      `${apiBaseUrl}/api/Kitchen/cooking-list/${itemId}/mark-ready`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      }
+    );
+    await handleResponse<void>(response);
+  },
+};

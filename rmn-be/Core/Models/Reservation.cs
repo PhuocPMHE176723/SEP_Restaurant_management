@@ -32,7 +32,7 @@ public class Reservation
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = "PENDING"; // PENDING/CONFIRMED/CANCELLED/NO_SHOW/COMPLETED
+    public string Status { get; set; } = "PENDING"; // PENDING/CONFIRMED/CANCELLED/NO_SHOW/COMPLETED/CHECKED_IN
 
     [MaxLength(255)]
     public string? Note { get; set; }
