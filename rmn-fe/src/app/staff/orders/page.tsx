@@ -13,9 +13,10 @@ export default function StaffOrdersPage() {
   const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("SENT_TO_KITCHEN");
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -23,16 +24,16 @@ export default function StaffOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [dateFilter]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     filterOrders();
-  }, [allOrders, statusFilter, searchTerm, dateFilter]);
+  }, [allOrders, statusFilter, searchTerm, startDate, endDate]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const data = await orderApi.getAllOrders(dateFilter, dateFilter);
+      const data = await orderApi.getAllOrders(startDate, endDate);
       setAllOrders(data);
       setLoading(false);
     } catch (error) {
@@ -42,16 +43,11 @@ export default function StaffOrdersPage() {
   };
 
   const filterOrders = () => {
-    let filtered = [...allOrders];
+    const allowed = ["SENT_TO_KITCHEN", "SERVED", "CLOSED"];
+    let filtered = allOrders.filter(o => allowed.includes(o.status));
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((order) => order.status === statusFilter);
-    }
-
-    if (dateFilter) {
-      filtered = filtered.filter((order) => 
-        new Date(order.openedAt).toISOString().split("T")[0] === dateFilter
-      );
     }
 
     if (searchTerm) {
@@ -161,31 +157,46 @@ export default function StaffOrdersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Ngày:</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Từ ngày:</span>
           <input
             type="date"
             className={styles.input}
             style={{ width: '160px' }}
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Đến ngày:</span>
+          <input
+            type="date"
+            className={styles.input}
+            style={{ width: '160px' }}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
         
-        <div className={styles.filterGroup}>
-          <select 
-            className={styles.select}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="OPEN">Mới mở</option>
-            <option value="SENT_TO_KITCHEN">Đang chờ bếp</option>
-            <option value="SERVED">Đã phục vụ</option>
-            <option value="CLOSED">Đã thanh toán</option>
-            <option value="CANCELLED">Đã hủy</option>
-            <option value="RESERVED">Đã đặt bàn</option>
-          </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Trạng thái:</span>
+          <div className={styles.statusButtonGroup}>
+            {[
+              { value: "ALL", label: "Tất cả" },
+              { value: "SENT_TO_KITCHEN", label: "Chờ bếp" },
+              { value: "SERVED", label: "Đã phục vụ" },
+              { value: "CLOSED", label: "Hoàn thành" },
+            ].map((s) => (
+              <button
+                key={s.value}
+                onClick={() => setStatusFilter(s.value)}
+                className={`${styles.statusBtn} ${statusFilter === s.value ? styles.statusBtnActive : ""}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

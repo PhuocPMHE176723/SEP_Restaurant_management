@@ -45,7 +45,18 @@ export interface CreateReservationRequest {
     durationMinutes?: number;
     note?: string;
     contactEmail?: string;
+    tableId?: number;
     menuItems: OrderItemRequest[];
+}
+
+export interface TableAvailability {
+    tableId: number;
+    tableCode: string;
+    tableName: string;
+    capacity: number;
+    isAvailable: boolean;
+    statusMessage: string;
+    customerName?: string;
 }
 
 export interface ReservationDTO {
@@ -130,4 +141,12 @@ export async function updateReservationItems(id: number, items: OrderItemRequest
         body: JSON.stringify(items),
     });
     await handleResponse<void>(res);
+}
+
+export async function getPublicTableAvailability(date: string, timeSlot: string): Promise<TableAvailability[]> {
+    const res = await fetch(`${apiBaseUrl}/api/diningtable/public-availability?date=${date}&timeSlot=${timeSlot}`, {
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store"
+    });
+    return handleResponse<TableAvailability[]>(res);
 }

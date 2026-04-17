@@ -221,11 +221,13 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(resetPasswordUrl))
             throw new InvalidOperationException("Frontend:ResetPasswordUrl is not configured.");
 
-        var resetLink = $"{resetPasswordUrl}?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
+        var resetLink =
+            $"{resetPasswordUrl}?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
 
         var subject = "[Nhà Hàng Khói Quê] Yêu cầu đặt lại mật khẩu";
 
-        var htmlMessage = $@"
+        var htmlMessage =
+            $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
                 <div style='background-color: #f7a048; padding: 20px; text-align: center; color: white;'>
                     <h2 style='margin: 0;'>Đặt Lại Mật Khẩu</h2>
@@ -253,7 +255,9 @@ public class AuthService : IAuthService
         await _emailService.SendEmailNewAsync(request.Email, subject, htmlMessage);
     }
 
-    public async Task<(bool Succeeded, List<string> Errors)> ResetPasswordAsync(ResetPasswordRequestDTO request)
+    public async Task<(bool Succeeded, List<string> Errors)> ResetPasswordAsync(
+        ResetPasswordRequestDTO request
+    )
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
@@ -268,13 +272,21 @@ public class AuthService : IAuthService
 
         return (true, new List<string>());
     }
-    public async Task<(bool Succeeded, List<string> Errors)> ChangePasswordAsync(string userId, ChangePasswordRequestDTO request)
+
+    public async Task<(bool Succeeded, List<string> Errors)> ChangePasswordAsync(
+        string userId,
+        ChangePasswordRequestDTO request
+    )
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return (false, new List<string> { "User not found" });
 
-        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        var result = await _userManager.ChangePasswordAsync(
+            user,
+            request.CurrentPassword,
+            request.NewPassword
+        );
 
         if (!result.Succeeded)
         {
@@ -283,11 +295,14 @@ public class AuthService : IAuthService
 
         return (true, new List<string>());
     }
+
     // Send OTP
     private const int OtpExpiredMinutes = 5;
     private const int ResendCooldownSeconds = 60;
 
-    public async Task<(bool Succeeded, List<string> Errors)> NewRegisterAsync(RegisterRequestDTO request)
+    public async Task<(bool Succeeded, List<string> Errors)> NewRegisterAsync(
+        RegisterRequestDTO request
+    )
     {
         const string role = "Customer"; // 👉 FIX CỨNG ROLE
 
@@ -309,7 +324,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             FullName = request.FullName,
             PhoneNumber = request.Phone,
-            EmailConfirmed = false
+            EmailConfirmed = false,
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -334,7 +349,7 @@ public class AuthService : IAuthService
             Phone = request.Phone,
             Email = request.Email,
             TotalPoints = 0,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         _context.Customers.Add(customer);
@@ -343,23 +358,17 @@ public class AuthService : IAuthService
         // 👉 tạo OTP
         var otp = GenerateOtp();
 
-        _memoryCache.Set(
-            $"register_otp:{request.Email.ToLower()}",
-            otp,
-            TimeSpan.FromMinutes(5)
-        );
+        _memoryCache.Set($"register_otp:{request.Email.ToLower()}", otp, TimeSpan.FromMinutes(5));
 
         // 👉 gửi mail
-        await _emailService.SendEmailVerificationOtpAsync(
-            request.Email,
-            request.FullName,
-            otp
-        );
+        await _emailService.SendEmailVerificationOtpAsync(request.Email, request.FullName, otp);
 
         return (true, new List<string>());
     }
 
-    public async Task<(bool Succeeded, List<string> Errors)> VerifyEmailOtpAsync(VerifyEmailOtpRequestDTO request)
+    public async Task<(bool Succeeded, List<string> Errors)> VerifyEmailOtpAsync(
+        VerifyEmailOtpRequestDTO request
+    )
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
@@ -374,7 +383,10 @@ public class AuthService : IAuthService
 
         var otpKey = GetOtpKey(request.Email);
 
-        if (!_memoryCache.TryGetValue(otpKey, out string? savedOtp) || string.IsNullOrWhiteSpace(savedOtp))
+        if (
+            !_memoryCache.TryGetValue(otpKey, out string? savedOtp)
+            || string.IsNullOrWhiteSpace(savedOtp)
+        )
         {
             return (false, new List<string> { "OTP expired or not found." });
         }
@@ -397,7 +409,9 @@ public class AuthService : IAuthService
         return (true, new List<string>());
     }
 
-    public async Task<(bool Succeeded, List<string> Errors)> ResendEmailOtpAsync(ResendOtpRequestDTO request)
+    public async Task<(bool Succeeded, List<string> Errors)> ResendEmailOtpAsync(
+        ResendOtpRequestDTO request
+    )
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
@@ -414,17 +428,19 @@ public class AuthService : IAuthService
 
         if (_memoryCache.TryGetValue(cooldownKey, out _))
         {
-            return (false, new List<string> { $"Please wait {ResendCooldownSeconds} seconds before requesting another OTP." });
+            return (
+                false,
+                new List<string>
+                {
+                    $"Please wait {ResendCooldownSeconds} seconds before requesting another OTP.",
+                }
+            );
         }
 
         var otp = GenerateOtp();
         SetOtpCache(request.Email, otp);
 
-        _memoryCache.Set(
-            cooldownKey,
-            true,
-            TimeSpan.FromSeconds(ResendCooldownSeconds)
-        );
+        _memoryCache.Set(cooldownKey, true, TimeSpan.FromSeconds(ResendCooldownSeconds));
 
         await _emailService.SendEmailVerificationOtpAsync(
             user.Email ?? request.Email,
@@ -437,16 +453,13 @@ public class AuthService : IAuthService
 
     private void SetOtpCache(string email, string otp)
     {
-        _memoryCache.Set(
-            GetOtpKey(email),
-            otp,
-            TimeSpan.FromMinutes(OtpExpiredMinutes)
-        );
+        _memoryCache.Set(GetOtpKey(email), otp, TimeSpan.FromMinutes(OtpExpiredMinutes));
     }
 
     private static string GetOtpKey(string email) => $"register_otp:{email.Trim().ToLower()}";
 
-    private static string GetCooldownKey(string email) => $"register_otp_cooldown:{email.Trim().ToLower()}";
+    private static string GetCooldownKey(string email) =>
+        $"register_otp_cooldown:{email.Trim().ToLower()}";
 
     private static string GenerateOtp()
     {

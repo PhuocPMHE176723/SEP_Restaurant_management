@@ -10,4 +10,5 @@ public interface IDiningTableService
     Task<DiningTableDTO> CreateAsync(CreateDiningTableDTO dto);
     Task<bool> UpdateAsync(int id, UpdateDiningTableDTO dto);
     Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<TableAvailabilityDTO>> GetAvailabilityAsync(DateTime date, string timeSlot);
 }

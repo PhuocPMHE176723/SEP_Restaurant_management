@@ -40,6 +40,21 @@ public class DiningTableController : BaseController
     }
 
     
+    [HttpGet("public-availability")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicAvailability([FromQuery] DateTime date, [FromQuery] string timeSlot)
+    {
+        try
+        {
+            var tables = await _tableService.GetAvailabilityAsync(date, timeSlot);
+            return Success(tables);
+        }
+        catch (Exception ex)
+        {
+            return Failure(ex.Message);
+        }
+    }
+
     [HttpGet("with-orders")]
     [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> GetAllWithOrders()

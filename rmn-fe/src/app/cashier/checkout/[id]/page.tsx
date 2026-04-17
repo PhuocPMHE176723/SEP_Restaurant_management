@@ -27,10 +27,9 @@ export default function CashierCheckoutPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [discountInfo, setDiscountInfo] = useState<{ type: string; value: number; max?: number } | null>(null);
-  const [discountAmount, setDiscountAmount] = useState(0);
   const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
   const [pointsToUse, setPointsToUse] = useState(0);
+  const [useVipPackage, setUseVipPackage] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [qrTimer, setQrTimer] = useState(300); // 5 minutes
@@ -39,8 +38,34 @@ export default function CashierCheckoutPage() {
     if (orderId) {
       fetchPreview();
       getSepayConfig().then(setSepayConfig).catch(console.error);
+      
+      // Khôi phục timer từ localStorage nếu có
+      const savedStartTime = localStorage.getItem(`qr_start_${orderId}`);
+      if (savedStartTime) {
+        const elapsed = Math.floor((Date.now() - Number(savedStartTime)) / 1000);
+        const remaining = 300 - elapsed;
+        if (remaining > 0) {
+          setQrTimer(remaining);
+          setShowQrModal(true);
+          setPaymentMethod('BANK');
+        } else {
+          localStorage.removeItem(`qr_start_${orderId}`);
+        }
+      }
     }
   }, [orderId]);
+
+  // Cảnh báo khi rời trang nếu đang hiện QR
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (showQrModal && !isSuccess) {
+        e.preventDefault();
+        e.returnValue = "Nếu bạn rời đi, phiên quét mã QR sẽ bị hủy. Bạn có chắc chắn?";
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [showQrModal, isSuccess]);
 
   // Automated polling for Bank Transfer
   useEffect(() => {
@@ -116,20 +141,39 @@ export default function CashierCheckoutPage() {
 
   const handleCheckout = async () => {
     if (isProcessing || isSuccess) return;
+
+    // Nếu chọn chuyển khoản mà chưa hiện QR thì hiện QR trước
+    if (paymentMethod === 'BANK' && !showQrModal) {
+      setShowQrModal(true);
+      setQrTimer(300);
+      localStorage.setItem(`qr_start_${orderId}`, Date.now().toString());
+      return;
+    }
+
     setIsProcessing(true);
     try {
       await invoiceApi.checkout({
         orderId,
-        discountCode: discountCode || undefined,
+        discountCode: (useVipPackage ? "VIP_PROMO" : (discountCode || undefined)),
         pointsToUse,
         paidAmount: preview?.amountToPay ?? 0
       });
       setIsSuccess(true);
+      localStorage.removeItem(`qr_start_${orderId}`);
+      
       Swal.fire({
-        title: "Thành công",
-        text: "Thanh toán thành công! Bạn có thể in hóa đơn bây giờ.",
+        title: "Thanh toán thành công!",
+        text: "Hệ thống đã ghi nhận thanh toán. Bạn có muốn in hóa đơn ngay không?",
         icon: "success",
-        confirmButtonColor: "var(--brand-primary)"
+        showCancelButton: true,
+        confirmButtonText: "Có, in hóa đơn",
+        cancelButtonText: "Không, để sau",
+        confirmButtonColor: "var(--brand-primary)",
+        cancelButtonColor: "#64748b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.print();
+        }
       });
     } catch (err: any) {
       Swal.fire({
@@ -208,18 +252,43 @@ export default function CashierCheckoutPage() {
           {customer ? (
             <div className={styles.customerCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.875rem', color: '#64748b' }}>Khách hàng thân thiết</span>
-                <button onClick={() => setCustomer(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}>Gỡ</button>
+                <span style={{ fontSize: '0.875rem', color: '#64748b' }}>Thành viên hệ thống</span>
+                <button onClick={() => {
+                  setCustomer(null);
+                  setPointsToUse(0);
+                  setUseVipPackage(false);
+                  fetchPreview(undefined, 0);
+                }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}>Gỡ</button>
               </div>
               <div className={styles.customerInfo}>
                 <span className={styles.customerName}>{customer.fullName}</span>
-                <span className={styles.customerPoints}>{customer.totalPoints} điểm</span>
+                <span className={styles.customerPoints} style={{ background: '#fef3c7', color: '#92400e', padding: '2px 10px', borderRadius: '12px', fontWeight: 600 }}>
+                  {((customer as any).TotalPoints ?? (customer as any).totalPoints ?? 0)} điểm
+                </span>
               </div>
             </div>
           ) : (
-            <button className={styles.lookupBtn} onClick={() => setIsModalOpen(true)}>
-              + Gắn khách hàng (Tích điểm/Giảm giá)
-            </button>
+            <div className={styles.discountSection}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Tra cứu điểm thành viên</label>
+              <div className={styles.discountInputWrapper}>
+                <input 
+                  className={styles.input} 
+                  type="text" 
+                  placeholder="Nhập SĐT khách hàng..." 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setIsModalOpen(true);
+                    }
+                  }}
+                  readOnly
+                  onClick={() => setIsModalOpen(true)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <button className={styles.applyBtn} onClick={() => setIsModalOpen(true)}>
+                  Tìm khách
+                </button>
+              </div>
+            </div>
           )}
 
           <div className={styles.discountSection}>
@@ -244,22 +313,55 @@ export default function CashierCheckoutPage() {
 
           {customer && (
             <div className={styles.discountSection} style={{ marginTop: '1rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Dùng điểm tích lũy (Có {customer.totalPoints} điểm)</label>
-              <div className={styles.discountInputWrapper}>
-                <input 
-                  className={styles.input} 
-                  type="number" 
-                  placeholder="Số điểm muốn dùng..." 
-                  value={pointsToUse}
-                  onChange={e => setPointsToUse(Number(e.target.value))}
-                />
-                <button 
-                  className={styles.applyBtn} 
-                  onClick={handleApplyPoints}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                 <button 
+                  className={`${styles.methodItem} ${!useVipPackage ? styles.active : ''}`}
+                  onClick={() => {
+                    setUseVipPackage(false);
+                    fetchPreview(discountCode, pointsToUse);
+                  }}
+                  style={{ flex: 1, padding: '8px', fontSize: '13px' }}
                 >
                   Dùng điểm
                 </button>
+                <button 
+                  className={`${styles.methodItem} ${useVipPackage ? styles.active : ''}`}
+                  onClick={() => {
+                    setUseVipPackage(true);
+                    setPointsToUse(0);
+                    // Giả lập dùng code VIP nếu check VIP
+                    fetchPreview("VIP_PROMO", 0);
+                  }}
+                  style={{ flex: 1, padding: '8px', fontSize: '13px' }}
+                >
+                  Gói ưu đãi VIP
+                </button>
               </div>
+
+              {!useVipPackage ? (
+                <>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Dùng điểm tích lũy (Có {((customer as any).TotalPoints ?? (customer as any).totalPoints ?? 0)} điểm)</label>
+                  <div className={styles.discountInputWrapper}>
+                    <input 
+                      className={styles.input} 
+                      type="number" 
+                      placeholder="Số điểm muốn dùng..." 
+                      value={pointsToUse}
+                      onChange={e => setPointsToUse(Number(e.target.value))}
+                    />
+                    <button 
+                      className={styles.applyBtn} 
+                      onClick={handleApplyPoints}
+                    >
+                      Dùng điểm
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ background: '#f0fdf4', padding: '10px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                   <p style={{ fontSize: '13px', color: '#166534', margin: 0 }}>✨ <b>Gói VIP:</b> Giảm giá trực tiếp hóa đơn (Trừ tiền, không tốn điểm tích lũy).</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -274,10 +376,7 @@ export default function CashierCheckoutPage() {
               </div>
               <div 
                 className={`${styles.methodItem} ${paymentMethod === 'BANK' ? styles.active : ''}`}
-                onClick={() => {
-                  setPaymentMethod('BANK');
-                  setShowQrModal(true);
-                }}
+                onClick={() => setPaymentMethod('BANK')}
               >
                 Chuyển khoản
               </div>
