@@ -44,7 +44,11 @@ export default function StaffReservationsPage() {
   const filterReservations = () => {
     let filtered = reservations;
 
-    if (filter !== "ALL") {
+    if (filter === "PENDING") {
+      filtered = filtered.filter(
+        (reservation) => reservation.status === "PENDING" || reservation.status === "CONFIRMED",
+      );
+    } else if (filter !== "ALL") {
       filtered = filtered.filter(
         (reservation) => reservation.status === filter,
       );
@@ -86,12 +90,12 @@ export default function StaffReservationsPage() {
   const handleStatusUpdate = async (
     id: number,
     status: string,
-    tableId?: number,
+    tableIds?: number[],
   ) => {
     try {
       await adminReservationApi.updateReservationStatus(id, {
         status,
-        tableId,
+        tableIds,
       });
       await fetchReservations(); // Refresh data
       Swal.fire({

@@ -8,7 +8,8 @@ public class ReservationDTO
 {
     public long ReservationId { get; set; }
     public long? CustomerId { get; set; }
-    public int? TableId { get; set; }
+    public int TotalTables { get; set; }
+    public List<int>? TableIds { get; set; }
     public string CustomerName { get; set; } = default!;
     public string CustomerPhone { get; set; } = default!;
     public string? ContactEmail { get; set; }
@@ -52,7 +53,8 @@ public class OrderItemDTO
 
 public class CreateReservationRequest
 {
-    public int? TableId { get; set; }
+    public int TotalTables { get; set; } = 1;
+    public List<int>? TableIds { get; set; }
 
     [Required]
     public DateTime ReservedAt { get; set; }
@@ -94,7 +96,7 @@ public class UpdateReservationStatusRequest
     public string Status { get; set; } = default!;
 
     /// <summary>Tuỳ chọn gán/chuyển bàn khi cập nhật trạng thái</summary>
-    public int? TableId { get; set; }
+    public List<int>? TableIds { get; set; }
 }
 
 public class CreateWalkinOrderRequest

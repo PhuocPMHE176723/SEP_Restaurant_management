@@ -11,7 +11,7 @@ public class Reservation
 
     public long? CustomerId { get; set; }
 
-    public int? TableId { get; set; }
+    public int TotalTables { get; set; } = 1;
 
     [Required]
     [MaxLength(150)]
@@ -44,8 +44,7 @@ public class Reservation
     [ForeignKey(nameof(CustomerId))]
     public virtual Customer? Customer { get; set; }
 
-    [ForeignKey(nameof(TableId))]
-    public virtual DiningTable? Table { get; set; }
+    public virtual ICollection<ReservationTable> ReservationTables { get; set; } = new List<ReservationTable>();
 
     [ForeignKey(nameof(CreatedByStaffId))]
     public virtual Staff? CreatedByStaff { get; set; }

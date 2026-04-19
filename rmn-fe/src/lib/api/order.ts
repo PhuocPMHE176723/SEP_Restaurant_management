@@ -123,6 +123,14 @@ export const orderApi = {
 
     await handleResponse<void>(response);
   },
+  async removeOrderItem(orderItemId: number): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/items/${orderItemId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+
+    await handleResponse<void>(response);
+  },
 
   async confirmItems(orderId: number, orderItemIds: number[]): Promise<void> {
     const response = await fetch(`${apiBaseUrl}/api/Order/${orderId}/confirm-items`, {

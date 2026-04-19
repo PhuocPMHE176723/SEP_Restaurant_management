@@ -30,11 +30,21 @@ public class MappingProfile : Profile
 
         // ── Reservation ────────────────────────────────────────
         CreateMap<Reservation, ReservationDTO>()
+            .ForMember(
+                dest => dest.TableIds,
+                opt => opt.MapFrom(src => src.ReservationTables.Select(rt => rt.TableId).ToList())
+            )
             .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Order));
 
         // ── Order ──────────────────────────────────────────────
         CreateMap<Order, OrderDTO>()
-            .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.OrderItems.Sum(i => i.LineTotal)))
+            .ForMember(
+                dest => dest.TotalAmount,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.OrderItems.Where(i => i.Status != "CANCELLED").Sum(i => i.LineTotal)
+                    )
+            )
             .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.OrderItems));
 
         // ── OrderItem ──────────────────────────────────────────
@@ -43,9 +53,12 @@ public class MappingProfile : Profile
         // ── Blog & Sliders ─────────────────────────────────────
         CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();
         CreateMap<BlogPost, BlogPostDTO>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName));
+            .ForMember(
+                dest => dest.CategoryName,
+                opt => opt.MapFrom(src => src.Category.CategoryName)
+            );
         CreateMap<CreateBlogPostDTO, BlogPost>();
-        
+
         CreateMap<Slider, SliderDTO>().ReverseMap();
         CreateMap<CreateSliderDTO, Slider>();
 
@@ -60,4 +73,3 @@ public class MappingProfile : Profile
         CreateMap<UpdateCustomerDTO, Customer>();
     }
 }
-

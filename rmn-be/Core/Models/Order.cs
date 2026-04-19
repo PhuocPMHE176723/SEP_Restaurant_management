@@ -54,6 +54,8 @@ public class Order
     public virtual Staff CreatedByStaff { get; set; } = default!;
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-    public virtual ICollection<OrderStatusHistory> StatusHistories { get; set; } = new List<OrderStatusHistory>();
+    public virtual ICollection<OrderStatusHistory> StatusHistories { get; set; } =
+        new List<OrderStatusHistory>();
+    public virtual ICollection<OrderTable> OrderTables { get; set; } = new List<OrderTable>();
     public virtual Invoice? Invoice { get; set; }
 }

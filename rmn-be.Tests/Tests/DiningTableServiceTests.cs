@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
@@ -15,6 +16,7 @@ public class DiningTableServicePostTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IDiningTableRepository> _diningTableRepoMock;
+    private readonly SepDatabaseContext _context;
     private readonly DiningTableService _service;
 
     public DiningTableServicePostTests()
@@ -22,9 +24,14 @@ public class DiningTableServicePostTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
         _diningTableRepoMock = new Mock<IDiningTableRepository>();
+        var options =
+            new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<SepDatabaseContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+        _context = new SepDatabaseContext(options);
 
         _unitOfWorkMock.Setup(u => u.DiningTables).Returns(_diningTableRepoMock.Object);
-        _service = new DiningTableService(_unitOfWorkMock.Object, _mapperMock.Object);
+        _service = new DiningTableService(_unitOfWorkMock.Object, _mapperMock.Object, _context);
     }
 
     // ─────────────────────────────────────────────

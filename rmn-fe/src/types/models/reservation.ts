@@ -27,5 +27,7 @@ export interface ReservationResponse {
     note?: string;
     createdAt?: string;
     createdByStaffId?: number | null;
+    totalTables?: number;
+    tableIds?: number[];
     order?: OrderResponse;
 }

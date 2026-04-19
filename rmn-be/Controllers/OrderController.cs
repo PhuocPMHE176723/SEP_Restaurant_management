@@ -1,13 +1,13 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.Data;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Exceptions;
-using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Middlewares;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
+using SEP_Restaurant_management.Core.Models;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -25,10 +25,15 @@ public class OrderController : BaseController
 
     [HttpGet]
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
-    public async Task<IActionResult> GetAllOrders([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+    public async Task<IActionResult> GetAllOrders(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null
+    )
     {
-        var query = _context.Orders
-            .Include(o => o.Table)
+        var query = _context
+            .Orders.Include(o => o.Table)
+            .Include(o => o.OrderTables)
+                .ThenInclude(ot => ot.DiningTable)
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .Include(o => o.OrderItems)
@@ -46,35 +51,52 @@ public class OrderController : BaseController
             query = query.Where(o => o.OpenedAt <= end);
         }
 
-        var orders = await query
-            .OrderByDescending(o => o.OpenedAt)
-            .Select(o => new OrderDTO
-            {
-                OrderId = o.OrderId,
-                OrderCode = o.OrderCode,
-                Status = o.Status,
-                TableId = o.TableId,
-                TableName = o.Table != null ? o.Table.TableCode : null,
-                OrderType = o.OrderType,
-                CustomerName = o.Customer != null ? o.Customer.FullName : null,
-                OpenedAt = o.OpenedAt,
-                ClosedAt = o.ClosedAt,
-                TotalAmount = o.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice),
-                OrderItems = o
-                    .OrderItems.Select(oi => new OrderItemDTO
-                    {
-                        OrderItemId = oi.OrderItemId,
-                        ItemNameSnapshot = oi.ItemNameSnapshot,
-                        Quantity = oi.Quantity,
-                        UnitPrice = oi.UnitPrice,
-                        Status = oi.Status,
-                        Note = oi.Note,
-                    })
-                    .ToList(),
-            })
-            .ToListAsync();
+        var orders = await query.OrderByDescending(o => o.OpenedAt).ToListAsync();
 
-        return Success(orders);
+        var orderDtos = orders
+            .Select(o =>
+            {
+                var tableNames = o
+                    .OrderTables.Select(ot =>
+                        ot.DiningTable != null ? ot.DiningTable.TableCode : null
+                    )
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .ToList();
+
+                var fallbackName = o.Table != null ? o.Table.TableCode : null;
+                var displayTableName =
+                    tableNames.Count > 0 ? string.Join(", ", tableNames!) : fallbackName;
+
+                return new OrderDTO
+                {
+                    OrderId = o.OrderId,
+                    OrderCode = o.OrderCode,
+                    Status = o.Status,
+                    TableId = o.TableId,
+                    TableName = displayTableName,
+                    OrderType = o.OrderType,
+                    CustomerName = o.Customer != null ? o.Customer.FullName : null,
+                    OpenedAt = o.OpenedAt,
+                    ClosedAt = o.ClosedAt,
+                    TotalAmount = o
+                        .OrderItems.Where(oi => oi.Status != "CANCELLED")
+                        .Sum(oi => oi.Quantity * oi.UnitPrice),
+                    OrderItems = o
+                        .OrderItems.Select(oi => new OrderItemDTO
+                        {
+                            OrderItemId = oi.OrderItemId,
+                            ItemNameSnapshot = oi.ItemNameSnapshot,
+                            Quantity = oi.Quantity,
+                            UnitPrice = oi.UnitPrice,
+                            Status = oi.Status,
+                            Note = oi.Note,
+                        })
+                        .ToList(),
+                };
+            })
+            .ToList();
+
+        return Success(orderDtos);
     }
 
     [HttpGet("{id}")]
@@ -83,6 +105,8 @@ public class OrderController : BaseController
     {
         var order = await _context
             .Orders.Include(o => o.Table)
+            .Include(o => o.OrderTables)
+                .ThenInclude(ot => ot.DiningTable)
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .Include(o => o.OrderItems)
@@ -93,18 +117,27 @@ public class OrderController : BaseController
             return NotFoundResponse("Order not found");
         }
 
+        var tableNames = order
+            .OrderTables.Select(ot => ot.DiningTable != null ? ot.DiningTable.TableCode : null)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+        var fallbackTableName = order.Table?.TableCode;
+        var displayName = tableNames.Count > 0 ? string.Join(", ", tableNames!) : fallbackTableName;
+
         var orderDto = new OrderDTO
         {
             OrderId = order.OrderId,
             OrderCode = order.OrderCode,
             Status = order.Status,
             TableId = order.TableId,
-            TableName = order.Table?.TableCode,
+            TableName = displayName,
             OrderType = order.OrderType,
             CustomerName = order.Customer?.FullName,
             OpenedAt = order.OpenedAt,
             ClosedAt = order.ClosedAt,
-            TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice),
+            TotalAmount = order
+                .OrderItems.Where(oi => oi.Status != "CANCELLED")
+                .Sum(oi => oi.Quantity * oi.UnitPrice),
             OrderItems = order
                 .OrderItems.Select(oi => new OrderItemDTO
                 {
@@ -123,10 +156,7 @@ public class OrderController : BaseController
 
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
-    public async Task<IActionResult> UpdateOrderStatus(
-        long id,
-        UpdateOrderStatusRequest request
-    )
+    public async Task<IActionResult> UpdateOrderStatus(long id, UpdateOrderStatusRequest request)
     {
         var order = await _context.Orders.FindAsync(id);
         if (order == null)
@@ -148,12 +178,13 @@ public class OrderController : BaseController
             {
                 order.ClosedAt = DateTimeHelper.VietnamNow();
             }
-            
+
             // 1. Release Primary Table
             if (order.TableId.HasValue)
             {
                 var primaryTable = await _context.DiningTables.FindAsync(order.TableId.Value);
-                if (primaryTable != null) primaryTable.Status = "AVAILABLE";
+                if (primaryTable != null)
+                    primaryTable.Status = "AVAILABLE";
             }
 
             // 2. Release Extra Tables from Note
@@ -163,14 +194,15 @@ public class OrderController : BaseController
                 if (endBracketIndex > 8)
                 {
                     var tableIdsStr = order.Note.Substring(8, endBracketIndex - 8);
-                    var tableIds = tableIdsStr.Split(',')
+                    var tableIds = tableIdsStr
+                        .Split(',')
                         .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
                         .Where(id => id.HasValue)
                         .Select(id => id!.Value)
                         .ToList();
 
-                    var extraTables = await _context.DiningTables
-                        .Where(t => tableIds.Contains(t.TableId))
+                    var extraTables = await _context
+                        .DiningTables.Where(t => tableIds.Contains(t.TableId))
                         .ToListAsync();
 
                     foreach (var table in extraTables)
@@ -233,8 +265,9 @@ public class OrderController : BaseController
         try
         {
             // 1. Get or Create Customer
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Phone == request.Phone);
+            var customer = await _context.Customers.FirstOrDefaultAsync(c =>
+                c.Phone == request.Phone
+            );
 
             if (customer == null)
             {
@@ -242,30 +275,33 @@ public class OrderController : BaseController
                 {
                     FullName = request.Name,
                     Phone = request.Phone,
-                    CreatedAt = DateTimeHelper.VietnamNow()
+                    CreatedAt = DateTimeHelper.VietnamNow(),
                 };
                 _context.Customers.Add(customer);
                 await _context.SaveChangesAsync();
             }
 
             // 2. Validate All Tables
-            var tables = await _context.DiningTables
-                .Where(t => request.TableIds.Contains(t.TableId))
+            var tables = await _context
+                .DiningTables.Where(t => request.TableIds.Contains(t.TableId))
                 .ToListAsync();
 
-            if (tables.Count != request.TableIds.Count) return NotFoundResponse("Some tables not found");
-            if (tables.Any(t => t.Status != "AVAILABLE")) return Failure("Some tables are not available");
+            if (tables.Count != request.TableIds.Count)
+                return NotFoundResponse("Some tables not found");
+            if (tables.Any(t => t.Status != "AVAILABLE"))
+                return Failure("Some tables are not available");
 
             // 3. Get Staff ID
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
-            
+
             // 4. Track Tables for release (Store IDs in Note)
             var tableIdsStr = string.Join(",", request.TableIds);
             var noteWithTables = $"[Tables:{tableIdsStr}] " + (request.Note ?? "");
-            
+
             // 5. Create Order (Link to the first/primary table)
-            var orderCode = $"WALK-{DateTimeHelper.VietnamNow():yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
+            var orderCode =
+                $"WALK-{DateTimeHelper.VietnamNow():yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
             var order = new Order
             {
                 OrderCode = orderCode,
@@ -275,7 +311,7 @@ public class OrderController : BaseController
                 Status = "OPEN",
                 OpenedAt = DateTimeHelper.VietnamNow(),
                 CreatedByStaffId = staff?.StaffId,
-                Note = noteWithTables
+                Note = noteWithTables,
             };
 
             _context.Orders.Add(order);
@@ -289,7 +325,10 @@ public class OrderController : BaseController
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Success(new { order.OrderId, order.OrderCode }, "Walk-in order created successfully");
+            return Success(
+                new { order.OrderId, order.OrderCode },
+                "Walk-in order created successfully"
+            );
         }
         catch (Exception ex)
         {
@@ -307,23 +346,28 @@ public class OrderController : BaseController
         {
             // 1. Get source table and its active order
             var fromTable = await _context.DiningTables.FindAsync(request.FromTableId);
-            if (fromTable == null) return NotFoundResponse("Source table not found");
+            if (fromTable == null)
+                return NotFoundResponse("Source table not found");
 
-            var order = await _context.Orders
-                .FirstOrDefaultAsync(o => o.TableId == request.FromTableId && 
-                                         (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED"));
-            
-            if (order == null) return Failure("No active order found on source table");
+            var order = await _context.Orders.FirstOrDefaultAsync(o =>
+                o.TableId == request.FromTableId
+                && (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED")
+            );
+
+            if (order == null)
+                return Failure("No active order found on source table");
 
             // 2. Get destination table
             var toTable = await _context.DiningTables.FindAsync(request.ToTableId);
-            if (toTable == null) return NotFoundResponse("Destination table not found");
-            if (toTable.Status != "AVAILABLE") return Failure("Destination table is not available");
+            if (toTable == null)
+                return NotFoundResponse("Destination table not found");
+            if (toTable.Status != "AVAILABLE")
+                return Failure("Destination table is not available");
 
             // 3. Update Order
             order.TableId = request.ToTableId;
-            order.Note = string.IsNullOrEmpty(order.Note) 
-                ? $"Transferred from {fromTable.TableCode}. Reason: {request.Reason}" 
+            order.Note = string.IsNullOrEmpty(order.Note)
+                ? $"Transferred from {fromTable.TableCode}. Reason: {request.Reason}"
                 : $"{order.Note} | Transferred from {fromTable.TableCode}. Reason: {request.Reason}";
 
             // 4. Update Tables Status
@@ -333,7 +377,7 @@ public class OrderController : BaseController
             // 5. Add status history entry
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
-            
+
             var history = new OrderStatusHistory
             {
                 OrderId = order.OrderId,
@@ -341,14 +385,18 @@ public class OrderController : BaseController
                 NewStatus = order.Status, // Status doesn't change, but we log the transfer
                 ChangedByStaffId = staff?.StaffId,
                 ChangedAt = DateTimeHelper.VietnamNow(),
-                Note = $"Table transfer from {fromTable.TableCode} to {toTable.TableCode}. Reason: {request.Reason}"
+                Note =
+                    $"Table transfer from {fromTable.TableCode} to {toTable.TableCode}. Reason: {request.Reason}",
             };
             _context.OrderStatusHistories.Add(history);
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Success(new { order.OrderId, order.OrderCode }, "Table transferred successfully");
+            return Success(
+                new { order.OrderId, order.OrderCode },
+                "Table transferred successfully"
+            );
         }
         catch (Exception ex)
         {
@@ -356,6 +404,7 @@ public class OrderController : BaseController
             return Failure($"Failed to transfer table: {ex.Message}");
         }
     }
+
     [HttpPatch("items/{orderItemId}/status")]
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     public async Task<IActionResult> UpdateOrderItemStatus(
@@ -363,8 +412,8 @@ public class OrderController : BaseController
         UpdateOrderStatusRequest request
     )
     {
-        var orderItem = await _context.OrderItems
-            .Include(oi => oi.Order)
+        var orderItem = await _context
+            .OrderItems.Include(oi => oi.Order)
             .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
 
         if (orderItem == null)
@@ -382,12 +431,12 @@ public class OrderController : BaseController
         var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
 
         orderItem.Status = request.Status;
-        
+
         // 1. Tự động trừ kho và cập nhật định lượng ngày nếu món ăn được phục vụ (SERVED)
         if (request.Status == "SERVED")
         {
-            var ingredients = await _context.MenuItemIngredients
-                .Where(mi => mi.ItemId == orderItem.ItemId)
+            var ingredients = await _context
+                .MenuItemIngredients.Where(mi => mi.ItemId == orderItem.ItemId)
                 .ToListAsync();
 
             var today = DateTimeHelper.VietnamNow().Date;
@@ -395,8 +444,9 @@ public class OrderController : BaseController
             foreach (var ing in ingredients)
             {
                 // A. Cập nhật Định lượng Ngày (Daily Allocation)
-                var dailyAllocation = await _context.DailyIngredientAllocations
-                    .FirstOrDefaultAsync(da => da.IngredientId == ing.IngredientId && da.Date == today);
+                var dailyAllocation = await _context.DailyIngredientAllocations.FirstOrDefaultAsync(
+                    da => da.IngredientId == ing.IngredientId && da.Date == today
+                );
 
                 if (dailyAllocation != null)
                 {
@@ -413,7 +463,8 @@ public class OrderController : BaseController
                     RefId = orderItem.OrderItemId,
                     MovedAt = DateTimeHelper.VietnamNow(),
                     CreatedByStaffId = staff?.StaffId,
-                    Note = $"Xuất kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})"
+                    Note =
+                        $"Xuất kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})",
                 };
                 _context.StockMovements.Add(movement);
             }
@@ -427,7 +478,7 @@ public class OrderController : BaseController
             NewStatus = request.Status,
             ChangedByStaffId = staff?.StaffId,
             ChangedAt = DateTimeHelper.VietnamNow(),
-            Note = $"Updated item status to {request.Status}"
+            Note = $"Updated item status to {request.Status}",
         };
         _context.OrderStatusHistories.Add(history);
 
@@ -436,22 +487,75 @@ public class OrderController : BaseController
         return Success("Order item status updated successfully");
     }
 
+    [HttpDelete("items/{orderItemId}")]
+    [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
+    public async Task<IActionResult> CancelOrderItem(long orderItemId)
+    {
+        var orderItem = await _context
+            .OrderItems.Include(oi => oi.Order)
+            .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
+
+        if (orderItem == null)
+        {
+            return NotFoundResponse("Order item not found");
+        }
+
+        if (
+            orderItem.Order == null
+            || orderItem.Order.Status == "CLOSED"
+            || orderItem.Order.Status == "CANCELLED"
+        )
+        {
+            return Failure("Cannot modify items for a closed or cancelled order");
+        }
+
+        if (orderItem.Status == "SERVED")
+        {
+            return Failure("Cannot remove a served item");
+        }
+
+        orderItem.Status = "CANCELLED";
+
+        _context.OrderStatusHistories.Add(
+            new OrderStatusHistory
+            {
+                OrderId = orderItem.OrderId,
+                OldStatus = $"ITEM:{orderItem.ItemNameSnapshot}",
+                NewStatus = "CANCELLED",
+                ChangedAt = DateTimeHelper.VietnamNow(),
+                Note = "Item removed manually before completion",
+            }
+        );
+
+        await _context.SaveChangesAsync();
+        return Success("Order item removed successfully");
+    }
+
     [HttpPost("guest-add-items")]
     [AllowAnonymous]
     public async Task<IActionResult> GuestAddItems([FromBody] GuestAddItemsRequest request)
     {
         var table = await _context.DiningTables.FindAsync(request.TableId);
-        if (table == null || table.Status != "OCCUPIED") return Failure("Bàn không ở trạng thái đang sử dụng");
+        if (table == null || table.Status != "OCCUPIED")
+            return Failure("Bàn không ở trạng thái đang sử dụng");
 
-        var order = await _context.Orders
-            .FirstOrDefaultAsync(o => o.TableId == request.TableId && (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED"));
-        
-        if (order == null) return Failure("Không tìm thấy đơn hàng đang hoạt động cho bàn này");
+        // Find order where TableId is primary OR TableId is in the [Tables:...] list in Note
+        var tableIdStr = request.TableId.ToString();
+        var order = await _context.Orders.FirstOrDefaultAsync(o =>
+            (
+                o.TableId == request.TableId
+                || (o.Note != null && o.Note.Contains("[Tables:") && o.Note.Contains(tableIdStr))
+            ) && (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED")
+        );
+
+        if (order == null)
+            return Failure("Không tìm thấy đơn hàng đang hoạt động cho bàn này");
 
         foreach (var item in request.Items)
         {
             var menuItem = await _context.MenuItems.FindAsync(item.MenuItemId);
-            if (menuItem == null) continue;
+            if (menuItem == null)
+                continue;
 
             var orderItem = new OrderItem
             {
@@ -462,7 +566,7 @@ public class OrderController : BaseController
                 ItemNameSnapshot = menuItem.ItemName,
                 Note = item.Note,
                 Status = "WAIT_CONFIRM",
-                CreatedAt = DateTimeHelper.VietnamNow()
+                CreatedAt = DateTimeHelper.VietnamNow(),
             };
             _context.OrderItems.Add(orderItem);
         }
@@ -473,7 +577,10 @@ public class OrderController : BaseController
 
     [HttpPost("{id}/confirm-items")]
     [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
-    public async Task<IActionResult> ConfirmGuestItems(long id, [FromBody] ConfirmItemsRequest request)
+    public async Task<IActionResult> ConfirmGuestItems(
+        long id,
+        [FromBody] ConfirmItemsRequest request
+    )
     {
         var order = await _context.Orders.FindAsync(id);
         if (order == null || order.Status == "CLOSED" || order.Status == "CANCELLED")
@@ -481,23 +588,30 @@ public class OrderController : BaseController
             return Failure("Cannot confirm items for a closed or cancelled order");
         }
 
-        var orderItems = await _context.OrderItems
-            .Where(oi => oi.OrderId == id && request.OrderItemIds.Contains(oi.OrderItemId) && oi.Status == "WAIT_CONFIRM")
+        var orderItems = await _context
+            .OrderItems.Where(oi =>
+                oi.OrderId == id
+                && request.OrderItemIds.Contains(oi.OrderItemId)
+                && oi.Status == "WAIT_CONFIRM"
+            )
             .ToListAsync();
 
-        if (orderItems.Count == 0) return Failure("Không có món nào cần xác nhận");
+        if (orderItems.Count == 0)
+            return Failure("Không có món nào cần xác nhận");
 
         foreach (var item in orderItems)
         {
             item.Status = "PENDING";
-            _context.OrderStatusHistories.Add(new OrderStatusHistory
-            {
-                OrderId = id,
-                OldStatus = "WAIT_CONFIRM",
-                NewStatus = "PENDING",
-                ChangedAt = DateTimeHelper.VietnamNow(),
-                Note = "Staff confirmed guest selection"
-            });
+            _context.OrderStatusHistories.Add(
+                new OrderStatusHistory
+                {
+                    OrderId = id,
+                    OldStatus = "WAIT_CONFIRM",
+                    NewStatus = "PENDING",
+                    ChangedAt = DateTimeHelper.VietnamNow(),
+                    Note = "Staff confirmed guest selection",
+                }
+            );
         }
 
         await _context.SaveChangesAsync();
@@ -514,8 +628,8 @@ public class OrderController : BaseController
             if (request.SecondaryOrderIds == null || !request.SecondaryOrderIds.Any())
                 return Failure("Must provide at least one secondary order to merge.");
 
-            var primaryOrder = await _context.Orders
-                .Include(o => o.Table)
+            var primaryOrder = await _context
+                .Orders.Include(o => o.Table)
                 .FirstOrDefaultAsync(o => o.OrderId == request.PrimaryOrderId);
 
             if (primaryOrder == null)
@@ -528,15 +642,18 @@ public class OrderController : BaseController
 
             foreach (var secondaryId in request.SecondaryOrderIds)
             {
-                if (secondaryId == request.PrimaryOrderId) continue;
+                if (secondaryId == request.PrimaryOrderId)
+                    continue;
 
-                var secondaryOrder = await _context.Orders
-                    .Include(o => o.OrderItems)
+                var secondaryOrder = await _context
+                    .Orders.Include(o => o.OrderItems)
                     .Include(o => o.Table)
                     .FirstOrDefaultAsync(o => o.OrderId == secondaryId);
 
-                if (secondaryOrder == null) continue;
-                if (secondaryOrder.Status == "CLOSED" || secondaryOrder.Status == "CANCELLED") continue;
+                if (secondaryOrder == null)
+                    continue;
+                if (secondaryOrder.Status == "CLOSED" || secondaryOrder.Status == "CANCELLED")
+                    continue;
 
                 // Move items
                 foreach (var item in secondaryOrder.OrderItems)
@@ -545,45 +662,56 @@ public class OrderController : BaseController
                 }
 
                 // Append note
-                string mergeNote = $"Merged from {secondaryOrder.OrderCode} (Table {secondaryOrder.Table?.TableCode})";
-                primaryOrder.Note = string.IsNullOrEmpty(primaryOrder.Note) ? mergeNote : $"{primaryOrder.Note} | {mergeNote}";
+                string mergeNote =
+                    $"Merged from {secondaryOrder.OrderCode} (Table {secondaryOrder.Table?.TableCode})";
+                primaryOrder.Note = string.IsNullOrEmpty(primaryOrder.Note)
+                    ? mergeNote
+                    : $"{primaryOrder.Note} | {mergeNote}";
 
                 // Cancel secondary order
                 secondaryOrder.Status = "CANCELLED";
-                secondaryOrder.Note = string.IsNullOrEmpty(secondaryOrder.Note) 
-                    ? $"Merged into {primaryOrder.OrderCode} (Table {primaryOrder.Table?.TableCode})" 
+                secondaryOrder.Note = string.IsNullOrEmpty(secondaryOrder.Note)
+                    ? $"Merged into {primaryOrder.OrderCode} (Table {primaryOrder.Table?.TableCode})"
                     : $"{secondaryOrder.Note} | Merged into {primaryOrder.OrderCode}";
-                
+
                 // Free table if different and table is set
-                if (secondaryOrder.TableId.HasValue && secondaryOrder.TableId != primaryOrder.TableId)
+                if (
+                    secondaryOrder.TableId.HasValue
+                    && secondaryOrder.TableId != primaryOrder.TableId
+                )
                 {
                     var table = await _context.DiningTables.FindAsync(secondaryOrder.TableId);
                     // Only free the table if it's currently occupied. If there's another active order on the same table, it shouldn't realistically happen.
-                    if (table != null) table.Status = "AVAILABLE";
+                    if (table != null)
+                        table.Status = "AVAILABLE";
                 }
 
                 // Add history
-                _context.OrderStatusHistories.Add(new OrderStatusHistory
-                {
-                    OrderId = secondaryOrder.OrderId,
-                    OldStatus = "OPEN/SERVED", 
-                    NewStatus = "CANCELLED",
-                    ChangedByStaffId = staff?.StaffId,
-                    ChangedAt = DateTimeHelper.VietnamNow(),
-                    Note = $"Merged into order {primaryOrder.OrderCode}"
-                });
+                _context.OrderStatusHistories.Add(
+                    new OrderStatusHistory
+                    {
+                        OrderId = secondaryOrder.OrderId,
+                        OldStatus = "OPEN/SERVED",
+                        NewStatus = "CANCELLED",
+                        ChangedByStaffId = staff?.StaffId,
+                        ChangedAt = DateTimeHelper.VietnamNow(),
+                        Note = $"Merged into order {primaryOrder.OrderCode}",
+                    }
+                );
             }
 
             // History for primary
-            _context.OrderStatusHistories.Add(new OrderStatusHistory
-            {
-                OrderId = primaryOrder.OrderId,
-                OldStatus = primaryOrder.Status,
-                NewStatus = primaryOrder.Status,
-                ChangedByStaffId = staff?.StaffId,
-                ChangedAt = DateTimeHelper.VietnamNow(),
-                Note = "Received merged orders"
-            });
+            _context.OrderStatusHistories.Add(
+                new OrderStatusHistory
+                {
+                    OrderId = primaryOrder.OrderId,
+                    OldStatus = primaryOrder.Status,
+                    NewStatus = primaryOrder.Status,
+                    ChangedByStaffId = staff?.StaffId,
+                    ChangedAt = DateTimeHelper.VietnamNow(),
+                    Note = "Received merged orders",
+                }
+            );
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();

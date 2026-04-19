@@ -894,6 +894,32 @@ namespace rmn_be.Core.Migrations
                     b.ToTable("Orders", (string)null);
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderTable", b =>
+                {
+                    b.Property<long>("OrderTableId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("OrderTableId"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderTableId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("TableId");
+
+                    b.ToTable("OrderTables", (string)null);
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderItem", b =>
                 {
                     b.Property<long>("OrderItemId")
@@ -1183,6 +1209,10 @@ namespace rmn_be.Core.Migrations
                     b.Property<int>("PartySize")
                         .HasColumnType("int");
 
+                    b.Property<int>("TotalTables")
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTime>("ReservedAt")
                         .HasColumnType("datetime2");
 
@@ -1205,6 +1235,32 @@ namespace rmn_be.Core.Migrations
                     b.HasIndex("TableId");
 
                     b.ToTable("Reservations", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.ReservationTable", b =>
+                {
+                    b.Property<long>("ReservationTableId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReservationTableId"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("ReservationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReservationTableId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("TableId");
+
+                    b.ToTable("ReservationTables", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Slider", b =>
@@ -1742,6 +1798,25 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Table");
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderTable", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.DiningTable", "DiningTable")
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Order", "Order")
+                        .WithMany("OrderTables")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DiningTable");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderItem", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.MenuItem", "MenuItem")
@@ -1868,6 +1943,25 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Customer");
 
                     b.Navigation("Table");
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.ReservationTable", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.DiningTable", "DiningTable")
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Reservation", "Reservation")
+                        .WithMany("ReservationTables")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DiningTable");
+
+                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Staff", b =>

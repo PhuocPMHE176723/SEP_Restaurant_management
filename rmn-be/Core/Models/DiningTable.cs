@@ -24,6 +24,6 @@ public partial class DiningTable
 
     public bool IsActive { get; set; } = true;
 
-    public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
+    public virtual ICollection<ReservationTable> ReservationTables { get; set; } = new List<ReservationTable>();
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

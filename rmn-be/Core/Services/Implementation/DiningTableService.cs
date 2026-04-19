@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Repositories.Interface;
@@ -10,11 +11,13 @@ public class DiningTableService : IDiningTableService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly SepDatabaseContext _context;
 
-    public DiningTableService(IUnitOfWork unitOfWork, IMapper mapper)
+    public DiningTableService(IUnitOfWork unitOfWork, IMapper mapper, SepDatabaseContext context)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _context = context;
     }
 
     public async Task<IEnumerable<DiningTableDTO>> GetAllAsync()
@@ -100,8 +103,10 @@ public class DiningTableService : IDiningTableService
         
         var targetTime = date.Date.Add(ts);
         
-        var reservations = await _unitOfWork.GetRepository<Reservation>()
-            .FindAsync(r => r.Status != "CANCELLED" && r.Status != "COMPLETED" && r.Status != "NO_SHOW" && r.TableId != null);
+        var reservations = await _context.Reservations
+            .Include(r => r.ReservationTables)
+            .Where(r => r.Status != "CANCELLED" && r.Status != "COMPLETED" && r.Status != "NO_SHOW")
+            .ToListAsync();
             
         var availabilityList = new List<TableAvailabilityDTO>();
         
@@ -127,7 +132,7 @@ public class DiningTableService : IDiningTableService
                 }
             }
             
-            var tableReservations = reservations.Where(r => r.TableId == table.TableId);
+            var tableReservations = reservations.Where(r => r.ReservationTables.Any(rt => rt.TableId == table.TableId));
             foreach (var res in tableReservations)
             {
                 var endTime = res.ReservedAt.AddMinutes(res.DurationMinutes);

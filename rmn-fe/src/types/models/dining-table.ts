@@ -24,5 +24,5 @@ export interface UpdateDiningTableRequest {
 
 export interface UpdateReservationStatusRequest {
     status: string;
-    tableId?: number;
+    tableIds?: number[];
 }

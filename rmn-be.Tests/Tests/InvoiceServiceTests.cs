@@ -95,10 +95,15 @@ public class InvoiceServicePostTests
                 DurationMinutes = 90,
                 Status = "CHECKED_IN",
                 CreatedAt = DateTime.UtcNow.AddHours(-2),
-                TableId = tableId,
                 IsDepositPaid = depositPaid,
                 DepositAmount = depositAmount,
             };
+            if (tableId.HasValue)
+            {
+                reservation.ReservationTables.Add(
+                    new ReservationTable { TableId = tableId.Value, AssignedAt = DateTime.UtcNow }
+                );
+            }
             context.Reservations.Add(reservation);
         }
 

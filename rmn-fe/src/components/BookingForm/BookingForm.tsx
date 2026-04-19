@@ -6,12 +6,14 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   createReservation,
   getPublicMenuItems,
-  getPublicTableAvailability,
-  type TableAvailability,
   type MenuItem,
   type OrderItemRequest,
 } from "../../lib/api/reservation";
-import { getSepayConfig, checkSepayTransaction, cancelSepayTimeout } from "../../lib/api/payment";
+import {
+  getSepayConfig,
+  checkSepayTransaction,
+  cancelSepayTimeout,
+} from "../../lib/api/payment";
 import { isValidVNPhone } from "../../lib/validation";
 import Modal from "../Modal/Modal";
 import styles from "./BookingForm.module.css";
@@ -23,14 +25,18 @@ function generateTimeSlots(): string[] {
   for (let h = 11; h <= 14; h++) {
     for (let m = 0; m < 60; m += 15) {
       if (h === 14 && m > 0) break;
-      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+      slots.push(
+        `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
+      );
     }
   }
   // Dinner: 17:00 - 21:30
   for (let h = 17; h <= 21; h++) {
     for (let m = 0; m < 60; m += 15) {
       if (h === 21 && m > 30) break;
-      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+      slots.push(
+        `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
+      );
     }
   }
   return Array.from(new Set(slots)).sort();
@@ -38,6 +44,7 @@ function generateTimeSlots(): string[] {
 
 const TIME_SLOTS = generateTimeSlots();
 const MAX_PARTY_SIZE = 100;
+const MAX_TABLES = 50;
 
 type SeatingPlan = {
   totalTables: number;
@@ -113,23 +120,20 @@ export default function BookingForm() {
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [bookingMode, setBookingMode] = useState<"party" | "table">("party");
 
-  const [tables, setTables] = useState<TableAvailability[]>([]);
-  const [loadingTables, setLoadingTables] = useState(false);
-  const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
-  const [tableSelectMode, setTableSelectMode] = useState<'auto' | 'manual'>('auto');
-
-  const totalAvailableCapacity = useMemo(() => {
-    return tables.filter(t => t.isAvailable).reduce((sum, t) => sum + t.capacity, 0);
-  }, [tables]);
-
-  const [sepayConfig, setSepayConfig] = useState<{ account: string; bank: string } | null>(null);
+  const [sepayConfig, setSepayConfig] = useState<{
+    account: string;
+    bank: string;
+  } | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrAmount, setQrAmount] = useState(0);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [transferCode, setTransferCode] = useState(""); // display in QR modal
   const [checkingPayment, setCheckingPayment] = useState(false);
-  const [currentReservationId, setCurrentReservationId] = useState<number | null>(null);
+  const [currentReservationId, setCurrentReservationId] = useState<
+    number | null
+  >(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes polling
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -144,18 +148,27 @@ export default function BookingForm() {
         if (sessionStr && cfg) {
           try {
             const session = JSON.parse(sessionStr);
-            const remaining = Math.floor((session.expireAt - Date.now()) / 1000);
-            
+            const remaining = Math.floor(
+              (session.expireAt - Date.now()) / 1000,
+            );
+
             if (remaining > 0) {
               setQrAmount(session.depositAmt);
               setCurrentReservationId(session.resId);
-              const transferContent = session.paymentCode ? `RMNRES${session.paymentCode}` : `RMNRES${session.resId}`;
+              const transferContent = session.paymentCode
+                ? `RMNRES${session.paymentCode}`
+                : `RMNRES${session.resId}`;
               setTransferCode(transferContent);
               setQrCodeUrl(
-                `https://qr.sepay.vn/img?acc=${cfg.account}&bank=${cfg.bank}&amount=${session.depositAmt}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${session.depositAmt}`)}`
+                `https://qr.sepay.vn/img?acc=${cfg.account}&bank=${cfg.bank}&amount=${session.depositAmt}&des=${encodeURIComponent(`Thanh toan don hang ${transferContent} ${session.depositAmt}`)}`,
               );
               setQrModalOpen(true);
-              startPaymentCheck(session.resId, session.depositAmt, session.paymentCode || String(session.resId), session.expireAt);
+              startPaymentCheck(
+                session.resId,
+                session.depositAmt,
+                session.paymentCode || String(session.resId),
+                session.expireAt,
+              );
             } else {
               // Expired session found on load -> clean up and cancel
               localStorage.removeItem("sepay_session");
@@ -167,10 +180,11 @@ export default function BookingForm() {
         }
       })
       .catch((err) => console.error("Could not load SePay config", err));
-    
+
     return () => {
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      if (countdownIntervalRef.current)
+        clearInterval(countdownIntervalRef.current);
     };
   }, []);
 
@@ -196,21 +210,9 @@ export default function BookingForm() {
 
   useEffect(() => {
     if (form.date && form.timeSlot) {
-      setLoadingTables(true);
-      getPublicTableAvailability(form.date, form.timeSlot)
-        .then(res => {
-          setTables(res);
-          // Auto remove selected tables if they are no longer available in the new timeslot
-          setSelectedTableIds(prev => {
-            const availableTableIds = new Set(res.filter(t => t.isAvailable).map(t => t.tableId));
-            return prev.filter(id => availableTableIds.has(id));
-          });
-        })
-        .catch(err => console.error("Failed to load tables:", err))
-        .finally(() => setLoadingTables(false));
+      // Intentionally no table diagram/selection.
     } else {
-      setTables([]);
-      setSelectedTableIds([]);
+      // no-op
     }
   }, [form.date, form.timeSlot]);
 
@@ -223,7 +225,30 @@ export default function BookingForm() {
     () => buildSeatingPlan(form.partySize || 0),
     [form.partySize],
   );
-  const numberOfTables = Math.max(1, seatingPlan.totalTables || 1);
+
+  const suggestedTables = useMemo(
+    () => Math.max(1, seatingPlan.totalTables || 1),
+    [seatingPlan.totalTables],
+  );
+
+  const [tableCount, setTableCount] = useState<number>(() => {
+    const initialPlan = buildSeatingPlan(8);
+    return Math.max(1, initialPlan.totalTables || 1);
+  });
+  const [tableCountTouched, setTableCountTouched] = useState(false);
+
+  useEffect(() => {
+    if (!tableCountTouched) setTableCount(suggestedTables);
+  }, [suggestedTables, tableCountTouched]);
+
+  useEffect(() => {
+    if (bookingMode === "party") {
+      setTableCountTouched(false);
+      setTableCount(suggestedTables);
+    } else {
+      setTableCountTouched(true);
+    }
+  }, [bookingMode, suggestedTables]);
 
   // Build list of unique categories from menu items
   const categories = useMemo(() => {
@@ -244,7 +269,9 @@ export default function BookingForm() {
   const filteredMenu = useMemo(() => {
     let filtered = menuItems;
     if (activeCategory !== "all") {
-      filtered = filtered.filter((item) => item.categoryName === activeCategory);
+      filtered = filtered.filter(
+        (item) => item.categoryName === activeCategory,
+      );
     }
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
@@ -262,9 +289,11 @@ export default function BookingForm() {
       const newMap = new Map(prev);
       if (!newMap.has(itemId)) {
         // Clamp quantity to something reasonable (max tables for 100 people is ~25)
-        const initialQty = Math.min(numberOfTables, 50); 
-        console.log(`[BookingForm] Adding MenuItem ${itemId} with quantity ${initialQty} (numberOfTables: ${numberOfTables})`);
-        newMap.set(itemId, initialQty); 
+        const initialQty = Math.min(tableCount, 50);
+        console.log(
+          `[BookingForm] Adding MenuItem ${itemId} with quantity ${initialQty} (tableCount: ${tableCount})`,
+        );
+        newMap.set(itemId, initialQty);
       }
       return newMap;
     });
@@ -330,6 +359,13 @@ export default function BookingForm() {
       e.partySize = `Tối đa ${MAX_PARTY_SIZE} khách mỗi lần đặt`;
     }
 
+    if (tableCount < 1) {
+      e.totalTables = "Số lượng bàn phải từ 1 trở lên";
+      missingNames.push("Số lượng bàn");
+    } else if (tableCount > MAX_TABLES) {
+      e.totalTables = `Tối đa ${MAX_TABLES} bàn mỗi lần đặt`;
+    }
+
     if (missingNames.length > 0) {
       Swal.fire({
         title: "Thiếu thông tin",
@@ -364,17 +400,8 @@ export default function BookingForm() {
         quantity,
       }));
       const phoneLine = form.phone ? `SĐT liên hệ: ${form.phone}` : "";
-      
-      let tablesNote = "";
-      if (selectedTableIds.length > 0) {
-        const tableNames = tables.filter(t => selectedTableIds.includes(t.tableId)).map(t => t.tableName).join(", ");
-        tablesNote = `Khách chọn thêm/ghép bàn: ${tableNames}`;
-      }
-      
-      const noteCombined = [phoneLine, tablesNote, form.note].filter(Boolean).join("\n");
 
-      // Bàn chính là bàn đầu tiên trong danh sách (dành cho TableId trong Reservation)
-      const primaryTableId = selectedTableIds.length > 0 ? selectedTableIds[0] : undefined;
+      const noteCombined = [phoneLine, form.note].filter(Boolean).join("\n");
 
       const result = await createReservation({
         reservedAt,
@@ -382,18 +409,23 @@ export default function BookingForm() {
         durationMinutes: 90,
         note: noteCombined || undefined,
         contactEmail: form.email || undefined,
-        tableId: primaryTableId,
+        totalTables: tableCount,
         menuItems: orderItems,
       });
 
       // SePay Deposit Logic
-      const _totalAmount = Array.from(selectedItems.entries()).reduce((sum, [id, qty]) => {
-        const item = menuItems.find((m) => m.itemId === id);
-        // Defensive clamp: quantity should not exceed 50 for a single item in a reservation
-        const safeQty = Math.min(qty, 50); 
-        console.log(`[BookingForm] Item ID: ${id}, Qty: ${qty} (safe: ${safeQty}), BasePrice: ${item?.basePrice}`);
-        return sum + (item ? item.basePrice * safeQty : 0);
-      }, 0);
+      const _totalAmount = Array.from(selectedItems.entries()).reduce(
+        (sum, [id, qty]) => {
+          const item = menuItems.find((m) => m.itemId === id);
+          // Defensive clamp: quantity should not exceed 50 for a single item in a reservation
+          const safeQty = Math.min(qty, 50);
+          console.log(
+            `[BookingForm] Item ID: ${id}, Qty: ${qty} (safe: ${safeQty}), BasePrice: ${item?.basePrice}`,
+          );
+          return sum + (item ? item.basePrice * safeQty : 0);
+        },
+        0,
+      );
 
       console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
 
@@ -417,9 +449,16 @@ export default function BookingForm() {
           title: "Đặt bàn thành công!",
           text: `Mã đặt bàn: #${result.reservationId}\nChúng tôi sẽ liên hệ xác nhận qua điện thoại sớm nhất.`,
           icon: "success",
-          confirmButtonColor: "var(--brand-primary)"
+          confirmButtonColor: "var(--brand-primary)",
         });
-        setForm({ date: "", timeSlot: "", partySize: 8, phone: "", email: "", note: "" });
+        setForm({
+          date: "",
+          timeSlot: "",
+          partySize: 8,
+          phone: "",
+          email: "",
+          note: "",
+        });
         setSelectedItems(new Map());
       }
     } catch (error: any) {
@@ -430,23 +469,32 @@ export default function BookingForm() {
         title: "Lỗi đặt bàn",
         text: errorMessage,
         icon: "error",
-        confirmButtonColor: "var(--error)"
+        confirmButtonColor: "var(--error)",
       });
     } finally {
       setLoading(false);
     }
   }
 
-  function startPaymentCheck(resId: number, depositAmt: number, paymentCode: string, existingExpireAt?: number) {
+  function startPaymentCheck(
+    resId: number,
+    depositAmt: number,
+    paymentCode: string,
+    existingExpireAt?: number,
+  ) {
     if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    if (countdownIntervalRef.current)
+      clearInterval(countdownIntervalRef.current);
     setCheckingPayment(true);
 
-    const expireAt = existingExpireAt || (Date.now() + 300 * 1000);
+    const expireAt = existingExpireAt || Date.now() + 300 * 1000;
     if (!existingExpireAt) {
-      localStorage.setItem("sepay_session", JSON.stringify({ resId, depositAmt, paymentCode, expireAt }));
+      localStorage.setItem(
+        "sepay_session",
+        JSON.stringify({ resId, depositAmt, paymentCode, expireAt }),
+      );
     }
-    
+
     setTimeLeft(Math.max(0, Math.floor((expireAt - Date.now()) / 1000)));
 
     countdownIntervalRef.current = setInterval(() => {
@@ -455,11 +503,22 @@ export default function BookingForm() {
         // Time is up -> cancel reservation and clear
         localStorage.removeItem("sepay_session");
         if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-        
+        if (countdownIntervalRef.current)
+          clearInterval(countdownIntervalRef.current);
+
         cancelSepayTimeout(resId)
-          .then(() => stopPaymentCheck(false, "Đã hết thời gian thanh toán cọc. Đơn đặt bàn của bạn đã bị huỷ tự động."))
-          .catch(() => stopPaymentCheck(false, "Đã hết thời gian thanh toán cọc. (Không thể huỷ đơn, vui lòng liên hệ nhà hàng)"));
+          .then(() =>
+            stopPaymentCheck(
+              false,
+              "Đã hết thời gian thanh toán cọc. Đơn đặt bàn của bạn đã bị huỷ tự động.",
+            ),
+          )
+          .catch(() =>
+            stopPaymentCheck(
+              false,
+              "Đã hết thời gian thanh toán cọc. (Không thể huỷ đơn, vui lòng liên hệ nhà hàng)",
+            ),
+          );
       } else {
         setTimeLeft(remaining);
       }
@@ -467,13 +526,25 @@ export default function BookingForm() {
 
     checkIntervalRef.current = setInterval(async () => {
       try {
-        const checkRes = await checkSepayTransaction(resId, paymentCode || String(resId));
+        const checkRes = await checkSepayTransaction(
+          resId,
+          paymentCode || String(resId),
+        );
         if (checkRes.success) {
           localStorage.removeItem("sepay_session");
-          stopPaymentCheck(true, "Thanh toán cọc thành công! Email xác nhận chi tiết đã được gửi đến bạn.");
-          setForm({ date: "", timeSlot: "", partySize: 8, phone: "", email: "", note: "" });
+          stopPaymentCheck(
+            true,
+            "Thanh toán cọc thành công! Email xác nhận chi tiết đã được gửi đến bạn.",
+          );
+          setForm({
+            date: "",
+            timeSlot: "",
+            partySize: 8,
+            phone: "",
+            email: "",
+            note: "",
+          });
           setSelectedItems(new Map());
-          setSelectedTableIds([]);
         }
       } catch (err: any) {
         console.error("Lỗi kiểm tra thanh toán", err);
@@ -481,9 +552,9 @@ export default function BookingForm() {
         if (err.message?.includes("Token") || err.message?.includes("401")) {
           clearInterval(checkIntervalRef.current!);
           Swal.fire({
-            icon: 'error',
-            title: 'Lỗi cấu hình thanh toán',
-            text: 'Không thể kết nối với hệ thống SePay. Vui lòng liên hệ nhà hàng để được hỗ trợ.',
+            icon: "error",
+            title: "Lỗi cấu hình thanh toán",
+            text: "Không thể kết nối với hệ thống SePay. Vui lòng liên hệ nhà hàng để được hỗ trợ.",
           });
         }
       }
@@ -492,15 +563,16 @@ export default function BookingForm() {
 
   function stopPaymentCheck(isSuccess: boolean, message: string) {
     if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    if (countdownIntervalRef.current)
+      clearInterval(countdownIntervalRef.current);
     setCheckingPayment(false);
     setQrModalOpen(false);
-    
+
     Swal.fire({
       title: isSuccess ? "Hoàn tất đặt bàn" : "Lưu ý",
       text: message,
       icon: isSuccess ? "success" : "error",
-      confirmButtonColor: isSuccess ? "var(--brand-primary)" : "var(--error)"
+      confirmButtonColor: isSuccess ? "var(--brand-primary)" : "var(--error)",
     });
   }
 
@@ -527,7 +599,7 @@ export default function BookingForm() {
   }, [seatingPlan]);
 
   const amountPerTable =
-    numberOfTables > 0 ? Math.round(totalAmount / numberOfTables) : 0;
+    tableCount > 0 ? Math.round(totalAmount / tableCount) : 0;
 
   if (!mounted) {
     return (
@@ -622,18 +694,21 @@ export default function BookingForm() {
                 )}
               </optgroup>
               <optgroup label="Khung giờ Tối (17:00 – 21:30)">
-                {TIME_SLOTS.filter((t) => t >= "17:00" && t <= "21:30").map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
+                {TIME_SLOTS.filter((t) => t >= "17:00" && t <= "21:30").map(
+                  (t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ),
+                )}
               </optgroup>
             </select>
             {errors.timeSlot && (
               <p className={styles.error}>{errors.timeSlot}</p>
             )}
             <p className={styles.hint}>
-              Khung giờ cách nhau 15 phút · Trưa (11:00-14:00) · Tối (17:00-21:30)
+              Khung giờ cách nhau 15 phút · Trưa (11:00-14:00) · Tối
+              (17:00-21:30)
             </p>
           </div>
         </div>
@@ -676,181 +751,121 @@ export default function BookingForm() {
           </p>
         </div>
 
-        {/* Party size */}
-        <div className={styles.field}>
-          <label className={styles.label}>Tổng số khách *</label>
-          <input
-            type="number"
-            min="1"
-            max={MAX_PARTY_SIZE}
-            value={form.partySize === 0 ? "" : form.partySize}
-            onChange={(e) => {
-              const rawValue = e.target.value;
-              if (rawValue === "") {
-                set("partySize", 0); // allow clearing the field before retyping
-                return;
-              }
-              const raw = parseInt(rawValue, 10);
-              const safe = Number.isFinite(raw) ? raw : 0;
-              const clamped = Math.min(Math.max(safe, 1), MAX_PARTY_SIZE);
-              set("partySize", clamped);
-            }}
-            className={styles.input}
-            style={{ maxWidth: 160 }}
-          />
-          {errors.partySize && (
-            <p className={styles.error}>{errors.partySize}</p>
-          )}
-          <p className={styles.hint}>
-            Bạn chỉ cần nhập tổng khách, hệ thống tự gợi ý bàn 4/6/8 chỗ.
-          </p>
-          {form.date && form.timeSlot && tables.length > 0 && form.partySize > totalAvailableCapacity && (
-            <p className={styles.error} style={{ marginTop: '0.5rem', background: '#fff1f2', padding: '0.5rem', borderRadius: '4px', border: '1px solid #fecaca' }}>
-              ⚠️ Rất tiếc, tổng sức chứa còn lại của các bàn trống vào {form.timeSlot} ngày {form.date} chỉ còn <strong>{totalAvailableCapacity} chỗ</strong>. Vui lòng giảm số khách hoặc chọn giờ khác.
-            </p>
-          )}
-          {/* Table auto-calculation badge with 4/6/8-seat mix */}
-          <div className={styles.tableBadge}>
-            <span className={styles.tableBadgeIcon}></span>
-            <span>
-              <strong>{form.partySize}</strong> người →{" "}
-              <strong className={styles.tableBadgeNum}>
-                {numberOfTables} bàn
-              </strong>
-              <span className={styles.tableBadgeSub}>
-                {tableBreakdown.text ? ` · ${tableBreakdown.text}` : ""}{" "}
-                {tableBreakdown.unused}
-              </span>
-            </span>
-          </div>
+        <div className={styles.modeTabs}>
+          <button
+            type="button"
+            className={`${styles.modeTab} ${bookingMode === "party" ? styles.modeTabActive : ""}`}
+            onClick={() => setBookingMode("party")}
+          >
+            Đặt theo số khách
+          </button>
+          <button
+            type="button"
+            className={`${styles.modeTab} ${bookingMode === "table" ? styles.modeTabActive : ""}`}
+            onClick={() => setBookingMode("table")}
+          >
+            Đặt theo số bàn
+          </button>
         </div>
 
-        {/* Sơ đồ bàn */}
-        {form.date && form.timeSlot && (
-          <div className={styles.tableSection}>
-            <div className={styles.tableSectionHeader}>
-              <div style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className={styles.label} style={{ marginBottom: 0 }}>Sơ đồ bàn</label>
-                  <a href="/reservations" className={styles.historyLink}>
-                    Lịch sử đặt bàn của bạn →
-                  </a>
-                </div>
-                <p className={styles.hint} style={{ marginTop: "0.25rem" }}>
-                  Gợi ý cần <strong>{numberOfTables} bàn</strong> cho <strong>{form.partySize} khách</strong>
-                </p>
+        {bookingMode === "party" ? (
+          <div className={styles.modePanel}>
+            <div className={styles.field}>
+              <div className={styles.fieldHeaderRow}>
+                <label className={styles.label} style={{ marginBottom: 0 }}>
+                  Tổng số khách *
+                </label>
+                <a href="/reservations" className={styles.historyLink}>
+                  Lịch sử đặt bàn của bạn →
+                </a>
               </div>
-              <div className={styles.tableModeToggle}>
-                <button
-                  type="button"
-                  className={`${styles.tableModeBtn} ${tableSelectMode === 'auto' ? styles.tableModeBtnActive : ''}`}
-                  onClick={() => {
-                    setTableSelectMode('auto');
-                    // Auto select logic...
-                    const available = tables.filter(t => t.isAvailable);
-                    const sorted = [...available].sort((a, b) => b.capacity - a.capacity);
-                    const picked: number[] = [];
-                    let seated = 0;
-                    for (const t of sorted) {
-                      if (seated >= form.partySize) break;
-                      picked.push(t.tableId);
-                      seated += t.capacity;
-                    }
-                    setSelectedTableIds(picked);
-                  }}
-                >
-                  Tự động
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.tableModeBtn} ${tableSelectMode === 'manual' ? styles.tableModeBtnActive : ''}`}
-                  onClick={() => {
-                    setTableSelectMode('manual');
-                    setSelectedTableIds([]);
-                  }}
-                >
-                  Thủ công
-                </button>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className={styles.tableLegend}>
-              <span className={styles.legendDot} style={{ background: '#22c55e' }} /> Trống
-              <span className={styles.legendDot} style={{ background: '#3b82f6', marginLeft: '1rem' }} /> Đã đặt trước
-              <span className={styles.legendDot} style={{ background: '#ef4444', marginLeft: '1rem' }} /> Đang có khách
-              <span className={styles.legendDot} style={{ background: '#f97316', marginLeft: '1rem' }} /> Đang chọn
-            </div>
-
-            {loadingTables ? (
-              <div className={styles.tableLoadingWrap}>
-                <div className={styles.spinner} />
-                <span>Đang tải sơ đồ bàn...</span>
-              </div>
-            ) : tables.length > 0 ? (
-              <div className={styles.tableDiagram}>
-                {tables.map(table => {
-                  const isSelected = selectedTableIds.includes(table.tableId);
-                  const canSelect = table.isAvailable;
-                  let cardClass = styles.tableDiagramCard;
-                  if (isSelected) cardClass += ` ${styles.tableDiagramCardPicked}`;
-                  else if (!canSelect) cardClass += ` ${styles.tableDiagramCardUnavailable}`;
-                  else cardClass += ` ${styles.tableDiagramCardAvailable}`;
-
-                  return (
-                    <div
-                      key={table.tableId}
-                      className={cardClass}
-                      onClick={() => {
-                        if (!canSelect) return;
-                        setSelectedTableIds(prev =>
-                          prev.includes(table.tableId)
-                            ? prev.filter(id => id !== table.tableId)
-                            : [...prev, table.tableId]
-                        );
-                      }}
-                    >
-                      <div className={styles.tableDiagramName}>{table.tableName || table.tableCode}</div>
-                      <div className={styles.tableDiagramCap}>{table.capacity} chỗ</div>
-                      {!canSelect && (
-                        <div 
-                          className={styles.tableDiagramStatus}
-                          style={{ color: table.statusMessage.includes('Đã đặt') ? '#3b82f6' : '#ef4444' }}
-                        >
-                          {table.statusMessage.includes('Đã đặt') ? 'Đã đặt' : table.statusMessage}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className={styles.tableEmpty}>Không tải được danh sách bàn. Vui lòng chọn ngày/giờ khác.</div>
-            )}
-
-            {/* Summary */}
-            {selectedTableIds.length > 0 && (
-              <div className={styles.tableSelectionSummary}>
-                <div className={styles.tableSelectionInfo}>
-                  <span>Đã chọn <strong>{selectedTableIds.length} bàn</strong></span>
-                  <span style={{ color: '#64748b', marginLeft: '0.75rem' }}>
-                    ({tables.filter(t => selectedTableIds.includes(t.tableId)).map(t => t.tableName || t.tableCode).join(', ')})
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.tableClearBtn}
-                  onClick={() => setSelectedTableIds([])}
-                >
-                  Bỏ chọn tất cả
-                </button>
-              </div>
-            )}
-            {selectedTableIds.length > 0 && selectedTableIds.reduce((sum, id) => sum + (tables.find(t => t.tableId === id)?.capacity ?? 0), 0) < form.partySize && (
-              <p className={styles.hint} style={{ color: '#f59e0b', marginTop: '0.5rem' }}>
-                ⚠️ Tổng sức chứa các bàn đang chọn ({selectedTableIds.reduce((sum, id) => sum + (tables.find(t => t.tableId === id)?.capacity ?? 0), 0)} chỗ) chưa đủ cho {form.partySize} khách. Nhân viên sẽ hỗ trợ sắp xếp thêm.
+              <input
+                type="number"
+                min="1"
+                max={MAX_PARTY_SIZE}
+                value={form.partySize === 0 ? "" : form.partySize}
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+                  if (rawValue === "") {
+                    set("partySize", 0); // allow clearing the field before retyping
+                    return;
+                  }
+                  const raw = parseInt(rawValue, 10);
+                  const safe = Number.isFinite(raw) ? raw : 0;
+                  const clamped = Math.min(Math.max(safe, 1), MAX_PARTY_SIZE);
+                  set("partySize", clamped);
+                }}
+                className={styles.input}
+                style={{ maxWidth: 220 }}
+              />
+              {errors.partySize && (
+                <p className={styles.error}>{errors.partySize}</p>
+              )}
+              <p className={styles.hint}>
+                Nhập tổng khách — hệ thống tự gợi ý bàn 4/6/8 chỗ.
               </p>
-            )}
+              {/* Table auto-calculation badge with 4/6/8-seat mix */}
+              <div className={styles.tableBadge}>
+                <span className={styles.tableBadgeIcon}></span>
+                <span>
+                  <strong>{form.partySize}</strong> người → gợi ý{" "}
+                  <strong className={styles.tableBadgeNum}>
+                    {suggestedTables} bàn
+                  </strong>
+                  <span className={styles.tableBadgeSub}>
+                    {tableBreakdown.text ? ` · ${tableBreakdown.text}` : ""}{" "}
+                    {tableBreakdown.unused}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.modePanel}>
+            <div className={styles.field}>
+              <div className={styles.fieldHeaderRow}>
+                <label className={styles.label} style={{ marginBottom: 0 }}>
+                  Số lượng bàn *
+                </label>
+                <a href="/reservations" className={styles.historyLink}>
+                  Lịch sử đặt bàn của bạn →
+                </a>
+              </div>
+              <input
+                type="number"
+                min="1"
+                max={MAX_TABLES}
+                value={tableCount === 0 ? "" : tableCount}
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+                  setTableCountTouched(true);
+                  if (rawValue === "") {
+                    setTableCount(0);
+                    return;
+                  }
+                  const raw = parseInt(rawValue, 10);
+                  const safe = Number.isFinite(raw) ? raw : 0;
+                  const clamped = Math.min(Math.max(safe, 1), MAX_TABLES);
+                  setTableCount(clamped);
+                  setErrors((prev) => ({ ...prev, totalTables: "" }));
+                }}
+                className={`${styles.input} ${errors.totalTables ? styles.inputError : ""}`}
+                style={{ maxWidth: 220 }}
+                required
+              />
+              {errors.totalTables && (
+                <p className={styles.error}>{errors.totalTables}</p>
+              )}
+              <p className={styles.hint}>
+                Nhập số bàn bạn muốn đặt/ghép. Gợi ý:{" "}
+                <strong>{suggestedTables} bàn</strong> cho {form.partySize}{" "}
+                khách.
+              </p>
+              <p className={styles.hint}>
+                Sau khi check-in, nhân viên/thu ngân sẽ tự ghép bàn trống hoặc
+                chọn thủ công theo nhu cầu.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -863,19 +878,30 @@ export default function BookingForm() {
         </h3>
         <p className={styles.sectionDesc}>
           Chọn trước các món yêu thích — đơn hàng sẽ được chuẩn bị khi bạn đến.
-          Mỗi món được tự động nhân x{numberOfTables} bàn, bạn có thể điều chỉnh
+          Mỗi món được tự động nhân x{tableCount} bàn, bạn có thể điều chỉnh
           lại.
         </p>
         <div className={styles.depositNote}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
           <div>
-            <strong>Quy tắc đặt trước:</strong> Để đảm bảo giữ chỗ và chuẩn bị món ăn chu đáo, 
-            quý khách vui lòng <strong>thanh toán cọc tối thiểu 200.000đ</strong> (hoặc 20% tổng giá trị món ăn đặt trước). 
-            Tiền cọc sẽ được trừ trực tiếp vào hoá đơn khi quý khách thanh toán tại nhà hàng.
+            <strong>Quy tắc đặt trước:</strong> Để đảm bảo giữ chỗ và chuẩn bị
+            món ăn chu đáo, quý khách vui lòng{" "}
+            <strong>thanh toán cọc tối thiểu 200.000đ</strong> (hoặc 20% tổng
+            giá trị món ăn đặt trước). Tiền cọc sẽ được trừ trực tiếp vào hoá
+            đơn khi quý khách thanh toán tại nhà hàng.
           </div>
         </div>
 
@@ -969,9 +995,66 @@ export default function BookingForm() {
             {/* Selected items summary */}
             {selectedItems.size > 0 && (
               <div className={styles.selectedList}>
-                <h4 className={styles.selectedTitle}>
-                  Món đã chọn ({selectedItems.size})
-                </h4>
+                <div
+                  className={styles.selectedTitleRow}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <h4
+                    className={styles.selectedTitle}
+                    style={{ marginBottom: 0 }}
+                  >
+                    Món đã chọn ({selectedItems.size})
+                  </h4>
+                  <button
+                    type="button"
+                    className={styles.clearAllBtn}
+                    onClick={() => {
+                      Swal.fire({
+                        title: "Xoá tất cả?",
+                        text: "Bạn có chắc chắn muốn xoá tất cả món ăn đã chọn?",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#ef4444",
+                        cancelButtonColor: "#64748b",
+                        confirmButtonText: "Đồng ý",
+                        cancelButtonText: "Huỷ",
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          setSelectedItems(new Map());
+                        }
+                      });
+                    }}
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "#ef4444",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    </svg>
+                    Xoá tất cả
+                  </button>
+                </div>
                 <div className={styles.selectedItems}>
                   {Array.from(selectedItems.entries()).map(
                     ([itemId, quantity]) => {
@@ -1032,6 +1115,39 @@ export default function BookingForm() {
                               +
                             </button>
                           </div>
+                          <button
+                            type="button"
+                            className={styles.removeItemBtn}
+                            onClick={() => updateQuantity(itemId, 0)}
+                            style={{
+                              marginLeft: "0.75rem",
+                              color: "#94a3b8",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "4px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                            title="Xoá món"
+                          >
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="15" y1="9" x2="9" y2="15" />
+                              <line x1="9" y1="9" x2="15" y2="15" />
+                            </svg>
+                            <span>Xoá</span>
+                          </button>
                         </div>
                       );
                     },
@@ -1043,7 +1159,11 @@ export default function BookingForm() {
                   <div className={styles.pricingRow}>
                     <span>Số món đã chọn:</span>
                     <span>
-                      {Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} món
+                      {Array.from(selectedItems.values()).reduce(
+                        (a, b) => a + b,
+                        0,
+                      )}{" "}
+                      món
                     </span>
                   </div>
                   <div className={styles.pricingRow}>
@@ -1056,16 +1176,30 @@ export default function BookingForm() {
                     <span className={styles.depositLabel}>
                       Tiền cọc (20%):
                       {totalAmount < 1000000 && (
-                        <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: "normal",
+                            color: "var(--text-secondary)",
+                            marginTop: "2px",
+                          }}
+                        >
                           (Áp dụng mức cọc tối thiểu 200.000đ)
                         </div>
                       )}
                     </span>
                     <span
                       className={styles.pricingDeposit}
-                      style={{ color: "var(--brand-primary)", fontWeight: "bold" }}
+                      style={{
+                        color: "var(--brand-primary)",
+                        fontWeight: "bold",
+                      }}
                     >
-                      {Math.max(200000, Math.round(totalAmount * 0.2)).toLocaleString("vi-VN")} đ
+                      {Math.max(
+                        200000,
+                        Math.round(totalAmount * 0.2),
+                      ).toLocaleString("vi-VN")}{" "}
+                      đ
                     </span>
                   </div>
                   <div
@@ -1075,10 +1209,57 @@ export default function BookingForm() {
                       fontSize: "0.9rem",
                     }}
                   >
-                    <span>Chia đều {numberOfTables} bàn:</span>
+                    <span>Chia đều {tableCount} bàn:</span>
                     <span>
                       ≈ {amountPerTable.toLocaleString("vi-VN")} đ / bàn
                     </span>
+                  </div>
+                  <div className={styles.pricingRow}>
+                    <span />
+                    <button
+                      type="button"
+                      className={styles.clearAllBtn}
+                      onClick={() => {
+                        Swal.fire({
+                          title: "Xoá tất cả?",
+                          text: "Bạn có chắc chắn muốn xoá tất cả món ăn đã chọn?",
+                          icon: "warning",
+                          showCancelButton: true,
+                          confirmButtonColor: "#ef4444",
+                          cancelButtonColor: "#64748b",
+                          confirmButtonText: "Đồng ý",
+                          cancelButtonText: "Huỷ",
+                        }).then((result) => {
+                          if (result.isConfirmed) {
+                            setSelectedItems(new Map());
+                          }
+                        });
+                      }}
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "#ef4444",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                      Xoá tất cả
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1171,7 +1352,10 @@ export default function BookingForm() {
               if (currentReservationId) {
                 cancelSepayTimeout(currentReservationId).catch(console.error);
               }
-              stopPaymentCheck(false, "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.");
+              stopPaymentCheck(
+                false,
+                "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.",
+              );
             }
           });
         }}
@@ -1182,52 +1366,92 @@ export default function BookingForm() {
           <p className={styles.qrTitle}>
             Vui lòng thanh toán số tiền cọc để xác nhận đặt bàn của bạn.
           </p>
-          
+
           <div className={styles.qrTimer}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
-            Thời gian còn lại: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+            Thời gian còn lại: {Math.floor(timeLeft / 60)}:
+            {(timeLeft % 60).toString().padStart(2, "0")}
           </div>
-          
+
           <div className={styles.qrCodeWrapper}>
             <div className={styles.qrScannerLine} />
-            <img 
-              src={qrCodeUrl} 
-              alt="QR Code SePay" 
+            <img
+              src={qrCodeUrl}
+              alt="QR Code SePay"
               className={styles.qrCode}
             />
           </div>
 
           <div className={styles.qrAmountWrapper}>
             <span className={styles.qrAmountLabel}>Số tiền cần thanh toán</span>
-            <strong className={styles.qrAmountValue}>{qrAmount.toLocaleString("vi-VN")} đ</strong>
+            <strong className={styles.qrAmountValue}>
+              {qrAmount.toLocaleString("vi-VN")} đ
+            </strong>
           </div>
 
           {transferCode && (
-            <div className={styles.qrAmountWrapper} style={{ marginTop: 8, flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-              <span className={styles.qrAmountLabel}>Nội dung chuyển khoản</span>
-              <strong className={styles.qrAmountValue} style={{ fontSize: "1rem", letterSpacing: 1, color: "var(--brand-primary)" }}>
+            <div
+              className={styles.qrAmountWrapper}
+              style={{
+                marginTop: 8,
+                flexDirection: "column",
+                gap: 4,
+                alignItems: "flex-start",
+              }}
+            >
+              <span className={styles.qrAmountLabel}>
+                Nội dung chuyển khoản
+              </span>
+              <strong
+                className={styles.qrAmountValue}
+                style={{
+                  fontSize: "1rem",
+                  letterSpacing: 1,
+                  color: "var(--brand-primary)",
+                }}
+              >
                 Thanh toan don hang {transferCode} {qrAmount}
               </strong>
-              <small style={{ color: "var(--text-muted, #888)", fontSize: "0.75rem" }}> </small>
+              <small
+                style={{
+                  color: "var(--text-muted, #888)",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {" "}
+              </small>
             </div>
           )}
-          
+
           <div className={styles.qrStatus}>
             {checkingPayment ? (
               <>
-                <span className={styles.spinner} style={{ width: "16px", height: "16px", borderWidth: "2px" }} />
+                <span
+                  className={styles.spinner}
+                  style={{ width: "16px", height: "16px", borderWidth: "2px" }}
+                />
                 Đang chờ thanh toán tự động...
               </>
-            ) : "Đã dừng kiểm tra."}
+            ) : (
+              "Đã dừng kiểm tra."
+            )}
           </div>
-          
-          <p className={styles.qrNote}>
-            
-          </p>
 
-          <button 
+          <p className={styles.qrNote}></p>
+
+          <button
             type="button"
             className={styles.qrCancelBtn}
             onClick={() => {
@@ -1244,15 +1468,31 @@ export default function BookingForm() {
                 if (result.isConfirmed) {
                   localStorage.removeItem("sepay_session");
                   if (currentReservationId) {
-                    cancelSepayTimeout(currentReservationId).catch(console.error);
+                    cancelSepayTimeout(currentReservationId).catch(
+                      console.error,
+                    );
                   }
-                  stopPaymentCheck(false, "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.");
+                  stopPaymentCheck(
+                    false,
+                    "Bạn đã huỷ giao dịch nạp cọc. Đơn đặt bàn đã bị huỷ.",
+                  );
                 }
               });
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
             Hủy giao dịch & Huỷ đơn đặt bàn
           </button>

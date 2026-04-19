@@ -14,7 +14,7 @@ interface Reservation {
   partySize: number;
   reservedAt: string;
   status: string;
-  tableId?: number;
+  tableIds?: number[];
   note?: string;
 }
 
@@ -77,7 +77,7 @@ export default function CheckinPage() {
     try {
       await adminReservationApi.updateReservationStatus(reservationId, {
         status: "CHECKED_IN",
-        tableId: tableId,
+        tableIds: [tableId],
       });
 
       showSuccess("Thành công", "Check-in thành công!");

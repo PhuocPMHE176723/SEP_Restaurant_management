@@ -52,7 +52,8 @@ public class CleanupService : ICleanupService
 
         // 2. Clear stale reservations
         var staleReservations = await _context.Reservations
-            .Include(r => r.Table)
+            .Include(r => r.ReservationTables)
+                .ThenInclude(rt => rt.DiningTable)
             .Where(r => (r.Status == "PENDING" || r.Status == "CONFIRMED") 
                         && r.ReservedAt.Date < today)
             .ToListAsync();
@@ -63,10 +64,13 @@ public class CleanupService : ICleanupService
             res.Status = oldStatus == "CONFIRMED" ? "NO_SHOW" : "CANCELLED";
             res.Note = (res.Note + $" [Auto-{res.Status} by Daily Cleanup]").Trim();
 
-            if (res.Table != null)
+            foreach (var rt in res.ReservationTables)
             {
-                res.Table.Status = "AVAILABLE";
-                tablesReleased++;
+                if (rt.DiningTable != null)
+                {
+                    rt.DiningTable.Status = "AVAILABLE";
+                    tablesReleased++;
+                }
             }
             reservationsCleared++;
         }
@@ -84,7 +88,7 @@ public class CleanupService : ICleanupService
                 o.OpenedAt.Date >= today);
 
             bool hasActiveReservation = await _context.Reservations.AnyAsync(r =>
-                r.TableId == table.TableId &&
+                r.ReservationTables.Any(rt => rt.TableId == table.TableId) &&
                 (r.Status == "CONFIRMED") &&
                 r.ReservedAt.Date >= today);
 

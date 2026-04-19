@@ -108,7 +108,10 @@ public class CleanupServicePostTests
                 DurationMinutes = 90,
                 Status = "CONFIRMED",
                 CreatedAt = today.AddDays(-2),
-                TableId = 1,
+                ReservationTables = new[]
+                {
+                    new ReservationTable { TableId = 1, AssignedAt = DateTime.UtcNow },
+                },
             }
         );
         await context.SaveChangesAsync();

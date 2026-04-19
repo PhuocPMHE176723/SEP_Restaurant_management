@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using rmn_be.Core.DTOs;
@@ -16,7 +16,13 @@ namespace rmn_be.Core.Services.Implementation
         private readonly IMapper _mapper;
         private readonly UserManager<UserIdentity> _userManager;
         private readonly SepDatabaseContext _context;
-        public CustomerService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<UserIdentity> userManager, SepDatabaseContext context)
+
+        public CustomerService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            UserManager<UserIdentity> userManager,
+            SepDatabaseContext context
+        )
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -39,15 +45,15 @@ namespace rmn_be.Core.Services.Implementation
             var customers = await customerRepo.GetAllAsync();
 
             var duplicatedPhone = customers.Any(x =>
-                !string.IsNullOrWhiteSpace(x.Phone) &&
-                x.Phone.Trim() == phone);
+                !string.IsNullOrWhiteSpace(x.Phone) && x.Phone.Trim() == phone
+            );
 
             if (duplicatedPhone)
                 throw new Exception("Phone already exists.");
 
             var duplicatedEmail = customers.Any(x =>
-                !string.IsNullOrWhiteSpace(x.Email) &&
-                x.Email!.Trim().ToLower() == email.ToLower());
+                !string.IsNullOrWhiteSpace(x.Email) && x.Email!.Trim().ToLower() == email.ToLower()
+            );
 
             if (duplicatedEmail)
                 throw new Exception("Email already exists.");
@@ -66,19 +72,23 @@ namespace rmn_be.Core.Services.Implementation
                 UserName = username,
                 Email = email,
                 PhoneNumber = phone,
-                FullName = fullName
+                FullName = fullName,
             };
 
             var createUserResult = await _userManager.CreateAsync(user, createDto.Password);
             if (!createUserResult.Succeeded)
             {
-                throw new Exception(string.Join(", ", createUserResult.Errors.Select(x => x.Description)));
+                throw new Exception(
+                    string.Join(", ", createUserResult.Errors.Select(x => x.Description))
+                );
             }
 
             var addRoleResult = await _userManager.AddToRoleAsync(user, "Customer");
             if (!addRoleResult.Succeeded)
             {
-                throw new Exception(string.Join(", ", addRoleResult.Errors.Select(x => x.Description)));
+                throw new Exception(
+                    string.Join(", ", addRoleResult.Errors.Select(x => x.Description))
+                );
             }
 
             var customer = new Customer
@@ -88,7 +98,7 @@ namespace rmn_be.Core.Services.Implementation
                 Phone = phone,
                 Email = email,
                 TotalPoints = 0,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             await customerRepo.AddAsync(customer);
@@ -97,7 +107,9 @@ namespace rmn_be.Core.Services.Implementation
             return _mapper.Map<CustomerDTO>(customer);
         }
 
-        public async Task<PagedResultDTO<CustomerDTO>> GetAllCustomersAsync(PagingRequestDTO pagingRequest)
+        public async Task<PagedResultDTO<CustomerDTO>> GetAllCustomersAsync(
+            PagingRequestDTO pagingRequest
+        )
         {
             var customers = await _unitOfWork.GetRepository<Customer>().GetAllAsync();
 
@@ -108,13 +120,11 @@ namespace rmn_be.Core.Services.Implementation
                 var keyword = pagingRequest.SearchTerm.Trim().ToLower();
 
                 query = query.Where(x =>
-                    (!string.IsNullOrEmpty(x.FullName) && x.FullName.ToLower().Contains(keyword)) ||
-                    (!string.IsNullOrEmpty(x.Email) && x.Email.ToLower().Contains(keyword)) ||
-                    (!string.IsNullOrEmpty(x.Phone) && x.Phone.ToLower().Contains(keyword)) 
+                    (!string.IsNullOrEmpty(x.FullName) && x.FullName.ToLower().Contains(keyword))
+                    || (!string.IsNullOrEmpty(x.Email) && x.Email.ToLower().Contains(keyword))
+                    || (!string.IsNullOrEmpty(x.Phone) && x.Phone.ToLower().Contains(keyword))
                 );
             }
-
-            
 
             var totalRecords = query.Count();
 
@@ -129,14 +139,15 @@ namespace rmn_be.Core.Services.Implementation
                 PageNumber = pagingRequest.PageNumber,
                 PageSize = pagingRequest.PageSize,
                 TotalRecords = totalRecords,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pagingRequest.PageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pagingRequest.PageSize),
             };
         }
 
         public async Task<CustomerDTO?> GetCustomerByIdAsync(long id)
         {
             var customer = await _unitOfWork.GetRepository<Customer>().GetByIdAsync(id);
-            if (customer == null) return null;
+            if (customer == null)
+                return null;
 
             return _mapper.Map<CustomerDTO>(customer);
         }
@@ -157,17 +168,19 @@ namespace rmn_be.Core.Services.Implementation
             var customers = await customerRepo.GetAllAsync();
 
             var duplicatedPhone = customers.Any(x =>
-                x.CustomerId != id &&
-                !string.IsNullOrWhiteSpace(x.Phone) &&
-                x.Phone.Trim() == normalizedPhone);
+                x.CustomerId != id
+                && !string.IsNullOrWhiteSpace(x.Phone)
+                && x.Phone.Trim() == normalizedPhone
+            );
 
             if (duplicatedPhone)
                 throw new Exception("Phone already exists.");
 
             var duplicatedEmail = customers.Any(x =>
-                x.CustomerId != id &&
-                !string.IsNullOrWhiteSpace(x.Email) &&
-                x.Email!.Trim().ToLower() == normalizedEmail.ToLower());
+                x.CustomerId != id
+                && !string.IsNullOrWhiteSpace(x.Email)
+                && x.Email!.Trim().ToLower() == normalizedEmail.ToLower()
+            );
 
             if (duplicatedEmail)
                 throw new Exception("Email already exists.");
@@ -193,7 +206,9 @@ namespace rmn_be.Core.Services.Implementation
                     var updateUserResult = await _userManager.UpdateAsync(user);
                     if (!updateUserResult.Succeeded)
                     {
-                        throw new Exception(string.Join(", ", updateUserResult.Errors.Select(x => x.Description)));
+                        throw new Exception(
+                            string.Join(", ", updateUserResult.Errors.Select(x => x.Description))
+                        );
                     }
                 }
             }
@@ -207,14 +222,14 @@ namespace rmn_be.Core.Services.Implementation
 
             return result > 0;
         }
+
         public async Task<CustomerDTO?> GetMyProfileAsync(string userId)
         {
-            var customers = await _unitOfWork
-        .GetRepository<Customer>()
-        .GetAllAsync();
+            var customers = await _unitOfWork.GetRepository<Customer>().GetAllAsync();
 
             var entity = customers.FirstOrDefault(c => c.UserId == userId);
-            if (entity == null) return null;
+            if (entity == null)
+                return null;
 
             var user = await _userManager.FindByIdAsync(userId);
 
@@ -228,33 +243,35 @@ namespace rmn_be.Core.Services.Implementation
         {
             var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
 
-
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 throw new Exception("User not found");
 
-
-            var activeOrder = await _context.Orders
-                .AsNoTracking()
+            var activeOrder = await _context
+                .Orders.AsNoTracking()
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.MenuItem)
-                .Where(o => o.CustomerId == customer.CustomerId
-                    && (o.Status == "OPEN"
-                || o.Status == "SENT_TO_KITCHEN"
-                        || o.Status == "SERVED"))
+                .Where(o =>
+                    o.CustomerId == customer.CustomerId
+                    && (o.Status == "OPEN" || o.Status == "SENT_TO_KITCHEN" || o.Status == "SERVED")
+                )
                 .OrderByDescending(o => o.OpenedAt)
                 .FirstOrDefaultAsync();
 
-            var activeReservation = await _context.Reservations
-                .AsNoTracking()
-                .Include(r => r.Table)
+            var activeReservation = await _context
+                .Reservations.AsNoTracking()
+                .Include(r => r.ReservationTables)
+                    .ThenInclude(rt => rt.DiningTable)
                 .Include(r => r.Order)
                     .ThenInclude(o => o!.OrderItems)
                         .ThenInclude(oi => oi.MenuItem)
-                .Where(r => r.CustomerId == customer.CustomerId
-                    && (r.Status == "PENDING" || r.Status == "CONFIRMED") && r.Order.Status == "RESERVED")
+                .Where(r =>
+                    r.CustomerId == customer.CustomerId
+                    && (r.Status == "PENDING" || r.Status == "CONFIRMED")
+                    && r.Order.Status == "RESERVED"
+                )
                 .OrderBy(r => r.ReservedAt)
                 .FirstOrDefaultAsync();
 
@@ -266,9 +283,9 @@ namespace rmn_be.Core.Services.Implementation
                     FullName = customer.FullName,
                     Phone = customer.Phone,
                     Email = customer.Email,
-                    TotalPoints = customer.TotalPoints
+                    TotalPoints = customer.TotalPoints,
                 },
-                DisplayMode = "NONE"
+                DisplayMode = "NONE",
             };
 
             if (activeOrder != null)
@@ -287,8 +304,6 @@ namespace rmn_be.Core.Services.Implementation
             return result;
         }
 
-
-
         private OrderDTO MapOrderDTO(Order order)
         {
             return new OrderDTO
@@ -300,20 +315,25 @@ namespace rmn_be.Core.Services.Implementation
                 CustomerName = order.Customer?.FullName,
                 OpenedAt = order.OpenedAt,
                 ClosedAt = order.ClosedAt,
-                TotalAmount = order.OrderItems.Sum(i =>
-                    i.LineTotal > 0 ? i.LineTotal : (i.UnitPrice * i.Quantity) - i.DiscountAmount),
+                TotalAmount = order
+                    .OrderItems.Where(i => i.Status != "CANCELLED")
+                    .Sum(i =>
+                        i.LineTotal > 0
+                            ? i.LineTotal
+                            : (i.UnitPrice * i.Quantity) - i.DiscountAmount
+                    ),
 
-                OrderItems = order.OrderItems
-            .OrderBy(i => i.CreatedAt)
-            .Select(i => new OrderItemDTO
-            {
-                OrderItemId = i.OrderItemId,
-                ItemNameSnapshot = i.ItemNameSnapshot,
-                Quantity = i.Quantity,
-                Status = i.Status,
-                UnitPrice = i.UnitPrice
-            })
-            .ToList()
+                OrderItems = order
+                    .OrderItems.OrderBy(i => i.CreatedAt)
+                    .Select(i => new OrderItemDTO
+                    {
+                        OrderItemId = i.OrderItemId,
+                        ItemNameSnapshot = i.ItemNameSnapshot,
+                        Quantity = i.Quantity,
+                        Status = i.Status,
+                        UnitPrice = i.UnitPrice,
+                    })
+                    .ToList(),
             };
         }
 
@@ -323,7 +343,7 @@ namespace rmn_be.Core.Services.Implementation
             {
                 ReservationId = reservation.ReservationId,
                 CustomerId = reservation.CustomerId,
-                TableId = reservation.TableId,
+                TableIds = reservation.ReservationTables.Select(rt => rt.TableId).ToList(),
                 CustomerName = reservation.CustomerName,
                 CustomerPhone = reservation.CustomerPhone,
                 PartySize = reservation.PartySize,
@@ -335,30 +355,45 @@ namespace rmn_be.Core.Services.Implementation
                 CreatedByStaffId = reservation.CreatedByStaffId,
                 DepositAmount = reservation.DepositAmount,
 
-                Order = reservation.Order == null ? null : new OrderDTO
-                {
-                    OrderId = reservation.Order.OrderId,
-                    OrderCode = reservation.Order.OrderCode,
-                    Status = reservation.Order.Status,
-                    TableName = reservation.Table?.TableCode ?? reservation.Table?.TableName,
-                    CustomerName = reservation.CustomerName,
-                    OpenedAt = reservation.Order.OpenedAt,
-                    ClosedAt = reservation.Order.ClosedAt,
-                    TotalAmount = reservation.Order.OrderItems.Sum(i =>
-                        i.LineTotal > 0 ? i.LineTotal : (i.UnitPrice * i.Quantity) - i.DiscountAmount),
-
-                    OrderItems = reservation.Order.OrderItems
-                        .OrderBy(i => i.CreatedAt)
-                        .Select(i => new OrderItemDTO
+                Order =
+                    reservation.Order == null
+                        ? null
+                        : new OrderDTO
                         {
-                            OrderItemId = i.OrderItemId,
-                            ItemNameSnapshot = i.ItemNameSnapshot,
-                            Quantity = i.Quantity,
-                            Status = i.Status,
-                            UnitPrice = i.UnitPrice
-                        })
-                        .ToList()
-                }
+                            OrderId = reservation.Order.OrderId,
+                            OrderCode = reservation.Order.OrderCode,
+                            Status = reservation.Order.Status,
+                            TableName = string.Join(
+                                ", ",
+                                reservation
+                                    .ReservationTables.Select(rt =>
+                                        rt.DiningTable?.TableCode ?? rt.DiningTable?.TableName
+                                    )
+                                    .Where(n => n != null)
+                            ),
+                            CustomerName = reservation.CustomerName,
+                            OpenedAt = reservation.Order.OpenedAt,
+                            ClosedAt = reservation.Order.ClosedAt,
+                            TotalAmount = reservation
+                                .Order.OrderItems.Where(i => i.Status != "CANCELLED")
+                                .Sum(i =>
+                                    i.LineTotal > 0
+                                        ? i.LineTotal
+                                        : (i.UnitPrice * i.Quantity) - i.DiscountAmount
+                                ),
+
+                            OrderItems = reservation
+                                .Order.OrderItems.OrderBy(i => i.CreatedAt)
+                                .Select(i => new OrderItemDTO
+                                {
+                                    OrderItemId = i.OrderItemId,
+                                    ItemNameSnapshot = i.ItemNameSnapshot,
+                                    Quantity = i.Quantity,
+                                    Status = i.Status,
+                                    UnitPrice = i.UnitPrice,
+                                })
+                                .ToList(),
+                        },
             };
         }
     }

@@ -45,7 +45,8 @@ export interface CreateReservationRequest {
     durationMinutes?: number;
     note?: string;
     contactEmail?: string;
-    tableId?: number;
+    totalTables?: number;
+    tableIds?: number[];
     menuItems: OrderItemRequest[];
 }
 

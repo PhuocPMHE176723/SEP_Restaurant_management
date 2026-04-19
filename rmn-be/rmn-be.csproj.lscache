@@ -76,6 +76,7 @@ Controllers/
  PromotionController.cs
  PurchaseReceiptController.cs
  ReservationController.cs
+ ServingController.cs
  SliderController.cs
  StockController.cs
  UserController.cs
@@ -91,11 +92,13 @@ Core/
   DiningTableDTO.cs
   IngredientDTO.cs
   InvoiceDTO.cs
+  KitchenItemDTO.cs
   MenuCategoryDTO.cs
   MenuItemDTO.cs
   PagingDTO.cs
   PromotionDTOs.cs
   ReservationDTO.cs
+  ServingDTO.cs
   SliderDTOs.cs
   StaffDTO.cs
   TableAvailabilityDTO.cs
@@ -132,6 +135,9 @@ Core/
   20260402164455_SimplifyBlogPost.Designer.cs
   20260411103438_AddDailyIngredientAllocation.cs
   20260411103438_AddDailyIngredientAllocation.Designer.cs
+  20260419120000_AddTotalTablesToReservation.cs
+  20260419123000_AddReservationTables.cs
+  20260419130000_AddOrderTables.cs
   SepDatabaseContextModelSnapshot.cs
  Models/
   BlogCategory.cs
@@ -155,10 +161,12 @@ Core/
   Order.cs
   OrderItem.cs
   OrderStatusHistory.cs
+  OrderTable.cs
   Payment.cs
   PurchaseReceipt.cs
   PurchaseReceiptItem.cs
   Reservation.cs
+  ReservationTable.cs
   SepDatabaseContext.cs
   Slider.cs
   Staff.cs
@@ -191,12 +199,14 @@ Core/
   EmailService.cs
   IngredientService.cs
   InvoiceService.cs
+  Kitchen2Service.cs
   KitchenService.cs
   MenuCategoryService.cs
   MenuItemService.cs
   PromotionService.cs
   PurchaseReceiptService.cs
   ReservationService.cs
+  ServingService.cs
   StaffService.cs
   StockService.cs
  Services/Interface/
@@ -208,10 +218,12 @@ Core/
   IDiningTableService.cs
   IEmailService.cs
   IIngredientService.cs
+  IKitchen2Service.cs
   IMenuCategoryService.cs
   IMenuItemService.cs
   IPromotionService.cs
   IReservationService.cs
+  IServingService.cs
   IStaffService.cs
   IWarehouseServices.cs
 obj/Debug/net8.0/

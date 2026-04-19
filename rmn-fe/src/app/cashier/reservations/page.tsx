@@ -13,13 +13,20 @@ export default function CashierReservationsPage() {
     ReservationResponse[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("PENDING");
+  const [filter, setFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [endDate, setEndDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [search, setSearch] = useState<string>("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof ReservationResponse; direction: 'asc' | 'desc' } | null>({ key: 'reservationId', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof ReservationResponse;
+    direction: "asc" | "desc";
+  } | null>({ key: "reservationId", direction: "desc" });
 
   useEffect(() => {
     fetchReservations();
@@ -32,7 +39,10 @@ export default function CashierReservationsPage() {
   const fetchReservations = async () => {
     try {
       setLoading(true);
-      const data = await adminReservationApi.getAllReservations(startDate, endDate);
+      const data = await adminReservationApi.getAllReservations(
+        startDate,
+        endDate,
+      );
       setReservations(data);
       setLoading(false);
     } catch (error) {
@@ -64,11 +74,11 @@ export default function CashierReservationsPage() {
       filtered = [...filtered].sort((a, b) => {
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
-        
+
         if (aValue === bValue) return 0;
-        
+
         const comparison = (aValue as any) < (bValue as any) ? -1 : 1;
-        return sortConfig.direction === 'asc' ? comparison : -comparison;
+        return sortConfig.direction === "asc" ? comparison : -comparison;
       });
     }
 
@@ -86,19 +96,28 @@ export default function CashierReservationsPage() {
   const handleStatusUpdate = async (
     id: number,
     status: string,
-    tableId?: number,
+    tableIds?: number[],
   ) => {
     try {
       await adminReservationApi.updateReservationStatus(id, {
         status,
-        tableId,
+        tableIds,
       });
       await fetchReservations(); // Refresh data
+
+      if (status === "CHECKED_IN") {
+        const reservation = reservations.find((r) => r.reservationId === id);
+        if (reservation?.order?.orderId) {
+          window.location.href = `/cashier/orders?orderId=${reservation.order.orderId}`;
+          return;
+        }
+      }
+
       Swal.fire({
         title: "Thành công",
         text: "Cập nhật trạng thái thành công!",
         icon: "success",
-        confirmButtonColor: "var(--brand-primary)"
+        confirmButtonColor: "var(--brand-primary)",
       });
     } catch (error) {
       console.error("Failed to update status:", error);
@@ -106,22 +125,27 @@ export default function CashierReservationsPage() {
         title: "Lỗi",
         text: "Cập nhật thất bại!",
         icon: "error",
-        confirmButtonColor: "var(--error)"
+        confirmButtonColor: "var(--error)",
       });
     }
   };
 
   const requestSort = (key: keyof ReservationResponse) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction: "asc" | "desc" = "asc";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "asc"
+    ) {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key: string) => {
-    if (sortConfig?.key !== key) return <span style={{ color: '#cbd5e1' }}>↕</span>;
-    return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+    if (sortConfig?.key !== key)
+      return <span style={{ color: "#cbd5e1" }}>↕</span>;
+    return sortConfig.direction === "asc" ? " ↑" : " ↓";
   };
 
   return (
@@ -149,30 +173,42 @@ export default function CashierReservationsPage() {
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Từ ngày:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span
+            style={{ fontSize: "0.85rem", fontWeight: 600, color: "#64748b" }}
+          >
+            Từ ngày:
+          </span>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className={styles.input}
-            style={{ width: "160px", padding: '0.5rem' }}
+            style={{ width: "160px", padding: "0.5rem" }}
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Đến ngày:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span
+            style={{ fontSize: "0.85rem", fontWeight: 600, color: "#64748b" }}
+          >
+            Đến ngày:
+          </span>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className={styles.input}
-            style={{ width: "160px", padding: '0.5rem' }}
+            style={{ width: "160px", padding: "0.5rem" }}
           />
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Trạng thái:</span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span
+            style={{ fontSize: "0.85rem", fontWeight: 700, color: "#475569" }}
+          >
+            Trạng thái:
+          </span>
           <div className={styles.statusButtonGroup}>
             {[
               { value: "ALL", label: "Tất cả" },
@@ -191,20 +227,45 @@ export default function CashierReservationsPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minWidth: '200px', maxWidth: '400px', position: 'relative' }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: "200px",
+            maxWidth: "400px",
+            position: "relative",
+          }}
+        >
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm tên, SĐT hoặc mã đặt bàn..."
             className={styles.input}
-            style={{ width: "100%", paddingLeft: '2.5rem', paddingRight: '1rem' }}
+            style={{
+              width: "100%",
+              paddingLeft: "2.5rem",
+              paddingRight: "1rem",
+            }}
           />
-          <svg 
-            style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          <svg
+            style={{
+              position: "absolute",
+              left: "1rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#94a3b8",
+            }}
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
         </div>
       </div>
@@ -215,104 +276,152 @@ export default function CashierReservationsPage() {
         <>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-            <thead>
-              <tr>
-                <th onClick={() => requestSort('reservationId')} style={{ cursor: 'pointer' }}>
-                  ID {getSortIcon('reservationId')}
-                </th>
-                <th onClick={() => requestSort('customerName')} style={{ cursor: 'pointer' }}>
-                  Khách hàng {getSortIcon('customerName')}
-                </th>
-                <th onClick={() => requestSort('customerPhone')} style={{ cursor: 'pointer' }}>
-                  SĐT {getSortIcon('customerPhone')}
-                </th>
-                <th onClick={() => requestSort('partySize')} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                  Số người {getSortIcon('partySize')}
-                </th>
-                <th onClick={() => requestSort('reservedAt')} style={{ cursor: 'pointer' }}>
-                  Thời gian {getSortIcon('reservedAt')}
-                </th>
-                <th onClick={() => requestSort('status')} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                  Trạng thái {getSortIcon('status')}
-                </th>
-                <th style={{ width: '150px' }}>Ghi chú</th>
-                <th style={{ textAlign: 'center', width: '200px' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReservations.length === 0 ? (
+              <thead>
                 <tr>
-                  <td colSpan={8} className={styles.empty}>
-                    {search || startDate || endDate
-                      ? "Không tìm thấy đặt bàn nào"
-                      : "Chưa có đặt bàn nào"}
-                  </td>
+                  <th
+                    onClick={() => requestSort("reservationId")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    ID {getSortIcon("reservationId")}
+                  </th>
+                  <th
+                    onClick={() => requestSort("customerName")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Khách hàng {getSortIcon("customerName")}
+                  </th>
+                  <th
+                    onClick={() => requestSort("customerPhone")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    SĐT {getSortIcon("customerPhone")}
+                  </th>
+                  <th
+                    onClick={() => requestSort("partySize")}
+                    style={{ cursor: "pointer", textAlign: "center" }}
+                  >
+                    Số người {getSortIcon("partySize")}
+                  </th>
+                  <th
+                    onClick={() => requestSort("reservedAt")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Thời gian {getSortIcon("reservedAt")}
+                  </th>
+                  <th
+                    onClick={() => requestSort("status")}
+                    style={{ cursor: "pointer", textAlign: "center" }}
+                  >
+                    Trạng thái {getSortIcon("status")}
+                  </th>
+                  <th style={{ width: "150px" }}>Ghi chú</th>
+                  <th style={{ textAlign: "center", width: "200px" }}>
+                    Thao tác
+                  </th>
                 </tr>
-              ) : (
-                currentReservations.map((reservation) => (
-                  <tr key={reservation.reservationId}>
-                    <td>#{reservation.reservationId}</td>
-                    <td>{reservation.customerName}</td>
-                    <td>{reservation.customerPhone}</td>
-                    <td>{reservation.partySize}</td>
-                    <td>
-                      {new Date(reservation.reservedAt).toLocaleString("vi-VN")}
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.statusBadge} ${
-                          reservation.status === "PENDING" ? styles.statusPending :
-                          reservation.status === "CONFIRMED" ? styles.statusConfirmed :
-                          reservation.status === "CHECKED_IN" ? styles.statusCheckedIn :
-                          reservation.status === "CANCELLED" ? styles.statusCancelled :
-                          styles.statusDefault
-                        }`}
-                      >
-                        {reservation.status === "PENDING" ? "Đang chờ" :
-                         reservation.status === "CONFIRMED" ? "Đã xác nhận" :
-                         reservation.status === "CHECKED_IN" ? "Check-in" :
-                         reservation.status === "CANCELLED" ? "Đã hủy" :
-                         reservation.status}
-                      </span>
-                    </td>
-                    <td>{reservation.note || "-"}</td>
-                    <td>
-                      <div className={styles.actionButtons}>
-                        {reservation.status === "PENDING" && (
-                          <button
-                            className={styles.btnSuccess}
-                            onClick={() =>
-                              handleStatusUpdate(
-                                reservation.reservationId,
-                                "CONFIRMED",
-                              )
-                            }
-                          >
-                            Xác nhận
-                          </button>
-                        )}
-                        {(reservation.status === "PENDING" ||
-                          reservation.status === "CONFIRMED") && (
-                          <button
-                            className={styles.btnDanger}
-                            onClick={() =>
-                              handleStatusUpdate(
-                                reservation.reservationId,
-                                "CANCELLED",
-                              )
-                            }
-                          >
-                            Hủy
-                          </button>
-                        )}
-                      </div>
+              </thead>
+              <tbody>
+                {filteredReservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className={styles.empty}>
+                      {search || startDate || endDate
+                        ? "Không tìm thấy đặt bàn nào"
+                        : "Chưa có đặt bàn nào"}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  currentReservations.map((reservation) => (
+                    <tr key={reservation.reservationId}>
+                      <td>#{reservation.reservationId}</td>
+                      <td>{reservation.customerName}</td>
+                      <td>{reservation.customerPhone}</td>
+                      <td>{reservation.partySize}</td>
+                      <td>
+                        {new Date(reservation.reservedAt).toLocaleString(
+                          "vi-VN",
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`${styles.statusBadge} ${
+                            reservation.status === "PENDING"
+                              ? styles.statusPending
+                              : reservation.status === "CONFIRMED"
+                                ? styles.statusConfirmed
+                                : reservation.status === "CHECKED_IN"
+                                  ? styles.statusCheckedIn
+                                  : reservation.status === "CANCELLED"
+                                    ? styles.statusCancelled
+                                    : styles.statusDefault
+                          }`}
+                        >
+                          {reservation.status === "PENDING"
+                            ? "Đang chờ"
+                            : reservation.status === "CONFIRMED"
+                              ? "Đã xác nhận"
+                              : reservation.status === "CHECKED_IN"
+                                ? "Check-in"
+                                : reservation.status === "CANCELLED"
+                                  ? "Đã hủy"
+                                  : reservation.status}
+                        </span>
+                      </td>
+                      <td>{reservation.note || "-"}</td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          {reservation.status === "PENDING" && (
+                            <button
+                              className={styles.btnSuccess}
+                              onClick={() =>
+                                handleStatusUpdate(
+                                  reservation.reservationId,
+                                  "CONFIRMED",
+                                )
+                              }
+                            >
+                              Xác nhận
+                            </button>
+                          )}
+                          {reservation.status === "CONFIRMED" && (
+                            <button
+                              className={styles.btnPrimary}
+                              style={{
+                                backgroundColor: "#0ea5e9",
+                                borderColor: "#0ea5e9",
+                              }}
+                              onClick={() =>
+                                handleStatusUpdate(
+                                  reservation.reservationId,
+                                  "CHECKED_IN",
+                                  reservation.tableIds,
+                                )
+                              }
+                            >
+                              Check-in
+                            </button>
+                          )}
+                          {(reservation.status === "PENDING" ||
+                            reservation.status === "CONFIRMED") && (
+                            <button
+                              className={styles.btnDanger}
+                              onClick={() =>
+                                handleStatusUpdate(
+                                  reservation.reservationId,
+                                  "CANCELLED",
+                                )
+                              }
+                            >
+                              Hủy
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {totalPages > 1 && (
             <div style={{ marginTop: "1rem" }}>

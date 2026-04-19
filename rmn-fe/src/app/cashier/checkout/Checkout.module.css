@@ -149,6 +149,22 @@
   color: #0f172a;
 }
 
+.btnDanger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnDanger:hover {
+  background: #fecaca;
+}
+
 /* Right side - Payment Actions */
 .paymentSection {
   background: white;

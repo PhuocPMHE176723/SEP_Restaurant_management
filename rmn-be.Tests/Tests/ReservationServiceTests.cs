@@ -36,7 +36,8 @@ public class ReservationServicePostTests
                     {
                         ReservationId = r.ReservationId,
                         CustomerId = r.CustomerId,
-                        TableId = r.TableId,
+                        TotalTables = r.TotalTables,
+                        TableIds = r.ReservationTables.Select(rt => rt.TableId).ToList(),
                         CustomerName = r.CustomerName,
                         CustomerPhone = r.CustomerPhone,
                         ContactEmail = r.ContactEmail,
@@ -101,9 +102,15 @@ public class ReservationServicePostTests
             DurationMinutes = 90,
             Status = status,
             CreatedAt = DateTime.UtcNow,
-            TableId = tableId,
+            TotalTables = tableId.HasValue ? 1 : 0,
             DepositAmount = 200000,
         };
+        if (tableId.HasValue)
+        {
+            reservation.ReservationTables.Add(
+                new ReservationTable { TableId = tableId.Value, AssignedAt = DateTime.UtcNow }
+            );
+        }
         context.Reservations.Add(reservation);
 
         Order? order = null;
@@ -641,16 +648,18 @@ public class ReservationServicePostTests
         var mapperMock = CreateMapperMock();
         var service = new ReservationService(context, mapperMock.Object);
 
-        var ok = await service.UpdateReservationStatusAsync(
+        var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
             status: "CHECKED_IN",
-            tableId: 1
+            tableIds: new List<int> { 1 }
         );
 
-        Assert.True(ok);
-        var reservation = await context.Reservations.FindAsync((long)1);
+        Assert.True(orderId.HasValue && orderId.Value > 0);
+        var reservation = await context
+            .Reservations.Include(r => r.ReservationTables)
+            .FirstAsync(r => r.ReservationId == 1);
         Assert.Equal("CHECKED_IN", reservation!.Status);
-        Assert.Equal(1, reservation.TableId);
+        Assert.Contains(reservation.ReservationTables, rt => rt.TableId == 1);
 
         var table = await context.DiningTables.FindAsync(1);
         Assert.Equal("OCCUPIED", table!.Status);
@@ -673,9 +682,9 @@ public class ReservationServicePostTests
         var mapperMock = CreateMapperMock();
         var service = new ReservationService(context, mapperMock.Object);
 
-        var ok = await service.UpdateReservationStatusAsync(id: 1, status: "XYZ");
+        var orderId = await service.UpdateReservationStatusAsync(id: 1, status: "XYZ");
 
-        Assert.False(ok);
+        Assert.Null(orderId);
     }
 
     [Fact]
@@ -702,13 +711,13 @@ public class ReservationServicePostTests
         var mapperMock = CreateMapperMock();
         var service = new ReservationService(context, mapperMock.Object);
 
-        var ok = await service.UpdateReservationStatusAsync(
+        var orderId = await service.UpdateReservationStatusAsync(
             id: 999,
             status: "CONFIRMED",
-            tableId: 1
+            tableIds: new List<int> { 1 }
         );
 
-        Assert.False(ok);
+        Assert.Null(orderId);
     }
 
     [Fact]
@@ -732,13 +741,13 @@ public class ReservationServicePostTests
         var mapperMock = CreateMapperMock();
         var service = new ReservationService(context, mapperMock.Object);
 
-        var ok = await service.UpdateReservationStatusAsync(
+        var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
             status: "CONFIRMED",
-            tableId: 999
+            tableIds: new List<int> { 999 }
         );
 
-        Assert.False(ok);
+        Assert.Null(orderId);
     }
 
     [Fact]
@@ -776,13 +785,13 @@ public class ReservationServicePostTests
         var mapperMock = CreateMapperMock();
         var service = new ReservationService(context, mapperMock.Object);
 
-        var ok = await service.UpdateReservationStatusAsync(
+        var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
             status: "CANCELLED",
-            tableId: null
+            tableIds: null
         );
 
-        Assert.True(ok);
+        Assert.Null(orderId);
         var table = await context.DiningTables.FindAsync(1);
         Assert.Equal("AVAILABLE", table!.Status);
 
