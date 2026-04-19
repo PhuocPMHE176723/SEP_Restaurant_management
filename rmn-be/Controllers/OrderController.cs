@@ -264,6 +264,8 @@ public class OrderController : BaseController
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
+            var now = DateTimeHelper.VietnamNow();
+
             // 1. Get or Create Customer
             var customer = await _context.Customers.FirstOrDefaultAsync(c =>
                 c.Phone == request.Phone
@@ -275,7 +277,7 @@ public class OrderController : BaseController
                 {
                     FullName = request.Name,
                     Phone = request.Phone,
-                    CreatedAt = DateTimeHelper.VietnamNow(),
+                    CreatedAt = now,
                 };
                 _context.Customers.Add(customer);
                 await _context.SaveChangesAsync();
@@ -301,7 +303,7 @@ public class OrderController : BaseController
 
             // 5. Create Order (Link to the first/primary table)
             var orderCode =
-                $"WALK-{DateTimeHelper.VietnamNow():yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
+                $"WALK-{now:yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
             var order = new Order
             {
                 OrderCode = orderCode,
@@ -309,12 +311,25 @@ public class OrderController : BaseController
                 CustomerId = customer.CustomerId,
                 OrderType = "DINE_IN",
                 Status = "OPEN",
-                OpenedAt = DateTimeHelper.VietnamNow(),
+                OpenedAt = now,
                 CreatedByStaffId = staff?.StaffId,
                 Note = noteWithTables,
             };
 
             _context.Orders.Add(order);
+
+            // Persist all selected tables into OrderTables (n-n)
+            foreach (var tId in request.TableIds.Distinct())
+            {
+                _context.OrderTables.Add(
+                    new SEP_Restaurant_management.Core.Models.OrderTable
+                    {
+                        Order = order,
+                        TableId = tId,
+                        AssignedAt = now,
+                    }
+                );
+            }
 
             // 6. Update ALL Table Statuses to OCCUPIED
             foreach (var table in tables)

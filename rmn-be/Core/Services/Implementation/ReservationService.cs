@@ -341,6 +341,17 @@ public class ReservationService : IReservationService
         // 1. Handle Table Assignment & Status Sync
         if (tableIds != null && tableIds.Any())
         {
+            var distinctTableIds = tableIds.Distinct().ToList();
+            var requestedTables = await _context
+                .DiningTables.Where(t => distinctTableIds.Contains(t.TableId))
+                .ToListAsync();
+
+            // If any table is missing, treat request as invalid
+            if (requestedTables.Count != distinctTableIds.Count)
+            {
+                return null;
+            }
+
             // Release existing tables
             var existingTables = await _context
                 .ReservationTables.Where(rt => rt.ReservationId == id)
@@ -357,17 +368,13 @@ public class ReservationService : IReservationService
             _context.ReservationTables.RemoveRange(existingTables);
 
             // Add new tables
-            foreach (var tId in tableIds)
+            foreach (var table in requestedTables)
             {
-                var table = await _context.DiningTables.FindAsync(tId);
-                if (table == null)
-                    continue;
-
                 _context.ReservationTables.Add(
                     new ReservationTable
                     {
                         ReservationId = id,
-                        TableId = tId,
+                        TableId = table.TableId,
                         AssignedAt = DateTimeHelper.VietnamNow(),
                     }
                 );
@@ -399,6 +406,20 @@ public class ReservationService : IReservationService
                 var table = await _context.DiningTables.FindAsync(at.TableId);
                 if (table != null)
                     table.Status = "AVAILABLE";
+            }
+        }
+        else if (status.ToUpper() == "CHECKED_IN")
+        {
+            // No explicit tableIds provided; keep existing assignment and mark them occupied
+            var associatedTables = await _context
+                .ReservationTables.Where(rt => rt.ReservationId == id)
+                .ToListAsync();
+
+            foreach (var at in associatedTables)
+            {
+                var table = await _context.DiningTables.FindAsync(at.TableId);
+                if (table != null)
+                    table.Status = "OCCUPIED";
             }
         }
 
@@ -510,7 +531,9 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
-        return order?.OrderId ?? 0;
+
+        // Only return order id for CHECKED_IN (used by FE redirect to checkout)
+        return status.ToUpper() == "CHECKED_IN" ? (order?.OrderId ?? 0) : 0;
     }
 
     public async Task<bool> UpdateReservationItemsAsync(

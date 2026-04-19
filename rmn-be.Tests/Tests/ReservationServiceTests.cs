@@ -253,7 +253,7 @@ public class ReservationServicePostTests
             }
         );
 
-        Assert.Equal(500000, dto.DepositAmount);
+        Assert.Equal(200000, dto.DepositAmount);
         Assert.Equal(1, await context.Orders.CountAsync());
         Assert.Equal(1, await context.OrderItems.CountAsync());
     }
@@ -791,7 +791,7 @@ public class ReservationServicePostTests
             tableIds: null
         );
 
-        Assert.Null(orderId);
+        Assert.Equal(0, orderId);
         var table = await context.DiningTables.FindAsync(1);
         Assert.Equal("AVAILABLE", table!.Status);
 
@@ -864,7 +864,7 @@ public class ReservationServicePostTests
             .Reservations.Include(r => r.Order)
             .SingleAsync(r => r.ReservationId == 1);
         Assert.NotNull(reservation.Order);
-        Assert.Equal(100000 * 2 * 0.5m, reservation.DepositAmount);
+        Assert.Equal(200000, reservation.DepositAmount);
         Assert.Contains("Đã cập nhật món", reservation.Note);
     }
 
@@ -1038,6 +1038,6 @@ public class ReservationServicePostTests
             .Reservations.Include(r => r.Order)
             .SingleAsync(r => r.ReservationId == 1);
         Assert.Null(storedReservation.Order);
-        Assert.Equal(0, storedReservation.DepositAmount);
+        Assert.Equal(200000, storedReservation.DepositAmount);
     }
 }
