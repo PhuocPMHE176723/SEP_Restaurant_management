@@ -63,6 +63,12 @@ public class OrderController : BaseController
                     .Where(n => !string.IsNullOrWhiteSpace(n))
                     .ToList();
 
+                var tableIds = o.OrderTables.Select(ot => ot.TableId).Distinct().ToList();
+                if (tableIds.Count == 0 && o.TableId.HasValue)
+                {
+                    tableIds.Add(o.TableId.Value);
+                }
+
                 var fallbackName = o.Table != null ? o.Table.TableCode : null;
                 var displayTableName =
                     tableNames.Count > 0 ? string.Join(", ", tableNames!) : fallbackName;
@@ -73,6 +79,7 @@ public class OrderController : BaseController
                     OrderCode = o.OrderCode,
                     Status = o.Status,
                     TableId = o.TableId,
+                    TableIds = tableIds,
                     TableName = displayTableName,
                     OrderType = o.OrderType,
                     CustomerName = o.Customer != null ? o.Customer.FullName : null,
@@ -121,6 +128,12 @@ public class OrderController : BaseController
             .OrderTables.Select(ot => ot.DiningTable != null ? ot.DiningTable.TableCode : null)
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .ToList();
+
+        var tableIds = order.OrderTables.Select(ot => ot.TableId).Distinct().ToList();
+        if (tableIds.Count == 0 && order.TableId.HasValue)
+        {
+            tableIds.Add(order.TableId.Value);
+        }
         var fallbackTableName = order.Table?.TableCode;
         var displayName = tableNames.Count > 0 ? string.Join(", ", tableNames!) : fallbackTableName;
 
@@ -130,6 +143,7 @@ public class OrderController : BaseController
             OrderCode = order.OrderCode,
             Status = order.Status,
             TableId = order.TableId,
+            TableIds = tableIds,
             TableName = displayName,
             OrderType = order.OrderType,
             CustomerName = order.Customer?.FullName,
@@ -247,7 +261,8 @@ public class OrderController : BaseController
             UnitPrice = menuItem.BasePrice,
             ItemNameSnapshot = menuItem.ItemName,
             Note = request.Note,
-            Status = "PENDING",
+            // Only show in kitchen after explicit confirmation
+            Status = "WAIT_CONFIRM",
             CreatedAt = DateTimeHelper.VietnamNow(),
         };
 
@@ -645,12 +660,45 @@ public class OrderController : BaseController
 
             var primaryOrder = await _context
                 .Orders.Include(o => o.Table)
+                .Include(o => o.OrderTables)
                 .FirstOrDefaultAsync(o => o.OrderId == request.PrimaryOrderId);
 
             if (primaryOrder == null)
                 return NotFoundResponse("Primary order not found.");
             if (primaryOrder.Status == "CLOSED" || primaryOrder.Status == "CANCELLED")
                 return Failure("Primary order cannot be closed or cancelled.");
+
+            var now = DateTimeHelper.VietnamNow();
+
+            // Ensure primary order has an OrderTable row for its primary TableId (back-compat)
+            if (primaryOrder.TableId.HasValue)
+            {
+                var hasPrimaryTableLink = primaryOrder.OrderTables.Any(ot =>
+                    ot.TableId == primaryOrder.TableId.Value
+                );
+                if (!hasPrimaryTableLink)
+                {
+                    _context.OrderTables.Add(
+                        new OrderTable
+                        {
+                            OrderId = primaryOrder.OrderId,
+                            TableId = primaryOrder.TableId.Value,
+                            AssignedAt = now,
+                        }
+                    );
+                }
+            }
+
+            // Track current primary tables
+            var primaryTableIds = new HashSet<int>(
+                primaryOrder
+                    .OrderTables.Select(ot => ot.TableId)
+                    .Concat(
+                        primaryOrder.TableId.HasValue
+                            ? new[] { primaryOrder.TableId.Value }
+                            : Array.Empty<int>()
+                    )
+            );
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
@@ -663,12 +711,49 @@ public class OrderController : BaseController
                 var secondaryOrder = await _context
                     .Orders.Include(o => o.OrderItems)
                     .Include(o => o.Table)
+                    .Include(o => o.OrderTables)
                     .FirstOrDefaultAsync(o => o.OrderId == secondaryId);
 
                 if (secondaryOrder == null)
                     continue;
                 if (secondaryOrder.Status == "CLOSED" || secondaryOrder.Status == "CANCELLED")
                     continue;
+
+                // Move table links (OrderTables) to primary order
+                var secondaryTableIds = secondaryOrder
+                    .OrderTables.Select(ot => ot.TableId)
+                    .Distinct()
+                    .ToList();
+                if (secondaryTableIds.Count == 0 && secondaryOrder.TableId.HasValue)
+                {
+                    secondaryTableIds.Add(secondaryOrder.TableId.Value);
+                }
+
+                foreach (var tableId in secondaryTableIds)
+                {
+                    if (primaryTableIds.Contains(tableId))
+                        continue;
+
+                    _context.OrderTables.Add(
+                        new OrderTable
+                        {
+                            OrderId = primaryOrder.OrderId,
+                            TableId = tableId,
+                            AssignedAt = now,
+                        }
+                    );
+                    primaryTableIds.Add(tableId);
+
+                    var table = await _context.DiningTables.FindAsync(tableId);
+                    if (table != null)
+                        table.Status = "OCCUPIED";
+                }
+
+                // Remove old links from secondary order to avoid stale associations
+                if (secondaryOrder.OrderTables.Count > 0)
+                {
+                    _context.OrderTables.RemoveRange(secondaryOrder.OrderTables);
+                }
 
                 // Move items
                 foreach (var item in secondaryOrder.OrderItems)
@@ -689,18 +774,6 @@ public class OrderController : BaseController
                     ? $"Merged into {primaryOrder.OrderCode} (Table {primaryOrder.Table?.TableCode})"
                     : $"{secondaryOrder.Note} | Merged into {primaryOrder.OrderCode}";
 
-                // Free table if different and table is set
-                if (
-                    secondaryOrder.TableId.HasValue
-                    && secondaryOrder.TableId != primaryOrder.TableId
-                )
-                {
-                    var table = await _context.DiningTables.FindAsync(secondaryOrder.TableId);
-                    // Only free the table if it's currently occupied. If there's another active order on the same table, it shouldn't realistically happen.
-                    if (table != null)
-                        table.Status = "AVAILABLE";
-                }
-
                 // Add history
                 _context.OrderStatusHistories.Add(
                     new OrderStatusHistory
@@ -709,7 +782,7 @@ public class OrderController : BaseController
                         OldStatus = "OPEN/SERVED",
                         NewStatus = "CANCELLED",
                         ChangedByStaffId = staff?.StaffId,
-                        ChangedAt = DateTimeHelper.VietnamNow(),
+                        ChangedAt = now,
                         Note = $"Merged into order {primaryOrder.OrderCode}",
                     }
                 );
@@ -723,7 +796,7 @@ public class OrderController : BaseController
                     OldStatus = primaryOrder.Status,
                     NewStatus = primaryOrder.Status,
                     ChangedByStaffId = staff?.StaffId,
-                    ChangedAt = DateTimeHelper.VietnamNow(),
+                    ChangedAt = now,
                     Note = "Received merged orders",
                 }
             );

@@ -268,7 +268,7 @@ export default function OrderDetailModal({
                                 : item.status === "COOKING"
                                   ? "Đang nấu"
                                   : item.status === "WAIT_CONFIRM"
-                                    ? "Khách chọn"
+                                    ? "Chờ duyệt"
                                     : "Chờ"}
                             </span>
                           </td>

@@ -105,14 +105,6 @@ export default function CashierReservationsPage() {
       });
       await fetchReservations(); // Refresh data
 
-      if (status === "CHECKED_IN") {
-        const reservation = reservations.find((r) => r.reservationId === id);
-        if (reservation?.order?.orderId) {
-          window.location.href = `/cashier/orders?orderId=${reservation.order.orderId}`;
-          return;
-        }
-      }
-
       Swal.fire({
         title: "Thành công",
         text: "Cập nhật trạng thái thành công!",
@@ -300,7 +292,7 @@ export default function CashierReservationsPage() {
                     onClick={() => requestSort("partySize")}
                     style={{ cursor: "pointer", textAlign: "center" }}
                   >
-                    Số người {getSortIcon("partySize")}
+                    Số người / Bàn {getSortIcon("partySize")}
                   </th>
                   <th
                     onClick={() => requestSort("reservedAt")}
@@ -335,7 +327,20 @@ export default function CashierReservationsPage() {
                       <td>#{reservation.reservationId}</td>
                       <td>{reservation.customerName}</td>
                       <td>{reservation.customerPhone}</td>
-                      <td>{reservation.partySize}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <div style={{ fontWeight: 700 }}>
+                          {reservation.partySize}
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                          {Math.max(
+                            1,
+                            reservation.totalTables ??
+                              reservation.tableIds?.length ??
+                              1,
+                          )}{" "}
+                          bàn
+                        </div>
+                      </td>
                       <td>
                         {new Date(reservation.reservedAt).toLocaleString(
                           "vi-VN",
@@ -380,24 +385,6 @@ export default function CashierReservationsPage() {
                               }
                             >
                               Xác nhận
-                            </button>
-                          )}
-                          {reservation.status === "CONFIRMED" && (
-                            <button
-                              className={styles.btnPrimary}
-                              style={{
-                                backgroundColor: "#0ea5e9",
-                                borderColor: "#0ea5e9",
-                              }}
-                              onClick={() =>
-                                handleStatusUpdate(
-                                  reservation.reservationId,
-                                  "CHECKED_IN",
-                                  reservation.tableIds,
-                                )
-                              }
-                            >
-                              Check-in
                             </button>
                           )}
                           {(reservation.status === "PENDING" ||

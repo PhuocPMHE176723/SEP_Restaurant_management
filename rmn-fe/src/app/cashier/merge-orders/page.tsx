@@ -31,19 +31,25 @@ export default function CashierMergeOrdersPage() {
         orderApi.getAllOrders(),
       ]);
 
-      const tablesWithOrders: TableWithOrder[] = (tablesData || []).map((table) => {
-        const currentOrder = Array.isArray(ordersData)
-          ? ordersData.find(
-              (order) =>
-                (order.tableId === table.tableId || order.tableName === (table.tableName || table.tableCode)) &&
-                (order.status === "OPEN" || order.status === "SENT_TO_KITCHEN" || order.status === "SERVED"),
-            )
-          : undefined;
-        return {
-          ...table,
-          currentOrder,
-        };
-      });
+      const tablesWithOrders: TableWithOrder[] = (tablesData || []).map(
+        (table) => {
+          const currentOrder = Array.isArray(ordersData)
+            ? ordersData.find(
+                (order) =>
+                  ((order.tableIds?.includes(table.tableId) ?? false) ||
+                    order.tableId === table.tableId ||
+                    order.tableName === (table.tableName || table.tableCode)) &&
+                  (order.status === "OPEN" ||
+                    order.status === "SENT_TO_KITCHEN" ||
+                    order.status === "SERVED"),
+              )
+            : undefined;
+          return {
+            ...table,
+            currentOrder,
+          };
+        },
+      );
 
       setTables(tablesWithOrders);
       setLoading(false);
@@ -56,19 +62,27 @@ export default function CashierMergeOrdersPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "AVAILABLE": return "Trống";
-      case "OCCUPIED": return "Có khách";
-      case "RESERVED": return "Đã đặt";
-      default: return status;
+      case "AVAILABLE":
+        return "Trống";
+      case "OCCUPIED":
+        return "Có khách";
+      case "RESERVED":
+        return "Đã đặt";
+      default:
+        return status;
     }
   };
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "AVAILABLE": return styles.badgeAvailable;
-      case "OCCUPIED": return styles.badgeOccupied;
-      case "RESERVED": return styles.badgeReserved;
-      default: return styles.badgeInactive;
+      case "AVAILABLE":
+        return styles.badgeAvailable;
+      case "OCCUPIED":
+        return styles.badgeOccupied;
+      case "RESERVED":
+        return styles.badgeReserved;
+      default:
+        return styles.badgeInactive;
     }
   };
 
@@ -78,7 +92,10 @@ export default function CashierMergeOrdersPage() {
 
   const handleSelectTable = (table: TableWithOrder) => {
     if (!canBeMerged(table)) {
-      showWarning("Không hợp lệ", "Chỉ có thể chọn bàn đang có order (có khách).");
+      showWarning(
+        "Không hợp lệ",
+        "Chỉ có thể chọn bàn đang có order (có khách).",
+      );
       return;
     }
 
@@ -90,9 +107,13 @@ export default function CashierMergeOrdersPage() {
       setSecondaryTables([]);
     } else {
       // Toggle secondary table
-      const isAlreadySecondary = secondaryTables.some(t => t.tableId === table.tableId);
+      const isAlreadySecondary = secondaryTables.some(
+        (t) => t.tableId === table.tableId,
+      );
       if (isAlreadySecondary) {
-        setSecondaryTables(secondaryTables.filter(t => t.tableId !== table.tableId));
+        setSecondaryTables(
+          secondaryTables.filter((t) => t.tableId !== table.tableId),
+        );
       } else {
         setSecondaryTables([...secondaryTables, table]);
       }
@@ -101,21 +122,30 @@ export default function CashierMergeOrdersPage() {
 
   const handleMerge = async () => {
     if (!primaryTable) {
-      showError("Chưa chọn bàn chính", "Vui lòng chọn bàn chính (bàn gộp vào).");
+      showError(
+        "Chưa chọn bàn chính",
+        "Vui lòng chọn bàn chính (bàn gộp vào).",
+      );
       return;
     }
     if (secondaryTables.length === 0) {
-      showError("Chưa chọn bàn gộp", "Vui lòng chọn ít nhất một bàn để gộp vào bàn chính.");
+      showError(
+        "Chưa chọn bàn gộp",
+        "Vui lòng chọn ít nhất một bàn để gộp vào bàn chính.",
+      );
       return;
     }
 
     try {
       await orderApi.mergeOrders({
         primaryOrderId: primaryTable.currentOrder!.orderId,
-        secondaryOrderIds: secondaryTables.map(t => t.currentOrder!.orderId)
+        secondaryOrderIds: secondaryTables.map((t) => t.currentOrder!.orderId),
       });
 
-      showSuccess("Thành công", `Đã gộp ${secondaryTables.length} bàn vào bàn ${primaryTable.tableName || primaryTable.tableCode}`);
+      showSuccess(
+        "Thành công",
+        `Đã gộp ${secondaryTables.length} bàn vào bàn ${primaryTable.tableName || primaryTable.tableCode}`,
+      );
 
       setPrimaryTable(null);
       setSecondaryTables([]);
@@ -126,9 +156,10 @@ export default function CashierMergeOrdersPage() {
     }
   };
 
-  const filteredTables = tables.filter(t => 
-    t.tableName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.tableCode.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTables = tables.filter(
+    (t) =>
+      t.tableName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.tableCode.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -145,44 +176,62 @@ export default function CashierMergeOrdersPage() {
       {loading ? (
         <div className={styles.spinner} />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "1.5rem", alignItems: "start" }}>
-          <div className={styles.card} style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 350px",
+            gap: "1.5rem",
+            alignItems: "start",
+          }}
+        >
+          <div className={styles.card} style={{ padding: "1.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Sơ đồ bàn</h3>
-              <input 
-                type="text" 
-                className={styles.input} 
-                placeholder="Tìm mã bàn..." 
-                style={{ width: '200px' }}
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Tìm mã bàn..."
+                style={{ width: "200px" }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
-              gap: '1rem',
-              maxHeight: 'calc(100vh - 300px)',
-              overflowY: 'auto',
-              padding: '0.5rem'
-            }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                gap: "1rem",
+                maxHeight: "calc(100vh - 300px)",
+                overflowY: "auto",
+                padding: "0.5rem",
+              }}
+            >
               {filteredTables.map((table) => {
                 const isPrimary = primaryTable?.tableId === table.tableId;
-                const isSecondary = secondaryTables.some(t => t.tableId === table.tableId);
-                
+                const isSecondary = secondaryTables.some(
+                  (t) => t.tableId === table.tableId,
+                );
+
                 let opacity = 1;
-                let border = '1px solid #e2e8f0';
-                let bg = 'white';
-                
+                let border = "1px solid #e2e8f0";
+                let bg = "white";
+
                 if (!canBeMerged(table)) {
                   opacity = 0.4;
                 } else if (isPrimary) {
-                  border = '3px solid #3b82f6';
-                  bg = '#eff6ff';
+                  border = "3px solid #3b82f6";
+                  bg = "#eff6ff";
                 } else if (isSecondary) {
-                  border = '3px solid #f97316';
-                  bg = '#fff7ed';
+                  border = "3px solid #f97316";
+                  bg = "#fff7ed";
                 }
 
                 return (
@@ -195,90 +244,232 @@ export default function CashierMergeOrdersPage() {
                       border,
                       background: bg,
                       transition: "all 0.2s",
-                      padding: '1rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem'
+                      padding: "1rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
                     }}
                     onClick={() => handleSelectTable(table)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{table.tableName || table.tableCode}</span>
-                      <span className={`${styles.badge} ${getStatusClass(table.status)}`} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, fontSize: "1rem" }}>
+                        {table.tableName || table.tableCode}
+                      </span>
+                      <span
+                        className={`${styles.badge} ${getStatusClass(table.status)}`}
+                        style={{
+                          fontSize: "0.65rem",
+                          padding: "0.2rem 0.5rem",
+                        }}
+                      >
                         {getStatusText(table.status)}
                       </span>
                     </div>
-                    
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                      {table.capacity} chỗ • {table.currentOrder ? `Đơn: ${table.currentOrder.orderCode}` : 'Bàn trống'}
+
+                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                      {table.capacity} chỗ •{" "}
+                      {table.currentOrder
+                        ? `Đơn: ${table.currentOrder.orderCode}`
+                        : "Bàn trống"}
                     </div>
 
-                    {isPrimary && <div style={{ background: '#3b82f6', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>BÀN CHÍNH</div>}
-                    {isSecondary && <div style={{ background: '#f97316', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>BÀN GỘP (+1)</div>}
+                    {isPrimary && (
+                      <div
+                        style={{
+                          background: "#3b82f6",
+                          color: "#fff",
+                          fontSize: "0.65rem",
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          width: "fit-content",
+                        }}
+                      >
+                        BÀN CHÍNH
+                      </div>
+                    )}
+                    {isSecondary && (
+                      <div
+                        style={{
+                          background: "#f97316",
+                          color: "#fff",
+                          fontSize: "0.65rem",
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          width: "fit-content",
+                        }}
+                      >
+                        BÀN GỘP (+1)
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ position: 'sticky', top: '1.5rem' }}>
-            <div className={styles.card} style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+          <div style={{ position: "sticky", top: "1.5rem" }}>
+            <div className={styles.card} style={{ padding: "1.5rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.5rem",
+                  borderBottom: "1px solid #f1f5f9",
+                  paddingBottom: "0.75rem",
+                }}
+              >
                 <Layers size={18} color="#3b82f6" />
                 <h3 style={{ margin: 0 }}>Tiến hành gộp hóa đơn</h3>
               </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ 
-                  padding: '1rem', 
-                  borderRadius: '12px', 
-                  backgroundColor: primaryTable ? '#eff6ff' : '#f8fafc',
-                  border: primaryTable ? '2px solid #3b82f6' : '2px dashed #e2e8f0'
-                }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>BÀN CHÍNH (Sẽ giữ lại hóa đơn)</div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.25rem",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    backgroundColor: primaryTable ? "#eff6ff" : "#f8fafc",
+                    border: primaryTable
+                      ? "2px solid #3b82f6"
+                      : "2px dashed #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      color: "#64748b",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    BÀN CHÍNH (Sẽ giữ lại hóa đơn)
+                  </div>
                   {primaryTable ? (
                     <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>{primaryTable.tableName}</div>
-                      <div style={{ fontSize: '0.85rem', color: '#3b82f6' }}>{primaryTable.currentOrder?.customerName || 'Khách lẻ'}</div>
+                      <div
+                        style={{
+                          fontSize: "1.1rem",
+                          fontWeight: 800,
+                          color: "#1e40af",
+                        }}
+                      >
+                        {primaryTable.tableName}
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#3b82f6" }}>
+                        {primaryTable.currentOrder?.customerName || "Khách lẻ"}
+                      </div>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Chạm vào 1 bàn đang có khách làm bàn chính</div>
+                    <div style={{ fontSize: "0.85rem", color: "#94a3b8" }}>
+                      Chạm vào 1 bàn đang có khách làm bàn chính
+                    </div>
                   )}
                 </div>
 
-                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#cbd5e1' }}>+</div>
+                <div
+                  style={{
+                    textAlign: "center",
+                    fontSize: "1.5rem",
+                    color: "#cbd5e1",
+                  }}
+                >
+                  +
+                </div>
 
-                <div style={{ 
-                  padding: '1rem', 
-                  borderRadius: '12px', 
-                  backgroundColor: secondaryTables.length > 0 ? '#fff7ed' : '#f8fafc',
-                  border: secondaryTables.length > 0 ? '2px solid #f97316' : '2px dashed #e2e8f0'
-                }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>CÁC BÀN GỘP (Sẽ dồn món sang bàn chính)</div>
+                <div
+                  style={{
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    backgroundColor:
+                      secondaryTables.length > 0 ? "#fff7ed" : "#f8fafc",
+                    border:
+                      secondaryTables.length > 0
+                        ? "2px solid #f97316"
+                        : "2px dashed #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      color: "#64748b",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    CÁC BÀN GỘP (Sẽ dồn món sang bàn chính)
+                  </div>
                   {secondaryTables.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      {secondaryTables.map(t => (
-                        <div key={t.tableId} style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c2410c', background: '#ffe4e6', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      {secondaryTables.map((t) => (
+                        <div
+                          key={t.tableId}
+                          style={{
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "#c2410c",
+                            background: "#ffe4e6",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                          }}
+                        >
                           {t.tableName}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Chạm vào các bàn khác để gộp vào bàn chính</div>
+                    <div style={{ fontSize: "0.85rem", color: "#94a3b8" }}>
+                      Chạm vào các bàn khác để gộp vào bàn chính
+                    </div>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                  <button 
-                    className={styles.btnPrimary} 
-                    style={{ padding: '0.85rem', fontSize: '0.9rem', background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', border: 'none' }}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <button
+                    className={styles.btnPrimary}
+                    style={{
+                      padding: "0.85rem",
+                      fontSize: "0.9rem",
+                      background:
+                        "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                      border: "none",
+                    }}
                     onClick={handleMerge}
                   >
                     Xác nhận gộp hóa đơn
                   </button>
-                  <button 
+                  <button
                     className={styles.btnSecondary}
-                    onClick={() => { setPrimaryTable(null); setSecondaryTables([]); }}
+                    onClick={() => {
+                      setPrimaryTable(null);
+                      setSecondaryTables([]);
+                    }}
                   >
                     Làm mới lựa chọn
                   </button>

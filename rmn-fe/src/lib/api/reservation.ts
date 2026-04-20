@@ -63,6 +63,8 @@ export interface TableAvailability {
 export interface ReservationDTO {
     reservationId: number;
     customerId?: number | null;
+    totalTables?: number;
+    tableIds?: number[];
     tableId?: number | null;
     customerName: string;
     customerPhone: string;

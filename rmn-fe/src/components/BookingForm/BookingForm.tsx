@@ -6,8 +6,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   createReservation,
   getPublicMenuItems,
+  getPublicTableAvailability,
   type MenuItem,
   type OrderItemRequest,
+  type TableAvailability,
 } from "../../lib/api/reservation";
 import {
   getSepayConfig,
@@ -92,9 +94,36 @@ function buildSeatingPlan(partySize: number): SeatingPlan {
   return best;
 }
 
+function pickTablesFromAvailability(
+  list: TableAvailability[],
+  requestedTables: number,
+  partySize: number,
+): TableAvailability[] {
+  const available = list
+    .filter((t) => t.isAvailable)
+    .sort(
+      (a, b) =>
+        a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode),
+    );
+
+  const picked: TableAvailability[] = [];
+  let totalSeats = 0;
+  for (const t of available) {
+    if (picked.length >= requestedTables) break;
+    picked.push(t);
+    totalSeats += t.capacity;
+  }
+
+  if (picked.length < requestedTables) return [];
+  if (totalSeats < partySize) return [];
+  return picked;
+}
+
 export default function BookingForm() {
   const { user, isLoggedIn } = useAuth();
   const [mounted, setMounted] = useState(false);
+
+  const DEFAULT_PARTY_SIZE = 2;
 
   const today = new Date();
   const minDate = today.toISOString().split("T")[0];
@@ -105,7 +134,7 @@ export default function BookingForm() {
   const [form, setForm] = useState({
     date: "",
     timeSlot: "",
-    partySize: 8,
+    partySize: DEFAULT_PARTY_SIZE,
     phone: "",
     email: "",
     note: "",
@@ -120,7 +149,9 @@ export default function BookingForm() {
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [bookingMode, setBookingMode] = useState<"party" | "table">("party");
+  const [bookingMode, setBookingMode] = useState<"party" | "table" | null>(
+    null,
+  );
 
   const [sepayConfig, setSepayConfig] = useState<{
     account: string;
@@ -232,7 +263,7 @@ export default function BookingForm() {
   );
 
   const [tableCount, setTableCount] = useState<number>(() => {
-    const initialPlan = buildSeatingPlan(8);
+    const initialPlan = buildSeatingPlan(DEFAULT_PARTY_SIZE);
     return Math.max(1, initialPlan.totalTables || 1);
   });
   const [tableCountTouched, setTableCountTouched] = useState(false);
@@ -242,7 +273,7 @@ export default function BookingForm() {
   }, [suggestedTables, tableCountTouched]);
 
   useEffect(() => {
-    if (bookingMode === "party") {
+    if (bookingMode === "party" || bookingMode === null) {
       setTableCountTouched(false);
       setTableCount(suggestedTables);
     } else {
@@ -315,6 +346,11 @@ export default function BookingForm() {
     const e: { [key: string]: string } = {};
     const missingNames: string[] = [];
 
+    if (!bookingMode) {
+      e.bookingMode = "Vui lòng chọn: đặt theo số khách hoặc theo số bàn";
+      missingNames.push("Cách đặt");
+    }
+
     if (!isLoggedIn) {
       e.auth = "Vui lòng đăng nhập để đặt bàn";
     }
@@ -352,18 +388,22 @@ export default function BookingForm() {
       e.email = "Email không hợp lệ";
     }
 
-    if (form.partySize < 1) {
-      e.partySize = "Số khách phải từ 1 trở lên";
-      missingNames.push("Số lượng khách");
-    } else if (form.partySize > MAX_PARTY_SIZE) {
-      e.partySize = `Tối đa ${MAX_PARTY_SIZE} khách mỗi lần đặt`;
+    if (bookingMode === "party") {
+      if (form.partySize < 1) {
+        e.partySize = "Số khách phải từ 1 trở lên";
+        missingNames.push("Số lượng khách");
+      } else if (form.partySize > MAX_PARTY_SIZE) {
+        e.partySize = `Tối đa ${MAX_PARTY_SIZE} khách mỗi lần đặt`;
+      }
     }
 
-    if (tableCount < 1) {
-      e.totalTables = "Số lượng bàn phải từ 1 trở lên";
-      missingNames.push("Số lượng bàn");
-    } else if (tableCount > MAX_TABLES) {
-      e.totalTables = `Tối đa ${MAX_TABLES} bàn mỗi lần đặt`;
+    if (bookingMode === "table") {
+      if (tableCount < 1) {
+        e.totalTables = "Số lượng bàn phải từ 1 trở lên";
+        missingNames.push("Số lượng bàn");
+      } else if (tableCount > MAX_TABLES) {
+        e.totalTables = `Tối đa ${MAX_TABLES} bàn mỗi lần đặt`;
+      }
     }
 
     if (missingNames.length > 0) {
@@ -403,13 +443,38 @@ export default function BookingForm() {
 
       const noteCombined = [phoneLine, form.note].filter(Boolean).join("\n");
 
+      // Auto-assign tables based on requested table count and party size
+      const availability = await getPublicTableAvailability(
+        form.date,
+        form.timeSlot,
+      );
+      const partySizeForPicking = bookingMode === "table" ? 0 : form.partySize;
+      const pickedTables = pickTablesFromAvailability(
+        availability,
+        tableCount,
+        partySizeForPicking,
+      );
+      if (pickedTables.length === 0) {
+        throw new Error(
+          "Không đủ bàn trống phù hợp cho số bàn/số khách đã chọn. Vui lòng thử giờ khác hoặc giảm số bàn.",
+        );
+      }
+      const tableIds = pickedTables.map((t) => t.tableId);
+      const maxSeats = pickedTables.reduce(
+        (sum, t) => sum + (t.capacity || 0),
+        0,
+      );
+      const partySizeToSend =
+        bookingMode === "table" ? Math.max(1, maxSeats) : form.partySize;
+
       const result = await createReservation({
         reservedAt,
-        partySize: form.partySize,
+        partySize: partySizeToSend,
         durationMinutes: 90,
         note: noteCombined || undefined,
         contactEmail: form.email || undefined,
         totalTables: tableCount,
+        tableIds,
         menuItems: orderItems,
       });
 
@@ -454,11 +519,12 @@ export default function BookingForm() {
         setForm({
           date: "",
           timeSlot: "",
-          partySize: 8,
+          partySize: DEFAULT_PARTY_SIZE,
           phone: "",
           email: "",
           note: "",
         });
+        setBookingMode(null);
         setSelectedItems(new Map());
       }
     } catch (error: any) {
@@ -539,11 +605,12 @@ export default function BookingForm() {
           setForm({
             date: "",
             timeSlot: "",
-            partySize: 8,
+            partySize: DEFAULT_PARTY_SIZE,
             phone: "",
             email: "",
             note: "",
           });
+          setBookingMode(null);
           setSelectedItems(new Map());
         }
       } catch (err: any) {
@@ -768,7 +835,19 @@ export default function BookingForm() {
           </button>
         </div>
 
-        {bookingMode === "party" ? (
+        {errors.bookingMode && (
+          <p className={styles.error} style={{ marginTop: "0.5rem" }}>
+            {errors.bookingMode}
+          </p>
+        )}
+
+        {bookingMode === null ? (
+          <div className={styles.modePanel}>
+            <p className={styles.hint} style={{ margin: 0 }}>
+              Vui lòng chọn một cách đặt để bắt đầu nhập thông tin.
+            </p>
+          </div>
+        ) : bookingMode === "party" ? (
           <div className={styles.modePanel}>
             <div className={styles.field}>
               <div className={styles.fieldHeaderRow}>
@@ -856,14 +935,19 @@ export default function BookingForm() {
               {errors.totalTables && (
                 <p className={styles.error}>{errors.totalTables}</p>
               )}
+              <p className={styles.hint}>Nhập số bàn bạn muốn đặt/ghép.</p>
               <p className={styles.hint}>
-                Nhập số bàn bạn muốn đặt/ghép. Gợi ý:{" "}
-                <strong>{suggestedTables} bàn</strong> cho {form.partySize}{" "}
-                khách.
+                <strong>Số khách sẽ được tự động đặt</strong> theo tổng sức chứa
+                của các bàn được gán (ví dụ:{" "}
+                <strong>2 bàn ≈ tối đa 8 khách</strong>
+                nếu bàn 4 chỗ).
               </p>
               <p className={styles.hint}>
                 Sau khi check-in, nhân viên/thu ngân sẽ tự ghép bàn trống hoặc
                 chọn thủ công theo nhu cầu.
+              </p>
+              <p className={styles.hint}>
+                Hệ thống sẽ tự gán bàn trống theo ngày/giờ bạn chọn.
               </p>
             </div>
           </div>
