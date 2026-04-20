@@ -14,10 +14,9 @@ const NAV_ITEMS = [
 
   // Order & Bàn
   { href: "/staff/orders", label: "Order tại bàn" },
+  { href: "/staff/serving_list", label: "Danh sách phục vụ" },
   { href: "/staff/dining-tables", label: "Danh sách bàn" },
   { href: "/staff/table-transfer", label: "Chuyển bàn" },
-  // Phục vụ tại bàn
-  { href: "/staff/serving_list", label: "Danh sách phục vụ" },
 
   // Content Management
   { href: "/staff/blog", label: "Quản lý Blog" },
@@ -100,7 +99,7 @@ export default function StaffLayout({
 
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Phục vụ tại bàn</p>
-            {NAV_ITEMS.slice(3, 6).map((item) => (
+            {NAV_ITEMS.slice(3, 7).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -114,7 +113,7 @@ export default function StaffLayout({
 
           <div className={styles.navSection}>
             <p className={styles.navGroup}>Nội dung Website</p>
-            {NAV_ITEMS.slice(6).map((item) => (
+            {NAV_ITEMS.slice(7).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

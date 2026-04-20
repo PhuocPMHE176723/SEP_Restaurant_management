@@ -9,9 +9,7 @@ import styles from "../manager/manager.module.css";
 
 const KITCHEN_NAV = [
   { href: "/kitchen/cooking_list", label: "Danh sách chế biến" },
-  { href: "/kitchen", label: "Bảng điều hành" },
   { href: "/kitchen/history", label: "Lịch sử thực hiện" },
-  { href: "/kitchen/stock-history", label: "Biến động kho" },
   { href: "/kitchen/reports/ingredient-usage", label: "Tiêu hao NL" },
   
 ];
@@ -33,7 +31,7 @@ export default function KitchenLayout({
   useEffect(() => {
     if (!mounted) return;
     if (!isLoggedIn) {
-      router.replace("/login?redirect=/kitchen");
+      router.replace("/login?redirect=/kitchen/cooking_list");
       return;
     }
     const allowed =

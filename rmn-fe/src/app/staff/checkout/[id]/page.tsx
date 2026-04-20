@@ -33,6 +33,7 @@ export default function CheckoutPage() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [qrTimer, setQrTimer] = useState(300); // 5 minutes
+  const [selectedItemIndices, setSelectedItemIndices] = useState<number[]>([]);
 
   useEffect(() => {
     if (orderId) {
@@ -108,7 +109,7 @@ export default function CheckoutPage() {
   const fetchPreview = async (code?: string, points?: number) => {
     try {
       setLoading(true);
-      const data = await invoiceApi.getPreview(orderId, code || discountCode, points ?? pointsToUse);
+      const data = await invoiceApi.getPreview(orderId, code || discountCode, points ?? pointsToUse, getSelectedItemIds());
       setPreview(data);
     } catch (err: any) {
       setError(err.message || "Không thể tải thông tin đơn hàng.");
@@ -116,6 +117,33 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  const getSelectedItemIds = () => {
+      if (!preview) return [];
+      return preview.items
+        .filter((_: any, idx: number) => selectedItemIndices.includes(idx))
+        .map((item: any) => item.orderItemId);
+    };
+  
+    useEffect(() => {
+      if (preview?.items) {
+        setSelectedItemIndices(preview.items.map((_: any, idx: number) => idx));
+      }
+    }, [preview?.orderId]);
+  
+    const handleToggleItem = (idx: number) => {
+      setSelectedItemIndices(prev =>
+        prev.includes(idx)
+          ? prev.filter(i => i !== idx)
+          : [...prev, idx]
+      );
+    };
+  
+    useEffect(() => {
+      if (preview) {
+        fetchPreview();
+      }
+    }, [selectedItemIndices]);
 
   const handleApplyDiscount = async () => {
     if (!discountCode) return;
@@ -156,7 +184,8 @@ export default function CheckoutPage() {
         orderId,
         discountCode: (useVipPackage ? "VIP_PROMO" : (discountCode || undefined)),
         pointsToUse,
-        paidAmount: preview?.amountToPay ?? 0
+        paidAmount: preview?.amountToPay ?? 0,
+        selectedItemIds: getSelectedItemIds(),
       });
       setIsSuccess(true);
       localStorage.removeItem(`qr_start_${orderId}`);
@@ -218,13 +247,14 @@ export default function CheckoutPage() {
           <table className={styles.itemTable}>
             <thead>
               <tr>
+                <th></th>
                 <th>Món ăn</th>
                 <th style={{ textAlign: 'center' }}>SL</th>
                 <th style={{ textAlign: 'right' }}>Đơn giá</th>
                 <th style={{ textAlign: 'right' }}>Thành tiền</th>
               </tr>
             </thead>
-            <tbody>
+            {/* <tbody>
               {preview.items?.map((item: any, idx: number) => (
                 <tr key={idx}>
                   <td className={styles.itemName}>{item.itemNameSnapshot}</td>
@@ -233,6 +263,45 @@ export default function CheckoutPage() {
                   <td style={{ textAlign: 'right' }}>{(item.quantity * item.unitPrice).toLocaleString()}đ</td>
                 </tr>
               ))}
+            </tbody> */}
+            <tbody>
+              {preview.items?.map((item: any, idx: number) => {
+                const checked = selectedItemIndices.includes(idx);
+
+                return (
+                  <tr key={idx} style={{ opacity: checked ? 1 : 0.5 }}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={item.status === "SERVED"}
+                        onChange={() => handleToggleItem(idx)}
+                      />
+                    </td>
+
+                    <td className={styles.itemName}>
+                      {item.itemNameSnapshot}
+                      {item.status === "SERVED" && (
+                        <span style={{ marginLeft: 6, color: 'green', fontSize: 12 }}>
+                          ✓
+                        </span>
+                      )}
+                    </td>
+
+                    <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      {item.unitPrice?.toLocaleString()}đ
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      {checked
+                        ? (item.quantity * item.unitPrice).toLocaleString() + "đ"
+                        : "0đ"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           

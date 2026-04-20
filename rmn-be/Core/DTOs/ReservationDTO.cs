@@ -49,6 +49,7 @@ public class OrderItemDTO
     public decimal UnitPrice { get; set; }
     public string? Status { get; set; }
     public string? Note { get; set; }
+    public string? Thumbnail { get; set; }
 }
 
 public class CreateReservationRequest

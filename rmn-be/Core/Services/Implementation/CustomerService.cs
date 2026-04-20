@@ -306,12 +306,19 @@ namespace rmn_be.Core.Services.Implementation
 
         private OrderDTO MapOrderDTO(Order order)
         {
+            var tableNames = order.OrderTables.ToList();
+
+            var tableDisplay = tableNames.Any()
+                ? string.Join(", ", tableNames)
+                : "Ch?a có bàn";
+
+
             return new OrderDTO
             {
                 OrderId = order.OrderId,
                 OrderCode = order.OrderCode,
                 Status = order.Status,
-                TableName = order.Table?.TableCode ?? order.Table?.TableName,
+                TableName = tableDisplay,
                 CustomerName = order.Customer?.FullName,
                 OpenedAt = order.OpenedAt,
                 ClosedAt = order.ClosedAt,
@@ -332,6 +339,7 @@ namespace rmn_be.Core.Services.Implementation
                         Quantity = i.Quantity,
                         Status = i.Status,
                         UnitPrice = i.UnitPrice,
+                        Thumbnail = i.MenuItem.Thumbnail,
                     })
                     .ToList(),
             };
@@ -391,6 +399,7 @@ namespace rmn_be.Core.Services.Implementation
                                     Quantity = i.Quantity,
                                     Status = i.Status,
                                     UnitPrice = i.UnitPrice,
+                                    Thumbnail = i.MenuItem.Thumbnail,
                                 })
                                 .ToList(),
                         },

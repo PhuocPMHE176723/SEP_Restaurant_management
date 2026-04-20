@@ -79,6 +79,7 @@ namespace rmn_be.Core.Services.Implementation
             var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
             var orderRepo = _unitOfWork.GetRepository<Order>();
             var tableRepo = _unitOfWork.GetRepository<DiningTable>();
+            var orderTableRepo = _unitOfWork.GetRepository<OrderTable>();
 
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
@@ -102,9 +103,12 @@ namespace rmn_be.Core.Services.Implementation
                 .Where(x => orderIds.Contains(x.OrderId))
                 .ToDictionary(x => x.OrderId, x => x);
 
-            var tableIds = orders.Values
-                .Where(x => x.TableId.HasValue)
-                .Select(x => x.TableId!.Value)
+            var orderTables = (await orderTableRepo.GetAllAsync())
+        .Where(x => orderIds.Contains(x.OrderId))
+        .ToList();
+
+            var tableIds = orderTables
+                .Select(x => x.TableId)
                 .Distinct()
                 .ToList();
 
@@ -123,9 +127,16 @@ namespace rmn_be.Core.Services.Implementation
                     var readyQty = g.Where(x => x.Status == "READY_SERVE").Sum(x => x.Quantity);
                     var servedQty = g.Where(x => x.Status == "SERVED").Sum(x => x.Quantity);
 
-                    var tableName = order.TableId.HasValue && tables.ContainsKey(order.TableId.Value)
-                        ? tables[order.TableId.Value].TableName
-                        : "Mang về";
+                    var tableNames = orderTables
+               .Where(ot => ot.OrderId == g.Key)
+               .Select(ot => tables.ContainsKey(ot.TableId) ? tables[ot.TableId].TableName : null)
+               .Where(name => !string.IsNullOrEmpty(name))
+               .ToList();
+
+                    var tableDisplay = tableNames.Any()
+                ? string.Join(", ", tableNames)
+                : "Mang về";
+
 
                     var orderCode = !string.IsNullOrWhiteSpace(order.OrderCode)
                         ? order.OrderCode
@@ -135,8 +146,8 @@ namespace rmn_be.Core.Services.Implementation
                     {
                         OrderId = order.OrderId,
                         OrderCode = orderCode,
-                        TableNames = tableName,
-                        DisplayLabel = $"{orderCode} - {tableName}",
+                        TableNames = tableDisplay,
+                        DisplayLabel = $"{orderCode} - {tableDisplay}",
                         OrderedQuantity = orderedQuantity,
                         ReadyQuantity = readyQty,
                         ServedQuantity = servedQty,
@@ -159,102 +170,144 @@ namespace rmn_be.Core.Services.Implementation
         {
             if (quantity <= 0) return false;
 
-            var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
+            var repo = _unitOfWork.GetRepository<OrderItem>();
             var orderRepo = _unitOfWork.GetRepository<Order>();
 
             var targetOrder = await orderRepo.GetByIdAsync(orderId);
             if (targetOrder == null) return false;
 
-            // B1: thử lấy READY_SERVE ngay trong order đích trước
-            var targetReadyItems = (await orderItemRepo.FindAsync(x =>
+            //  lấy tất cả item đang READY_SERVE (source)
+            var sourceItems = (await repo.FindAsync(x =>
                     x.ItemId == itemId &&
-                    x.OrderId == orderId &&
                     x.Status == "READY_SERVE"))
                 .OrderBy(x => x.CreatedAt)
                 .ToList();
 
-            var remain = quantity;
+            if (!sourceItems.Any()) return false;
 
-            // Serve trực tiếp từ order đích nếu có
-            foreach (var item in targetReadyItems)
+            var sourceOrderId = sourceItems.First().OrderId;
+
+            // ============================================
+            //  Serve đúng order đang READY_SERVE
+            // ============================================
+            if (sourceOrderId == orderId)
             {
-                if (remain <= 0) break;
+                var remain = quantity;
 
-                if (item.Quantity <= remain)
+                var targetReadyItems = sourceItems
+                    .Where(x => x.OrderId == orderId)
+                    .ToList();
+
+                foreach (var item in targetReadyItems)
+                {
+                    if (remain <= 0) break;
+
+                    if (item.Quantity <= remain)
+                    {
+                        item.Status = "SERVED";
+                        repo.Update(item);
+                        remain -= item.Quantity;
+                    }
+                    else
+                    {
+                        item.Quantity -= remain;
+                        repo.Update(item);
+
+                        await repo.AddAsync(new OrderItem
+                        {
+                            OrderId = orderId,
+                            ItemId = item.ItemId,
+                            Quantity = remain,
+                            UnitPrice = item.UnitPrice,
+                            ItemNameSnapshot = item.ItemNameSnapshot,
+                            Note = item.Note,
+                            Status = "SERVED",
+                            CreatedAt = DateTime.Now
+                        });
+
+                        remain = 0;
+                    }
+                }
+
+                if (remain > 0) return false;
+
+                await _unitOfWork.SaveChangesAsync();
+                return true;
+            }
+
+            // ============================================
+            //  Swap + Serve
+            // ============================================
+
+            // target items (order được chọn)
+            var targetItems = (await repo.FindAsync(x =>
+                    x.ItemId == itemId &&
+                    x.OrderId == orderId &&
+                    x.Status != "SERVED"))
+                .OrderBy(x => x.CreatedAt)
+                .ToList();
+            var PreviousStatus = targetItems
+    .Select(x => x.Status)
+    .FirstOrDefault(x => x != "READY_SERVE") ?? "IN_PROGRESS";
+            if (!targetItems.Any()) return false;
+
+            //  swap source → PreviousStatus
+            foreach (var item in sourceItems)
+            {
+                var prev = PreviousStatus ?? "COOKING"; // fallback nếu null
+
+                PreviousStatus = item.Status; // READY_SERVE
+                item.Status = prev;
+
+                repo.Update(item);
+            }
+
+            //  target → READY_SERVE
+            foreach (var item in targetItems)
+            {
+                var current = item.Status;
+
+                PreviousStatus = current;
+                item.Status = "READY_SERVE";
+
+                repo.Update(item);
+            }
+
+            //  serve từ target
+            var remainAfterSwap = quantity;
+
+            foreach (var item in targetItems.Where(x => x.Status == "READY_SERVE"))
+            {
+                if (remainAfterSwap <= 0) break;
+
+                if (item.Quantity <= remainAfterSwap)
                 {
                     item.Status = "SERVED";
-                    orderItemRepo.Update(item);
-                    remain -= item.Quantity;
+                    repo.Update(item);
+                    remainAfterSwap -= item.Quantity;
                 }
                 else
                 {
-                    item.Quantity -= remain;
-                    orderItemRepo.Update(item);
+                    item.Quantity -= remainAfterSwap;
+                    repo.Update(item);
 
-                    var servedItem = new OrderItem
+                    await repo.AddAsync(new OrderItem
                     {
-                        OrderId = item.OrderId,
+                        OrderId = orderId,
                         ItemId = item.ItemId,
-                        Quantity = remain,
+                        Quantity = remainAfterSwap,
                         UnitPrice = item.UnitPrice,
                         ItemNameSnapshot = item.ItemNameSnapshot,
                         Note = item.Note,
                         Status = "SERVED",
-                        CreatedAt = item.CreatedAt
-                    };
+                        CreatedAt = DateTime.Now
+                    });
 
-                    await orderItemRepo.AddAsync(servedItem);
-                    remain = 0;
+                    remainAfterSwap = 0;
                 }
             }
 
-            // B2: nếu order đích chưa có READY_SERVE thì lấy từ order khác
-            if (remain > 0)
-            {
-                var availableReadyItems = (await orderItemRepo.FindAsync(x =>
-                        x.ItemId == itemId &&
-                        x.Status == "READY_SERVE"))
-                    .OrderBy(x => x.CreatedAt)
-                    .ToList();
-
-                foreach (var sourceItem in availableReadyItems)
-                {
-                    if (remain <= 0) break;
-
-                    var moveQty = Math.Min(sourceItem.Quantity, remain);
-
-                    if (moveQty == sourceItem.Quantity)
-                    {
-                        // chuyển hẳn phần READY_SERVE này sang order đích rồi serve
-                        sourceItem.OrderId = orderId;
-                        sourceItem.Status = "SERVED";
-                        orderItemRepo.Update(sourceItem);
-                    }
-                    else
-                    {
-                        sourceItem.Quantity -= moveQty;
-                        orderItemRepo.Update(sourceItem);
-
-                        var servedItem = new OrderItem
-                        {
-                            OrderId = orderId,
-                            ItemId = sourceItem.ItemId,
-                            Quantity = moveQty,
-                            UnitPrice = sourceItem.UnitPrice,
-                            ItemNameSnapshot = sourceItem.ItemNameSnapshot,
-                            Note = sourceItem.Note,
-                            Status = "SERVED",
-                            CreatedAt = sourceItem.CreatedAt
-                        };
-
-                        await orderItemRepo.AddAsync(servedItem);
-                    }
-
-                    remain -= moveQty;
-                }
-            }
-
-            if (remain > 0) return false;
+            if (remainAfterSwap > 0) return false;
 
             await _unitOfWork.SaveChangesAsync();
             return true;
