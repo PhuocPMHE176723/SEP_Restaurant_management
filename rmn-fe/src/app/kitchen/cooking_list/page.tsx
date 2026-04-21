@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cookingApi, type CookingListItem } from "../../../lib/api/kitchen";
 import styles from "../Kitchen.module.css";
-import { Search, RotateCcw, Plus, Clock, ChefHat } from "lucide-react";
+import { Search, RotateCcw, Plus, Clock, ChefHat, Check } from "lucide-react";
 import { showError, showSuccess } from "../../../lib/ui/alerts";
 
 export default function KitchenPage() {
@@ -165,23 +165,23 @@ export default function KitchenPage() {
 
       <div className={styles.historyContainer} style={{ marginTop: "2rem" }}>
         <div className={styles.historyList}>
+          {/* Header */}
           <div
             className={`${styles.historyItem} ${styles.historyHeader}`}
             style={{
               background: "#f8fafc",
               borderBottom: "2px solid #e2e8f0",
               fontWeight: 700,
-              gridTemplateColumns: "100px minmax(280px, 2.4fr) 1fr 1fr 1fr 180px 180px",
+              // Tùy chỉnh lại lưới Grid: 5 cột (giảm từ 7 cột)
+              gridTemplateColumns: "minmax(250px, 2.5fr) 100px minmax(210px, 2fr) minmax(210px, 2fr) minmax(120px, 1fr)",
               gap: "1rem",
             }}
           >
-            <div>Tổng đặt trước</div>
             <div>Thông tin món</div>
-            <div style={{ textAlign: "center" }}>Cần nấu</div>
-            <div style={{ textAlign: "center" }}>Đang nấu</div>
-            <div style={{ textAlign: "center" }}>Sẵn sàng</div>
-            <div style={{ textAlign: "center" }}>Bắt đầu nấu</div>
-            <div style={{ textAlign: "center" }}>Hoàn tất</div>
+            <div style={{ textAlign: "center" }}>Số lượng đặt trước</div>
+            <div style={{ textAlign: "center" }}>Số lượng cần nấu</div>
+            <div style={{ textAlign: "center" }}>Số lượng đang nấu</div>
+            <div style={{ textAlign: "center" }}>Số lượng sẵn sàng</div>
           </div>
 
           {filteredCookingList.length === 0 ? (
@@ -201,49 +201,13 @@ export default function KitchenPage() {
                   key={item.itemId}
                   className={styles.historyItem}
                   style={{
-                    gridTemplateColumns: "100px minmax(280px, 2.4fr) 1fr 1fr 1fr 180px 180px",
+                    // Áp dụng chung Grid với Header
+                    gridTemplateColumns: "minmax(250px, 2.5fr) 100px minmax(210px, 2fr) minmax(210px, 2fr) minmax(120px, 1fr)",
                     gap: "1rem",
                     alignItems: "center",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <div
-                      style={{
-                        background: "#0f172a",
-                        color: "#fff",
-                        width: "64px",
-                        height: "64px",
-                        borderRadius: "18px",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: "0 8px 18px rgba(15,23,42,0.16)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "8px",
-                          fontWeight: 900,
-                          opacity: 0.55,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Tổng
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "1.5rem",
-                          fontWeight: 900,
-                          lineHeight: 1,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {item.totalPreOrderQuantity}
-                      </span>
-                    </div>
-                  </div>
-
+                  {/* Thông tin món */}
                   <div
                     style={{
                       display: "flex",
@@ -297,88 +261,107 @@ export default function KitchenPage() {
                     </div>
                   </div>
 
+                  {/* Tổng đặt */}
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <div
                       style={{
-                        fontSize: "2rem",
+                        fontSize: "2.25rem",
                         fontWeight: 900,
-                        color: "#f97316",
+                        color: "#0f172a",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {item.totalPreOrderQuantity}
+                    </div>
+                  </div>
+
+                  {/* Cột Cần Nấu */}
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "2.25rem", // Tăng size một chút cho nổi bật
+                        fontWeight: 900,
+                        color: "#059669",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
                       {item.mustCookQuantity}
                     </div>
                   </div>
-
-                  <div style={{ display: "flex", justifyContent: "center" }}>
+                  {/* Cột Đang Nấu */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
                     <div
                       style={{
-                        fontSize: "2rem",
+                        fontSize: "2.25rem",
                         fontWeight: 900,
-                        color: "#2563eb",
+                        color: "#f97316",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
                       {item.cookingQuantity}
                     </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "2rem",
-                        fontWeight: 900,
-                        color: "#059669",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {item.readyServeQuantity}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center" }}>
                     <button
                       className={styles.btnPrimary}
                       onClick={() => handleStartCooking(item.itemId)}
                       disabled={item.mustCookQuantity <= 0}
                       style={{
-                        minWidth: "140px",
+                        width: "40px",
+                        height: "40px",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
                         justifyContent: "center",
                         opacity: item.mustCookQuantity <= 0 ? 0.5 : 1,
                         cursor: item.mustCookQuantity <= 0 ? "not-allowed" : "pointer",
-                        background:
-                          item.mustCookQuantity <= 0 ? "#dbeafe" : "#2563eb",
+                        background: item.mustCookQuantity <= 0 ? "#f1f5f9" : "#3b82f6",
+                        color: item.mustCookQuantity <= 0 ? "#cbd5e1" : "#fff",
                         boxShadow: item.mustCookQuantity <= 0
                           ? "none"
-                          : "0 10px 20px rgba(37,99,235,0.18)",
+                          : "0 4px 12px rgba(59,130,246,0.3)",
+                        border: "none",
+                        borderRadius: "8px",
                       }}
                     >
-                      <Plus size={16} />
-                      Bắt đầu nấu
+                      <Plus size={20} />
                     </button>
                   </div>
-
-                  <div style={{ display: "flex", justifyContent: "center" }}>
+                  
+                  {/* Sẵn sàng */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+                    <div
+                      style={{
+                        fontSize: "2.25rem",
+                        fontWeight: 900,
+                        color: "#3b82f6",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {item.readyServeQuantity}
+                    </div>
                     <button
                       className={styles.btnPrimary}
                       onClick={() => handleMarkReady(item.itemId)}
                       disabled={item.cookingQuantity <= 0}
                       style={{
-                        minWidth: "140px",
+                        width: "40px",
+                        height: "40px",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
                         justifyContent: "center",
                         opacity: item.cookingQuantity <= 0 ? 0.5 : 1,
                         cursor: item.cookingQuantity <= 0 ? "not-allowed" : "pointer",
-                        background:
-                          item.cookingQuantity <= 0 ? "#d1fae5" : "#10b981",
-                        boxShadow: item.cookingQuantity <= 0
-                          ? "none"
-                          : "0 10px 20px rgba(16,185,129,0.18)",
+                        background: item.cookingQuantity <= 0 ? "#f8fafc" : "#f8fafc",
+                        color: item.cookingQuantity <= 0 ? "#cbd5e1" : "#94a3b8",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "none",
+                        borderRadius: "8px",
                       }}
                     >
-                      <Plus size={16} />
-                      Hoàn tất
+                      <Check size={20} />
                     </button>
                   </div>
+                  
                 </div>
               );
             })

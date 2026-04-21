@@ -16,6 +16,7 @@ export interface OrderItemDTO {
   status: string;
   unitPrice: number;
   note?: string | null;
+  thumbnail: string;
 }
 
 export interface OrderDTO {

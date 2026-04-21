@@ -23,7 +23,8 @@ public class InvoiceService
     public async Task<InvoicePreviewDTO> PreCalculateInvoiceAsync(
         long orderId,
         string? discountCode,
-        int pointsToUse
+        int pointsToUse,
+        List<long>? selectedItemIds = null
     )
     {
         var order = await _context
@@ -35,8 +36,18 @@ public class InvoiceService
         if (order == null)
             throw new Exception("Order not found");
 
+        var selectedItems = order.OrderItems.AsQueryable();
+
+        if (selectedItemIds != null && selectedItemIds.Any())
+        {
+            selectedItems = selectedItems.Where(oi => selectedItemIds.Contains(oi.OrderItemId));
+        }
+
         var activeItems = order.OrderItems.Where(oi => oi.Status != "CANCELLED").ToList();
-        decimal subtotal = activeItems.Sum(oi => (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount);
+        //decimal subtotal = activeItems.Sum(oi => (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount);
+        decimal subtotal = selectedItems.Sum(oi =>
+            (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount
+        );
         decimal discountAmount = 0;
 
         // 1. Apply Discount Code
@@ -124,12 +135,19 @@ public class InvoiceService
         long staffId,
         string? discountCode,
         int pointsToUse,
-        decimal paidAmount
+        decimal paidAmount,
+        List<long>? selectedItemIds = null
     )
     {
-        var preview = await PreCalculateInvoiceAsync(orderId, discountCode, pointsToUse);
+        var preview = await PreCalculateInvoiceAsync(
+            orderId,
+            discountCode,
+            pointsToUse,
+            selectedItemIds
+        );
         var order = await _context
-            .Orders.Include(o => o.Table)
+            .Orders.Include(o => o.OrderTables)
+                .ThenInclude(ot => ot.DiningTable)
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .FirstAsync(o => o.OrderId == orderId);
@@ -155,15 +173,33 @@ public class InvoiceService
         // Update Order & Table
         order.Status = "CLOSED";
         order.ClosedAt = DateTime.Now;
-        if (order.Table != null)
+        if (order.OrderTables != null)
         {
-            order.Table.Status = "AVAILABLE";
+            foreach (var ot in order.OrderTables)
+            {
+                if (ot.DiningTable != null)
+                {
+                    ot.DiningTable.Status = "AVAILABLE";
+                }
+            }
         }
         if (order.Reservation != null)
         {
             order.Reservation.Status = "COMPLETED";
         }
+        //Update items
+        if (selectedItemIds != null && selectedItemIds.Any())
+        {
+            foreach (var item in order.OrderItems)
+            {
+                bool isSelected = selectedItemIds.Contains(item.OrderItemId);
 
+                if (!isSelected && item.Status == "PENDING")
+                {
+                    item.Status = "CANCELLED";
+                }
+            }
+        }
         // Points Ledger
         if (order.CustomerId.HasValue)
         {

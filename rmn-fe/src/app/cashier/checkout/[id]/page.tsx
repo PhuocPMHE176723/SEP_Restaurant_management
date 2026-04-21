@@ -37,6 +37,7 @@ export default function CashierCheckoutPage() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [qrTimer, setQrTimer] = useState(300); // 5 minutes
+  const [selectedItemIndices, setSelectedItemIndices] = useState<number[]>([]);
 
   useEffect(() => {
     if (orderId) {
@@ -138,6 +139,7 @@ export default function CashierCheckoutPage() {
         orderId,
         code || discountCode,
         points ?? pointsToUse,
+        getSelectedItemIds(),
       );
       setPreview(data);
     } catch (err: any) {
@@ -146,6 +148,33 @@ export default function CashierCheckoutPage() {
       setLoading(false);
     }
   };
+
+  const getSelectedItemIds = () => {
+    if (!preview) return [];
+    return preview.items
+      .filter((_: any, idx: number) => selectedItemIndices.includes(idx))
+      .map((item: any) => item.orderItemId);
+  };
+
+  useEffect(() => {
+    if (preview?.items) {
+      setSelectedItemIndices(preview.items.map((_: any, idx: number) => idx));
+    }
+  }, [preview?.orderId]);
+
+  const handleToggleItem = (idx: number) => {
+    setSelectedItemIndices(prev =>
+      prev.includes(idx)
+        ? prev.filter(i => i !== idx)
+        : [...prev, idx]
+    );
+  };
+
+  useEffect(() => {
+    if (preview) {
+      fetchPreview();
+    }
+  }, [selectedItemIndices]);
 
   const handleApplyDiscount = async () => {
     if (!discountCode) return;
@@ -187,6 +216,7 @@ export default function CashierCheckoutPage() {
         discountCode: useVipPackage ? "VIP_PROMO" : discountCode || undefined,
         pointsToUse,
         paidAmount: preview?.amountToPay ?? 0,
+        selectedItemIds: getSelectedItemIds(),
       });
       setIsSuccess(true);
       localStorage.removeItem(`qr_start_${orderId}`);
@@ -255,60 +285,51 @@ export default function CashierCheckoutPage() {
           <table className={styles.itemTable}>
             <thead>
               <tr>
+                <th></th>
                 <th>Món ăn</th>
                 <th style={{ textAlign: "center" }}>SL</th>
                 <th style={{ textAlign: "right" }}>Đơn giá</th>
                 <th style={{ textAlign: "right" }}>Thành tiền</th>
-                {!isSuccess && <th style={{ textAlign: "center" }}>Xoá</th>}
               </tr>
             </thead>
             <tbody>
-              {preview.items?.map((item: any, idx: number) => (
-                <tr key={idx}>
-                  <td className={styles.itemName}>{item.itemNameSnapshot}</td>
-                  <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {item.unitPrice?.toLocaleString()}đ
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    {(item.quantity * item.unitPrice).toLocaleString()}đ
-                  </td>
-                  {!isSuccess && (
-                    <td style={{ textAlign: "center" }}>
-                      {item.status !== "SERVED" &&
-                        item.status !== "CANCELLED" && (
-                          <button
-                            className={styles.btnDanger}
-                            onClick={async () => {
-                              const confirmed = await Swal.fire({
-                                title: "Xoá món này?",
-                                text: "Món chưa hoàn thành sẽ bị loại khỏi tổng tiền.",
-                                icon: "warning",
-                                showCancelButton: true,
-                                confirmButtonColor: "#ef4444",
-                                cancelButtonColor: "#64748b",
-                                confirmButtonText: "Xoá",
-                                cancelButtonText: "Huỷ",
-                              });
-                              if (!confirmed.isConfirmed) return;
-                              try {
-                                await orderApi.removeOrderItem(
-                                  item.orderItemId,
-                                );
-                                await fetchPreview();
-                                showSuccess("Đã xoá món");
-                              } catch (e: any) {
-                                showError(e?.message || "Xoá món thất bại");
-                              }
-                            }}
-                          >
-                            Xoá
-                          </button>
-                        )}
+              {preview.items?.map((item: any, idx: number) => {
+                const checked = selectedItemIndices.includes(idx);
+
+                return (
+                  <tr key={idx} style={{ opacity: checked ? 1 : 0.5 }}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={item.status === "SERVED"}
+                        onChange={() => handleToggleItem(idx)}
+                      />
                     </td>
-                  )}
-                </tr>
-              ))}
+
+                    <td className={styles.itemName}>
+                      {item.itemNameSnapshot}
+                      {item.status === "SERVED" && (
+                        <span style={{ marginLeft: 6, color: 'green', fontSize: 12 }}>
+                          ✓
+                        </span>
+                      )}
+                    </td>
+
+                    <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      {item.unitPrice?.toLocaleString()}đ
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      {checked
+                        ? (item.quantity * item.unitPrice).toLocaleString() + "đ"
+                        : "0đ"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

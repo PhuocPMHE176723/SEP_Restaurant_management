@@ -11,7 +11,7 @@ import {
   type OrderDTO,
   type ReservationDTO,
 } from "../../../lib/api/myOrder";
-import { cancelReservation } from "../../../lib/api/reservation"; 
+import { cancelReservation } from "../../../lib/api/reservation";
 import styles from "./page.module.css";
 
 function formatCurrency(value: number) {
@@ -42,10 +42,11 @@ function ServingView({ order }: { order: OrderDTO }) {
       <div className={styles.topBar}>
         <div>
           <h2 className={styles.pageModeTitle}>
-            {order.tableName ? `Chi tiết bàn ${order.tableName}` : "Chi tiết bàn"}
+            Phục vụ tại chỗ
+
           </h2>
           <p className={`${styles.pageModeSub} ${styles.servingSub}`}>
-            Phục vụ tại chỗ
+            {order.tableName ? `Bàn ${order.tableName}` : "Chi tiết bàn"}
           </p>
         </div>
       </div>
@@ -94,9 +95,7 @@ function ServingView({ order }: { order: OrderDTO }) {
         <div className={styles.bottomSection}>
           <div className={styles.bottomTop}>
             <div>
-              <p className={styles.noteText}>
-                * Vui lòng kiểm tra lại món trước khi thanh toán
-              </p>
+              
             </div>
 
             <div className={styles.totalBox}>

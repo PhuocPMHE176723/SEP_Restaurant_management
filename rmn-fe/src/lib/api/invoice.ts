@@ -41,10 +41,13 @@ export interface InvoicePreview {
 }
 
 export const invoiceApi = {
-  async getPreview(orderId: number, discountCode?: string, pointsToUse: number = 0): Promise<InvoicePreview> {
+  async getPreview(orderId: number, discountCode?: string, pointsToUse: number = 0, selectedItemIds: number[] = []): Promise<InvoicePreview> {
     const params = new URLSearchParams();
     if (discountCode) params.append("discountCode", discountCode);
     if (pointsToUse) params.append("pointsToUse", pointsToUse.toString());
+    selectedItemIds.forEach(id => {
+    params.append("selectedItemIds", id.toString());
+  });
 
     const response = await fetch(`${apiBaseUrl}/api/Invoice/preview/${orderId}?${params.toString()}`, {
       headers: authHeaders(),
@@ -57,6 +60,7 @@ export const invoiceApi = {
     discountCode?: string;
     pointsToUse: number;
     paidAmount: number;
+    selectedItemIds: number[];
   }): Promise<{ invoiceId: number; invoiceCode: string }> {
     const response = await fetch(`${apiBaseUrl}/api/Invoice/checkout`, {
       method: "POST",

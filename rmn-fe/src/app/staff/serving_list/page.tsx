@@ -350,6 +350,9 @@ export default function ServingListPage() {
                           <div style={{ fontSize: "1.65rem", fontWeight: 900, lineHeight: 1, color: "#0f172a" }}>
                             {table.tableNames}
                           </div>
+                          <div style={{ fontSize: "0.75rem", fontWeight: 500, lineHeight: 1, color: "#46474a" }}>
+                            Đã gọi:  {formatLastUpdated(table.openedAt)}
+                          </div>
                         </div>
 
                         <div>

@@ -160,7 +160,7 @@ export default function Header() {
               {/* Kitchen portal shortcut */}
               {isKitchen && (
                 <Link
-                  href="/kitchen"
+                  href="/kitchen/cooking_list"
                   className={`btn btn-ghost ${styles.adminBtn}`}
                 >
                   Bếp
