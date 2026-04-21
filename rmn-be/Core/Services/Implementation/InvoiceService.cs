@@ -24,7 +24,7 @@ public class InvoiceService
         long orderId,
         string? discountCode,
         int pointsToUse,
-        List<long>? selectedItemIds
+        List<long>? selectedItemIds = null
     )
     {
         var order = await _context
@@ -40,13 +40,14 @@ public class InvoiceService
 
         if (selectedItemIds != null && selectedItemIds.Any())
         {
-            selectedItems = selectedItems
-                .Where(oi => selectedItemIds.Contains(oi.OrderItemId));
+            selectedItems = selectedItems.Where(oi => selectedItemIds.Contains(oi.OrderItemId));
         }
 
         var activeItems = order.OrderItems.Where(oi => oi.Status != "CANCELLED").ToList();
         //decimal subtotal = activeItems.Sum(oi => (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount);
-        decimal subtotal = selectedItems.Sum(oi => (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount);
+        decimal subtotal = selectedItems.Sum(oi =>
+            (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount
+        );
         decimal discountAmount = 0;
 
         // 1. Apply Discount Code
@@ -135,12 +136,18 @@ public class InvoiceService
         string? discountCode,
         int pointsToUse,
         decimal paidAmount,
-        List<long>? selectedItemIds
+        List<long>? selectedItemIds = null
     )
     {
-        var preview = await PreCalculateInvoiceAsync(orderId, discountCode, pointsToUse, selectedItemIds);
+        var preview = await PreCalculateInvoiceAsync(
+            orderId,
+            discountCode,
+            pointsToUse,
+            selectedItemIds
+        );
         var order = await _context
-            .Orders.Include(o => o.OrderTables).ThenInclude(ot => ot.DiningTable)
+            .Orders.Include(o => o.OrderTables)
+                .ThenInclude(ot => ot.DiningTable)
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .FirstAsync(o => o.OrderId == orderId);

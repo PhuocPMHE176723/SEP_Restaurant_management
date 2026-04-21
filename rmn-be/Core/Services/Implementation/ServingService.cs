@@ -114,9 +114,7 @@ namespace rmn_be.Core.Services.Implementation
             // Collect table ids from join table first; fall back to legacy Order.TableId
             var tableIds = orderTables
                 .Select(x => x.TableId)
-                .Concat(
-                    orders.Values.Where(x => x.TableId.HasValue).Select(x => x.TableId!.Value)
-                )
+                .Concat(orders.Values.Where(x => x.TableId.HasValue).Select(x => x.TableId!.Value))
                 .Distinct()
                 .ToList();
 
@@ -198,9 +196,7 @@ namespace rmn_be.Core.Services.Implementation
             // 1) Prefer serving from READY_SERVE items already in the target order.
             var targetReadyItems = (
                 await orderItemRepo.FindAsync(x =>
-                    x.ItemId == itemId
-                    && x.OrderId == orderId
-                    && x.Status == "READY_SERVE"
+                    x.ItemId == itemId && x.OrderId == orderId && x.Status == "READY_SERVE"
                 )
             )
                 .OrderBy(x => x.CreatedAt)
@@ -257,7 +253,8 @@ namespace rmn_be.Core.Services.Implementation
 
             var sourceItems = sourceGroup.OrderBy(x => x.CreatedAt).ToList();
 
-            var previousStatus = targetItems.Select(x => x.Status).FirstOrDefault(s => s != "READY_SERVE")
+            var previousStatus =
+                targetItems.Select(x => x.Status).FirstOrDefault(s => s != "READY_SERVE")
                 ?? "COOKING";
 
             foreach (var item in sourceItems)
