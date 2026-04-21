@@ -34,6 +34,7 @@ public class OrderDTO
     public string? TableName { get; set; }
     public string OrderType { get; set; } = "DINE_IN";
     public int? TableId { get; set; }
+    public List<int>? TableIds { get; set; }
     public string? CustomerName { get; set; }
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
@@ -132,7 +133,7 @@ public class MergeOrdersRequest
 {
     [Required]
     public long PrimaryOrderId { get; set; }
-    
+
     [Required]
     [MinLength(1, ErrorMessage = "Must select at least one secondary order to merge.")]
     public List<long> SecondaryOrderIds { get; set; } = new();

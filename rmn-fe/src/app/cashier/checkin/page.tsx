@@ -307,8 +307,7 @@ export default function CashierCheckinPage() {
                     <tr>
                       <th>Giờ</th>
                       <th>Khách hàng</th>
-                      <th>Số người</th>
-                      <th className={styles.colCompact}>Thao tác</th>
+                      <th>Số người / Bàn</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -341,37 +340,13 @@ export default function CashierCheckinPage() {
                             {r.customerPhone}
                           </div>
                         </td>
-                        <td>{r.partySize} người</td>
                         <td>
-                          <div style={{ display: "flex", gap: "0.4rem" }}>
-                            <button
-                              className={styles.btnPrimary}
-                              style={{
-                                padding: "0.4rem 0.8rem",
-                                fontSize: "0.75rem",
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedReservationId(r.reservationId);
-                                setSelectedTableIds([]);
-                              }}
-                            >
-                              Chọn bàn
-                            </button>
-                            <button
-                              className={styles.btnSuccess}
-                              style={{
-                                padding: "0.4rem 0.8rem",
-                                fontSize: "0.75rem",
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAutoCheckin(r);
-                              }}
-                            >
-                              Check-in nhanh
-                            </button>
-                          </div>
+                          {r.partySize} người ·{" "}
+                          {Math.max(
+                            1,
+                            r.totalTables ?? r.tableIds?.length ?? 1,
+                          )}{" "}
+                          bàn
                         </td>
                       </tr>
                     ))}
@@ -434,6 +409,9 @@ export default function CashierCheckinPage() {
                     <div style={{ fontSize: "1.1rem", fontWeight: 800 }}>
                       {selectedReservation.customerName}
                     </div>
+                    <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                      {selectedReservation.customerPhone}
+                    </div>
                     <div
                       style={{
                         fontSize: "0.9rem",
@@ -441,7 +419,8 @@ export default function CashierCheckinPage() {
                         color: "#f97316",
                       }}
                     >
-                      {selectedReservation.partySize} khách
+                      {selectedReservation.partySize} khách · cần{" "}
+                      {requiredTables} bàn
                     </div>
                     {selectedReservation.note && (
                       <div
@@ -593,7 +572,7 @@ export default function CashierCheckinPage() {
                         );
                       }}
                     >
-                      ✅ Check-in với bàn đã chọn
+                      Check-in với bàn đã chọn
                     </button>
                     <button
                       className={styles.btnSuccess}
@@ -604,7 +583,7 @@ export default function CashierCheckinPage() {
                       }}
                       onClick={() => handleAutoCheckin(selectedReservation)}
                     >
-                      💡 Tự động gán bàn & Check-in
+                      Tự động gán bàn & Check-in
                     </button>
                     <button
                       className={styles.btnSecondary}
@@ -622,9 +601,7 @@ export default function CashierCheckinPage() {
                     color: "#94a3b8",
                   }}
                 >
-                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-                    📋
-                  </div>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}></div>
                   Chọn một lịch đặt bàn bên trái để gán bàn
                 </div>
               )}

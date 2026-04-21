@@ -22,12 +22,19 @@ export default function ReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
+  function getReservationTotalTables(reservation: ReservationDTO): number {
+    const candidate = reservation.totalTables ?? reservation.tableIds?.length;
+    return Math.max(1, candidate ?? 1);
+  }
+
   // Cancel modal
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   // Edit preorder modal
-  const [editReservation, setEditReservation] = useState<ReservationDTO | null>(null);
+  const [editReservation, setEditReservation] = useState<ReservationDTO | null>(
+    null,
+  );
 
   // Result modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -59,7 +66,7 @@ export default function ReservationsPage() {
       loadData();
     }
   }, [mounted, isLoggedIn, router]);
- 
+
   async function loadData() {
     try {
       setLoading(true);
@@ -140,7 +147,9 @@ export default function ReservationsPage() {
   }
 
   const filteredReservations = reservations.filter((res) => {
-    const matchesDate = !filterDate || new Date(res.reservedAt).toISOString().split("T")[0] === filterDate;
+    const matchesDate =
+      !filterDate ||
+      new Date(res.reservedAt).toISOString().split("T")[0] === filterDate;
     const matchesStatus = filterStatus === "ALL" || res.status === filterStatus;
     return matchesDate && matchesStatus;
   });
@@ -173,8 +182,8 @@ export default function ReservationsPage() {
             <div className={styles.filterGroup}>
               <div className={styles.filterField}>
                 <label className={styles.filterLabel}>Ngày:</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className={styles.dateInput}
                   value={filterDate}
                   onChange={(e) => {
@@ -185,7 +194,7 @@ export default function ReservationsPage() {
               </div>
               <div className={styles.filterField}>
                 <label className={styles.filterLabel}>Trạng thái:</label>
-                <select 
+                <select
                   className={styles.statusSelect}
                   value={filterStatus}
                   onChange={(e) => {
@@ -201,7 +210,7 @@ export default function ReservationsPage() {
                 </select>
               </div>
               {(filterDate || filterStatus !== "ALL") && (
-                <button 
+                <button
                   className={`btn btn-primary ${styles.clearFilterBtn}`}
                   onClick={() => {
                     setFilterDate("");
@@ -214,7 +223,8 @@ export default function ReservationsPage() {
               )}
             </div>
             <div className={styles.filterInfo}>
-              Tìm thấy <strong>{filteredReservations.length}</strong> đơn đặt bàn
+              Tìm thấy <strong>{filteredReservations.length}</strong> đơn đặt
+              bàn
             </div>
           </div>
 
@@ -229,104 +239,117 @@ export default function ReservationsPage() {
           ) : (
             <div className={styles.list}>
               {filteredReservations
-                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage,
+                )
                 .map((reservation) => (
-                <div key={reservation.reservationId} className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <span
-                      className={`${styles.status} ${getStatusClass(reservation.status)}`}
-                    >
-                      {getStatusLabel(reservation.status)}
-                    </span>
-                    {reservation.status === "PENDING" && (
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button
-                          className={`btn btn-ghost ${styles.cancelBtn}`}
-                          style={{ borderColor: "#d1d5db", color: "#374151" }}
-                          onClick={() => setEditReservation(reservation)}
-                        >
-                          Sửa món ăn
-                        </button>
-                        <button
-                          className={`btn btn-ghost ${styles.cancelBtn}`}
-                          onClick={() => setCancelId(reservation.reservationId)}
-                          disabled={cancelling}
-                        >
-                          Hủy đặt bàn
-                        </button>
-                      </div>
-                    )}
-                    <div className={styles.cardDate}>
-                      Đặt lúc: {formatDate(reservation.createdAt)}{" "}
-                      {formatTime(reservation.createdAt)}
-                    </div>
-                  </div>
-
-                  <div className={styles.cardBody}>
-                    <div className={styles.infoRow}>
-                      <div className={styles.infoGroup}>
-                        <span className={styles.infoLabel}>Ngày:</span>
-                        <span className={styles.infoValue}>
-                          {formatDate(reservation.reservedAt)}
-                        </span>
-                      </div>
-                      <div className={styles.infoGroup}>
-                        <span className={styles.infoLabel}>Giờ:</span>
-                        <span className={styles.infoValue}>
-                          {formatTime(reservation.reservedAt)}
-                        </span>
-                      </div>
-                      <div className={styles.infoGroup}>
-                        <span className={styles.infoLabel}>Số khách:</span>
-                        <span className={styles.infoValue}>
-                          {reservation.partySize} người
-                        </span>
-                      </div>
-                    </div>
-                    {reservation.note && (
-                      <div className={styles.note}>
-                        <span className={styles.noteLabel}>Ghi chú:</span>
-                        <span className={styles.noteText}>
-                          {reservation.note}
-                        </span>
-                      </div>
-                    )}
-
-                    {reservation.order &&
-                      reservation.order.orderItems.length > 0 && (
-                        <div className={styles.orderSection}>
-                          <h4 className={styles.orderTitle}>Món ăn đã đặt</h4>
-                          <div className={styles.orderItems}>
-                            {reservation.order.orderItems.map((item) => (
-                              <div
-                                key={item.orderItemId}
-                                className={styles.orderItem}
-                              >
-                                <div className={styles.orderItemName}>
-                                  <span className={styles.orderItemQty}>
-                                    {item.quantity}x
-                                  </span>
-                                  {item.itemNameSnapshot}
-                                </div>
-                                <div className={styles.orderItemPrice}>
-                                  {(
-                                    item.unitPrice * item.quantity
-                                  ).toLocaleString("vi-VN")}
-                                  đ
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                  <div key={reservation.reservationId} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      <span
+                        className={`${styles.status} ${getStatusClass(reservation.status)}`}
+                      >
+                        {getStatusLabel(reservation.status)}
+                      </span>
+                      {reservation.status === "PENDING" && (
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button
+                            className={`btn btn-ghost ${styles.cancelBtn}`}
+                            style={{ borderColor: "#d1d5db", color: "#374151" }}
+                            onClick={() => setEditReservation(reservation)}
+                          >
+                            Sửa món ăn
+                          </button>
+                          <button
+                            className={`btn btn-ghost ${styles.cancelBtn}`}
+                            onClick={() =>
+                              setCancelId(reservation.reservationId)
+                            }
+                            disabled={cancelling}
+                          >
+                            Hủy đặt bàn
+                          </button>
                         </div>
                       )}
-                  </div>
-                </div>
-              ))}
+                      <div className={styles.cardDate}>
+                        Đặt lúc: {formatDate(reservation.createdAt)}{" "}
+                        {formatTime(reservation.createdAt)}
+                      </div>
+                    </div>
 
-              <div style={{ marginTop: '1rem' }}>
+                    <div className={styles.cardBody}>
+                      <div className={styles.infoRow}>
+                        <div className={styles.infoGroup}>
+                          <span className={styles.infoLabel}>Ngày:</span>
+                          <span className={styles.infoValue}>
+                            {formatDate(reservation.reservedAt)}
+                          </span>
+                        </div>
+                        <div className={styles.infoGroup}>
+                          <span className={styles.infoLabel}>Giờ:</span>
+                          <span className={styles.infoValue}>
+                            {formatTime(reservation.reservedAt)}
+                          </span>
+                        </div>
+                        <div className={styles.infoGroup}>
+                          <span className={styles.infoLabel}>Số khách:</span>
+                          <span className={styles.infoValue}>
+                            {reservation.partySize} người
+                          </span>
+                        </div>
+                        <div className={styles.infoGroup}>
+                          <span className={styles.infoLabel}>Số bàn:</span>
+                          <span className={styles.infoValue}>
+                            {getReservationTotalTables(reservation)} bàn
+                          </span>
+                        </div>
+                      </div>
+                      {reservation.note && (
+                        <div className={styles.note}>
+                          <span className={styles.noteLabel}>Ghi chú:</span>
+                          <span className={styles.noteText}>
+                            {reservation.note}
+                          </span>
+                        </div>
+                      )}
+
+                      {reservation.order &&
+                        reservation.order.orderItems.length > 0 && (
+                          <div className={styles.orderSection}>
+                            <h4 className={styles.orderTitle}>Món ăn đã đặt</h4>
+                            <div className={styles.orderItems}>
+                              {reservation.order.orderItems.map((item) => (
+                                <div
+                                  key={item.orderItemId}
+                                  className={styles.orderItem}
+                                >
+                                  <div className={styles.orderItemName}>
+                                    <span className={styles.orderItemQty}>
+                                      {item.quantity}x
+                                    </span>
+                                    {item.itemNameSnapshot}
+                                  </div>
+                                  <div className={styles.orderItemPrice}>
+                                    {(
+                                      item.unitPrice * item.quantity
+                                    ).toLocaleString("vi-VN")}
+                                    đ
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                ))}
+
+              <div style={{ marginTop: "1rem" }}>
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={Math.ceil(filteredReservations.length / itemsPerPage)}
+                  totalPages={Math.ceil(
+                    filteredReservations.length / itemsPerPage,
+                  )}
                   totalItems={filteredReservations.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}

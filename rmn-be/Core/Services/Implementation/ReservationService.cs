@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,70 @@ public class ReservationService : IReservationService
 {
     private readonly SepDatabaseContext _context;
     private readonly IMapper _mapper;
+
+    private static bool IsMissingPhone(string? phone)
+    {
+        return string.IsNullOrWhiteSpace(phone)
+            || phone.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase)
+            || phone.Trim().Equals("NA", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? TryExtractPhoneFromNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            return null;
+        }
+
+        // Try a targeted match first (handles: "SĐT liên hệ: 0xxxxxxxxx" and similar)
+        var match = Regex.Match(
+            note,
+            @"(?:(?:SĐT|SDT)\s*(?:liên\s*hệ|lien\s*he)?\s*[:\-]?\s*)?(0\d{8,10})",
+            RegexOptions.IgnoreCase
+        );
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        // Fallback: first VN-like phone number appearance
+        match = Regex.Match(note, @"0\d{8,10}");
+        return match.Success ? match.Value : null;
+    }
+
+    private static void NormalizeReservationDto(Reservation reservation, ReservationDTO dto)
+    {
+        // Name
+        if (string.IsNullOrWhiteSpace(dto.CustomerName))
+        {
+            dto.CustomerName =
+                reservation.Customer?.User?.FullName
+                ?? reservation.Customer?.FullName
+                ?? reservation.CustomerName
+                ?? "Guest";
+        }
+
+        // Phone: Reservation.CustomerPhone -> Customer.User.PhoneNumber -> Customer.Phone -> parse Note -> N/A
+        var phone = reservation.CustomerPhone;
+        if (IsMissingPhone(phone))
+        {
+            phone = reservation.Customer?.User?.PhoneNumber ?? reservation.Customer?.Phone;
+        }
+        if (IsMissingPhone(phone))
+        {
+            phone = TryExtractPhoneFromNote(reservation.Note);
+        }
+        dto.CustomerPhone = IsMissingPhone(phone) ? "N/A" : phone!.Trim();
+
+        // Total tables should be >= 1
+        if (dto.TotalTables <= 0)
+        {
+            dto.TotalTables =
+                reservation.TotalTables > 0
+                    ? reservation.TotalTables
+                    : Math.Max(1, dto.TableIds?.Count ?? 1);
+        }
+    }
 
     public ReservationService(SepDatabaseContext context, IMapper mapper)
     {
@@ -164,12 +229,21 @@ public class ReservationService : IReservationService
     {
         var reservations = await _context
             .Reservations.Where(r => r.CustomerId == customerId)
+            .Include(r => r.Customer)
+                .ThenInclude(c => c!.User)
+            .Include(r => r.ReservationTables)
             .Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
 
-        return _mapper.Map<List<ReservationDTO>>(reservations);
+        var dtos = _mapper.Map<List<ReservationDTO>>(reservations);
+        for (var i = 0; i < dtos.Count && i < reservations.Count; i++)
+        {
+            NormalizeReservationDto(reservations[i], dtos[i]);
+        }
+
+        return dtos;
     }
 
     public async Task<List<ReservationDTO>> GetAllReservationsAsync(
@@ -188,6 +262,8 @@ public class ReservationService : IReservationService
     {
         var query = _context
             .Reservations.Include(r => r.ReservationTables)
+            .Include(r => r.Customer)
+                .ThenInclude(c => c!.User)
             .Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
             .AsQueryable();
@@ -219,16 +295,33 @@ public class ReservationService : IReservationService
 
         var reservations = await query.OrderByDescending(r => r.ReservedAt).ToListAsync();
 
-        return _mapper.Map<List<ReservationDTO>>(reservations);
+        var dtos = _mapper.Map<List<ReservationDTO>>(reservations);
+        for (var i = 0; i < dtos.Count && i < reservations.Count; i++)
+        {
+            NormalizeReservationDto(reservations[i], dtos[i]);
+        }
+
+        return dtos;
     }
 
     public async Task<ReservationDTO?> GetReservationByIdAsync(long reservationId)
     {
-        var reservation = await _context.Reservations.FirstOrDefaultAsync(r =>
-            r.ReservationId == reservationId
-        );
+        var reservation = await _context
+            .Reservations.Include(r => r.ReservationTables)
+            .Include(r => r.Customer)
+                .ThenInclude(c => c!.User)
+            .Include(r => r.Order)
+                .ThenInclude(o => o!.OrderItems)
+            .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
 
-        return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
+        if (reservation == null)
+        {
+            return null;
+        }
+
+        var dto = _mapper.Map<ReservationDTO>(reservation);
+        NormalizeReservationDto(reservation, dto);
+        return dto;
     }
 
     public async Task<bool> CancelReservationAsync(long reservationId, long customerId)

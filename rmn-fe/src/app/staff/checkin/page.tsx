@@ -130,15 +130,22 @@ export default function CheckinPage() {
             ? pickTablesForReservation(reservation, tableId)
             : [tableId];
 
-      await adminReservationApi.updateReservationStatus(reservationId, {
-        status: "CHECKED_IN",
-        tableIds: tableIds.length > 0 ? tableIds : [tableId],
-      });
+      const result = await adminReservationApi.updateReservationStatus(
+        reservationId,
+        {
+          status: "CHECKED_IN",
+          tableIds: tableIds.length > 0 ? tableIds : [tableId],
+        },
+      );
 
       showSuccess("Thành công", "Check-in thành công!");
       setSelectedReservationId(null);
       setSelectedTableIds([]);
       fetchData();
+
+      if (result?.orderId) {
+        window.location.href = `/staff/checkout/${result.orderId}`;
+      }
     } catch (error) {
       console.error("Check-in failed:", error);
       showError("Lỗi", "Check-in thất bại!");
@@ -309,7 +316,7 @@ export default function CheckinPage() {
                     <tr>
                       <th>Giờ</th>
                       <th>Khách hàng</th>
-                      <th>Số người</th>
+                      <th>Số người / Bàn</th>
                       <th className={styles.colCompact}>Thao tác</th>
                     </tr>
                   </thead>
@@ -342,7 +349,14 @@ export default function CheckinPage() {
                             {r.customerPhone}
                           </div>
                         </td>
-                        <td>{r.partySize} người</td>
+                        <td>
+                          {r.partySize} người ·{" "}
+                          {Math.max(
+                            1,
+                            r.totalTables ?? r.tableIds?.length ?? 1,
+                          )}{" "}
+                          bàn
+                        </td>
                         <td>
                           <div style={{ display: "flex", gap: "0.4rem" }}>
                             <button
