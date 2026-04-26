@@ -6,11 +6,14 @@ import Link from "next/link";
 import { resendOtpApi, verifyOtpApi } from "../../../lib/api/auth";
 import OtpInput from "../OtpInput";
 import styles from "../login/page.module.css";
+import { auth } from "../../../lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 
 function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const phone = searchParams.get("phone") || "";
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -18,15 +21,17 @@ function VerifyOtpContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
   const otpValue = useMemo(() => otp.join(""), [otp]);
 
   useEffect(() => {
-    if (!email) {
+    if (!email && !phone) {
       router.replace("/register");
       return;
     }
-  }, [email, router]);
+  }, [email, phone, router]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,12 +41,67 @@ function VerifyOtpContent() {
     return () => clearInterval(timer);
   }, []);
 
+  // Initialize Recaptcha and send initial SMS if phone exists
+  useEffect(() => {
+    if (!phone || typeof window === "undefined") return;
+
+    const setupRecaptcha = () => {
+      try {
+        const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+          callback: () => {
+            console.log("Recaptcha verified");
+          },
+        });
+        setRecaptchaVerifier(verifier);
+        sendOTP(verifier);
+      } catch (err) {
+        console.error("Recaptcha error:", err);
+        setError("Lỗi khởi tạo bảo mật (Recaptcha). Vui lòng thử lại.");
+      }
+    };
+
+    setupRecaptcha();
+
+    return () => {
+      if (recaptchaVerifier) recaptchaVerifier.clear();
+    };
+  }, [phone]);
+
+  const formatPhoneNumber = (vnPhone: string) => {
+    if (vnPhone.startsWith("+")) return vnPhone;
+    if (vnPhone.startsWith("0")) return "+84" + vnPhone.slice(1);
+    return "+84" + vnPhone;
+  };
+
+  async function sendOTP(verifier: RecaptchaVerifier) {
+    if (!phone) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const formattedPhone = formatPhoneNumber(phone);
+      const result = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      setConfirmationResult(result);
+    } catch (err: any) {
+        console.error("Firebase Auth Error:", err);
+        if (err.code === "auth/invalid-phone-number") {
+            setError("Số điện thoại không hợp lệ.");
+        } else if (err.code === "auth/too-many-requests") {
+            setError("Quá nhiều yêu cầu. Vui lòng thử lại sau.");
+        } else {
+            setError("Không thể gửi tin nhắn SMS. Kiểm tra lại cấu hình Firebase của bạn.");
+        }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!email) {
-      setError("Không tìm thấy email xác thực");
+    if (!email && !phone) {
+      setError("Không tìm thấy thông tin xác thực (email hoặc số điện thoại)");
       return;
     }
 
@@ -52,15 +112,32 @@ function VerifyOtpContent() {
 
     setLoading(true);
     try {
-      await verifyOtpApi({
-        email,
-        otp: otpValue,
-      });
+      if (phone && confirmationResult) {
+        // Step 1: Verify with Firebase
+        await confirmationResult.confirm(otpValue);
+        
+        // Step 2: Notify backend that phone is verified
+        await verifyOtpApi({
+          phone: phone,
+          otp: "FIREBASE_VERIFIED", // Send a dummy or special code so backend knows
+        });
+      } else if (email) {
+        // Normal email verification
+        await verifyOtpApi({
+          email: email,
+          otp: otpValue,
+        });
+      }
 
       setSuccess(true);
-    } catch (err: unknown) {
-      const apiErr = err as { message?: string; errors?: string[] };
-      setError(apiErr.errors?.[0] ?? apiErr.message ?? "Xác thực OTP thất bại");
+    } catch (err: any) {
+      console.error("Verification Error:", err);
+      if (err.code === "auth/invalid-verification-code") {
+        setError("Mã OTP không chính xác.");
+      } else {
+        const apiErr = err as { message?: string; errors?: string[] };
+        setError(apiErr.errors?.[0] ?? apiErr.message ?? "Xác thực thất bại");
+      }
     } finally {
       setLoading(false);
     }
@@ -72,13 +149,20 @@ function VerifyOtpContent() {
     setError(null);
     setResending(true);
 
+    setResending(true);
+
     try {
-      await resendOtpApi({ email });
-      setCountdown(60);
-      setOtp(["", "", "", "", "", ""]);
-    } catch (err: unknown) {
-      const apiErr = err as { message?: string; errors?: string[] };
-      setError(apiErr.errors?.[0] ?? apiErr.message ?? "Gửi lại OTP thất bại");
+      if (phone && recaptchaVerifier) {
+        await sendOTP(recaptchaVerifier);
+        setCountdown(60);
+        setOtp(["", "", "", "", "", ""]);
+      } else if (email) {
+        await resendOtpApi({ email });
+        setCountdown(60);
+        setOtp(["", "", "", "", "", ""]);
+      }
+    } catch (err: any) {
+      setError("Gửi lại mã thất bại.");
     } finally {
       setResending(false);
     }
@@ -100,7 +184,7 @@ function VerifyOtpContent() {
           <p className={styles.leftSub}>
             {success
               ? "Tài khoản của bạn đã được xác thực. Bây giờ bạn có thể đăng nhập và bắt đầu sử dụng hệ thống."
-              : "Chúng tôi đã gửi mã OTP 6 chữ số đến email của bạn. Hãy nhập mã để hoàn tất đăng ký tài khoản."}
+              : `Chúng tôi đã gửi mã OTP 6 chữ số đến ${phone ? "số điện thoại" : "email"} của bạn. Hãy nhập mã để hoàn tất đăng ký tài khoản.`}
           </p>
 
           <div className={styles.dishes}>
@@ -130,11 +214,14 @@ function VerifyOtpContent() {
               <div className={styles.cardHead}>
                 <h1 className={styles.cardTitle}>Xác thực OTP</h1>
                 <p className={styles.cardSub}>
-                  Mã OTP đã được gửi đến <strong>{email}</strong>
+                  Mã OTP đã được gửi đến <strong>{phone || email}</strong>
                 </p>
               </div>
 
               {error && <div className={styles.errorBanner}>{error}</div>}
+              
+              {/* Container cho Firebase Recaptcha */}
+              <div id="recaptcha-container"></div>
 
               <form onSubmit={handleSubmit} className={styles.form}>
                 <div className={styles.field}>
@@ -200,7 +287,7 @@ function VerifyOtpContent() {
               <div className={styles.cardHead}>
                 <h1 className={styles.cardTitle}>Thành công!</h1>
                 <p className={styles.cardSub}>
-                  Email của bạn đã được xác thực thành công.
+                  {phone ? "Số điện thoại" : "Email"} của bạn đã được xác thực thành công.
                 </p>
               </div>
 

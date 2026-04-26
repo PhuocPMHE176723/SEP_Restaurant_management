@@ -132,12 +132,14 @@ export async function newRegisterApi(body: RegisterRequest): Promise<string> {
 }
 
 export type VerifyOtpPayload = {
-  email: string;
+  email?: string;
+  phone?: string;
   otp: string;
 };
 
 export type ResendOtpPayload = {
-  email: string;
+  email?: string;
+  phone?: string;
 };
 
 /**
@@ -149,10 +151,18 @@ type ApiResponse<T> = {
   errors?: string[];
 };
 export async function verifyOtpApi(body: VerifyOtpPayload): Promise<string> {
-  const res = await fetch(`${apiBaseUrl}/api/auth/verify-otp`, {
+  const url = body.phone 
+    ? `${apiBaseUrl}/api/auth/verify-otp-phone` 
+    : `${apiBaseUrl}/api/auth/verify-otp`;
+    
+  const payload = body.phone 
+    ? { phoneNumber: body.phone, otp: body.otp }
+    : body;
+
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
 
   const json = (await res.json()) as ApiResponse<string>;
@@ -171,10 +181,11 @@ export async function verifyOtpApi(body: VerifyOtpPayload): Promise<string> {
  * POST /api/auth/resend-otp
  */
 export async function resendOtpApi(body: ResendOtpPayload): Promise<string> {
+  const payload = body.phone ? { phoneNumber: body.phone } : body;
   const res = await fetch(`${apiBaseUrl}/api/auth/resend-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
 
   const json = (await res.json()) as ApiResponse<string>;
