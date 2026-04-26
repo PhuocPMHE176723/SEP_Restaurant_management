@@ -12,6 +12,9 @@ public class Reservation
     public long? CustomerId { get; set; }
 
     public int TotalTables { get; set; } = 1;
+    public int Table4Count { get; set; } = 0;
+    public int Table6Count { get; set; } = 0;
+    public int Table8Count { get; set; } = 0;
 
     [Required]
     [MaxLength(150)]

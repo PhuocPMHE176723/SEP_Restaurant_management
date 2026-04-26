@@ -8,7 +8,6 @@ import styles from "../manager/manager.module.css";
 
 const CASHIER_NAV = [
   { href: "/cashier/reservations", label: "Danh sách đặt bàn" },
-  { href: "/cashier/checkin", label: "Check-in & Gán bàn" },
   { href: "/cashier/walkin", label: "Khách vãng lai" },
   { href: "/cashier/orders", label: "Quản lý Order" },
   { href: "/cashier/dining-tables", label: "Sơ đồ bàn" },

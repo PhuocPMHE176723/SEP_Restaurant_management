@@ -1164,3 +1164,56 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.1);
 }
+
+.tableTypeList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableTypeItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.tableTypeLabel {
+  font-size: 15px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.tableCounter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tableCounterBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #dbe3ef;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tableCounterBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tableCounterValue {
+  min-width: 20px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+}

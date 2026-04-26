@@ -45,9 +45,9 @@ public class KitchenController : BaseController
     }
 
     [HttpGet("cooking-list")]
-    public async Task<IActionResult> GetCookingList()
+    public async Task<IActionResult> GetCookingList([FromQuery] DateTime? date, [FromQuery] string shift = "all")
     {
-        var result = await _kitchen2Service.GetCookingListAsync();
+        var result = await _kitchen2Service.GetCookingListAsync(date, shift);
         return Success(result);
     }
 

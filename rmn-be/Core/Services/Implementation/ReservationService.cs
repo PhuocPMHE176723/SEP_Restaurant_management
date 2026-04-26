@@ -118,8 +118,10 @@ public class ReservationService : IReservationService
                 ContactEmail = request.ContactEmail ?? customer.User?.Email,
                 CreatedAt = DateTimeHelper.VietnamNow(),
                 CreatedByStaffId = null,
-                TotalTables =
-                    request.TotalTables > 0 ? request.TotalTables : (request.TableIds?.Count ?? 1),
+                Table4Count = request.table4Count,
+                Table6Count = request.table6Count,
+                Table8Count = request.table8Count,
+                TotalTables = request.TotalTables,
             };
 
             // Add reservation tables
@@ -266,6 +268,8 @@ public class ReservationService : IReservationService
                 .ThenInclude(c => c!.User)
             .Include(r => r.Order)
                 .ThenInclude(o => o!.OrderItems)
+            .Include(r => r.Order)
+                .ThenInclude(o => o!.OrderTables)
             .AsQueryable();
 
         if (startDate.HasValue)
@@ -299,6 +303,8 @@ public class ReservationService : IReservationService
         for (var i = 0; i < dtos.Count && i < reservations.Count; i++)
         {
             NormalizeReservationDto(reservations[i], dtos[i]);
+            dtos[i].AssignedTableCount =
+        reservations[i].Order?.OrderTables?.Count ?? 0;
         }
 
         return dtos;

@@ -4,7 +4,7 @@ namespace rmn_be.Core.Services.Interface
 {
     public interface IKitchen2Service
     {
-        Task<List<CookingListItemDTO>> GetCookingListAsync();
+        Task<List<CookingListItemDTO>> GetCookingListAsync(DateTime? targetDate = null, string shift = "all");
         Task<bool> StartCookingByItemAsync(long itemId);
         Task<bool> MarkReadyServeByItemAsync(long itemId);
     }

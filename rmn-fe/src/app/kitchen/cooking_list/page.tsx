@@ -10,16 +10,28 @@ export default function KitchenPage() {
   const [cooking_list, setCookingList] = useState<CookingListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const getCurrentShift = (): "morning" | "afternoon" => {
+    const now = new Date();
+    const hour = now.getHours();
 
+    return hour < 17 ? "morning" : "afternoon";
+  };
+  // THÊM MỚI: 3 State này
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Mặc định ngày hôm nay
+  const [selectedShift, setSelectedShift] = useState<
+    "all" | "morning" | "afternoon"
+  >(getCurrentShift());
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null); // Lưu ID dòng đang mở dropdown
   useEffect(() => {
     fetchCookingList();
+
     const interval = setInterval(fetchCookingList, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate, selectedShift]);
 
   const fetchCookingList = async () => {
     try {
-      const data = await cookingApi.getCookingList();
+      const data = await cookingApi.getCookingList(selectedDate, selectedShift);
       setCookingList(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
@@ -151,10 +163,55 @@ export default function KitchenPage() {
                 />
               </div>
             </div>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
 
+              {/* Shift */}
+              <div>
+                <label className={styles.label}>Ca</label>
+                <div style={{ display: "flex", gap: "0.25rem" }}>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={() => setSelectedShift("all")}
+                    style={{ background: selectedShift === "all" ? "#3b82f6" : "#f1f5f9", color: selectedShift === "all" ? "#fff" : "#475569" }}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={() => setSelectedShift("morning")}
+                    style={{ background: selectedShift === "morning" ? "#f59e0b" : "#f1f5f9", color: selectedShift === "morning" ? "#fff" : "#475569" }}
+                  >
+                    Sáng
+                  </button>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={() => setSelectedShift("afternoon")}
+                    style={{ background: selectedShift === "afternoon" ? "#6366f1" : "#f1f5f9", color: selectedShift === "afternoon" ? "#fff" : "#475569" }}
+                  >
+                    Chiều
+                  </button>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className={styles.label}>Ngày</label>
+                <input
+                  type="date"
+                  className={styles.input}
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  style={{ height: "40px" }}
+                />
+              </div>
+            </div>
             <button
               className={styles.btnPrimary}
-              onClick={() => setSearchTerm("")}
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedDate(new Date().toISOString().split("T")[0]);
+                setSelectedShift("all");
+              }}
               style={{ background: "#f1f5f9", color: "#475569", boxShadow: "none" }}
             >
               <RotateCcw size={16} /> Đặt lại
@@ -180,7 +237,6 @@ export default function KitchenPage() {
             <div>Thông tin món</div>
             <div style={{ textAlign: "center" }}>Số lượng đặt trước</div>
             <div style={{ textAlign: "center" }}>Số lượng cần nấu</div>
-            <div style={{ textAlign: "center" }}>Số lượng đang nấu</div>
             <div style={{ textAlign: "center" }}>Số lượng sẵn sàng</div>
           </div>
 
@@ -271,7 +327,70 @@ export default function KitchenPage() {
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {item.totalPreOrderQuantity}
+                      <div style={{ position: "relative", textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: "2.25rem",
+                            fontWeight: 900,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {item.totalPreOrderQuantity}
+                        </div>
+
+                        {item.preOrderDetails?.length > 0 && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setActiveDropdown(activeDropdown === item.itemId ? null : item.itemId)
+                              }
+                              style={{
+                                marginTop: "4px",
+                                fontSize: "0.7rem",
+                                color: "#64748b",
+                                background: "#f1f5f9",
+                                borderRadius: "6px",
+                                padding: "2px 6px",
+                              }}
+                            >
+                              Chi tiết
+                            </button>
+
+                            {activeDropdown === item.itemId && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: "100%",
+                                  left: "50%",
+                                  transform: "translateX(-50%)",
+                                  background: "#fff",
+                                  border: "1px solid #e2e8f0",
+                                  borderRadius: "10px",
+                                  boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+                                  zIndex: 10,
+                                  width: "160px",
+                                }}
+                              >
+                                {item.preOrderDetails.map((slot, i) => (
+                                  <div
+                                    key={i}
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      padding: "6px 10px",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #f1f5f9",
+                                    }}
+                                  >
+                                    <span>{slot.time}</span>
+                                    <span style={{ fontWeight: 700 }}>{slot.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -288,44 +407,7 @@ export default function KitchenPage() {
                       {item.mustCookQuantity}
                     </div>
                   </div>
-                  {/* Cột Đang Nấu */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-                    <div
-                      style={{
-                        fontSize: "2.25rem",
-                        fontWeight: 900,
-                        color: "#f97316",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {item.cookingQuantity}
-                    </div>
-                    <button
-                      className={styles.btnPrimary}
-                      onClick={() => handleStartCooking(item.itemId)}
-                      disabled={item.mustCookQuantity <= 0}
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        opacity: item.mustCookQuantity <= 0 ? 0.5 : 1,
-                        cursor: item.mustCookQuantity <= 0 ? "not-allowed" : "pointer",
-                        background: item.mustCookQuantity <= 0 ? "#f1f5f9" : "#3b82f6",
-                        color: item.mustCookQuantity <= 0 ? "#cbd5e1" : "#fff",
-                        boxShadow: item.mustCookQuantity <= 0
-                          ? "none"
-                          : "0 4px 12px rgba(59,130,246,0.3)",
-                        border: "none",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <Plus size={20} />
-                    </button>
-                  </div>
-                  
+
                   {/* Sẵn sàng */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
                     <div
@@ -341,7 +423,7 @@ export default function KitchenPage() {
                     <button
                       className={styles.btnPrimary}
                       onClick={() => handleMarkReady(item.itemId)}
-                      disabled={item.cookingQuantity <= 0}
+                      disabled={item.mustCookQuantity <= 0}
                       style={{
                         width: "40px",
                         height: "40px",
@@ -349,19 +431,22 @@ export default function KitchenPage() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        opacity: item.cookingQuantity <= 0 ? 0.5 : 1,
-                        cursor: item.cookingQuantity <= 0 ? "not-allowed" : "pointer",
-                        background: item.cookingQuantity <= 0 ? "#f8fafc" : "#f8fafc",
-                        color: item.cookingQuantity <= 0 ? "#cbd5e1" : "#94a3b8",
+                        opacity: item.mustCookQuantity <= 0 ? 0.5 : 1,
+                        cursor: item.mustCookQuantity <= 0 ? "not-allowed" : "pointer",
+                        background: item.mustCookQuantity <= 0 ? "#f8fafc" : "#10b981",
+                        color: item.mustCookQuantity <= 0 ? "#cbd5e1" : "#fff",
                         border: "1px solid #e2e8f0",
-                        boxShadow: "none",
+                        boxShadow:
+                          item.mustCookQuantity <= 0
+                            ? "none"
+                            : "0 4px 12px rgba(16,185,129,0.3)",
                         borderRadius: "8px",
                       }}
                     >
                       <Check size={20} />
                     </button>
                   </div>
-                  
+
                 </div>
               );
             })

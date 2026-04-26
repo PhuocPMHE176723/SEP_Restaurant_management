@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEP_Restaurant_management.Core.Models;
 
@@ -11,9 +12,11 @@ using SEP_Restaurant_management.Core.Models;
 namespace rmn_be.Core.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    partial class SepDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260424213800_AddTableTypeCountsToReservation")]
+    partial class AddTableTypeCountsToReservation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1218,15 +1221,6 @@ namespace rmn_be.Core.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("PENDING");
-
-                    b.Property<int>("Table4Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Table6Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Table8Count")
-                        .HasColumnType("int");
 
                     b.Property<int>("TotalTables")
                         .ValueGeneratedOnAdd()

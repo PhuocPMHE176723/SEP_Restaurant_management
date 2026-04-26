@@ -48,6 +48,9 @@ export interface CreateReservationRequest {
     totalTables?: number;
     tableIds?: number[];
     menuItems: OrderItemRequest[];
+    table4Count?: number;
+    table6Count?: number;
+    table8Count?: number;
 }
 
 export interface TableAvailability {

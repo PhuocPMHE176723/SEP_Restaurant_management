@@ -23,6 +23,7 @@ public class ReservationDTO
     public decimal DepositAmount { get; set; }
     public bool IsDepositPaid { get; set; }
     public DateTime? DepositPaidAt { get; set; }
+    public int AssignedTableCount { get; set; }
     public OrderDTO? Order { get; set; }
 }
 
@@ -55,6 +56,9 @@ public class OrderItemDTO
 
 public class CreateReservationRequest
 {
+    public int table4Count { get; set; }
+    public int table6Count { get; set; }
+    public int table8Count { get; set; }
     public int TotalTables { get; set; } = 1;
     public List<int>? TableIds { get; set; }
 
@@ -62,7 +66,7 @@ public class CreateReservationRequest
     public DateTime ReservedAt { get; set; }
 
     [Required]
-    [Range(1, 50)]
+    [Range(0, 50)]
     public int PartySize { get; set; }
 
     [Range(30, 240)]
