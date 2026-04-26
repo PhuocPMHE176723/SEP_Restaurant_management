@@ -64,8 +64,8 @@ export default function RegisterPage() {
         phone,
       });
 
-      // Chuyển hướng trực tiếp đến trang login
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      // Chuyển hướng đến trang xác thực OTP bằng số điện thoại
+      router.push(`/verify-otp?phone=${encodeURIComponent(phone)}`);
     } catch (err: unknown) {
       const apiErr = err as { message?: string; errors?: string[] };
       setError(apiErr.errors?.[0] ?? apiErr.message ?? "Đăng ký thất bại");

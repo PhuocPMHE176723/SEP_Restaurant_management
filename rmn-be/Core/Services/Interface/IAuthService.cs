@@ -21,5 +21,6 @@ public interface IAuthService
 
     Task<(bool Succeeded, List<string> Errors)> NewRegisterAsync(RegisterRequestDTO request);
     Task<(bool Succeeded, List<string> Errors)> VerifyEmailOtpAsync(VerifyEmailOtpRequestDTO request);
-    Task<(bool Succeeded, List<string> Errors)> ResendEmailOtpAsync(ResendOtpRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> VerifyPhoneOtpAsync(VerifyPhoneOtpRequestDTO request);
+    Task<(bool Succeeded, List<string> Errors)> ResendOtpAsync(ResendOtpRequestDTO request);
 }

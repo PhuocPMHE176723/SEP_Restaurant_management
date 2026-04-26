@@ -143,6 +143,24 @@ public class AuthController : BaseController
     }
 
     [AllowAnonymous]
+    [HttpPost("verify-otp-phone")]
+    public async Task<IActionResult> VerifyPhoneOtp([FromBody] VerifyPhoneOtpRequestDTO request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return Failure("Invalid request data",
+                ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList());
+        }
+
+        var (succeeded, errors) = await _authService.VerifyPhoneOtpAsync(request);
+
+        if (!succeeded)
+            return Failure("Verify Phone OTP failed", errors);
+
+        return Success("Phone number verified successfully.");
+    }
+
+    [AllowAnonymous]
     [HttpPost("resend-otp")]
     public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequestDTO request)
     {
@@ -152,7 +170,7 @@ public class AuthController : BaseController
                 ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList());
         }
 
-        var (succeeded, errors) = await _authService.ResendEmailOtpAsync(request);
+        var (succeeded, errors) = await _authService.ResendOtpAsync(request);
 
         if (!succeeded)
             return Failure("Resend OTP failed", errors);

@@ -106,9 +106,22 @@ public class VerifyEmailOtpRequestDTO
     public string Otp { get; set; } = string.Empty;
 }
 
+public class VerifyPhoneOtpRequestDTO
+{
+    [Required(ErrorMessage = "Phone number is required")]
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "OTP is required")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP must be exactly 6 digits")]
+    public string Otp { get; set; } = string.Empty;
+}
+
 public class ResendOtpRequestDTO
 {
-    [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email format")]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
+
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
+    public string? PhoneNumber { get; set; }
 }

@@ -358,10 +358,69 @@ public class AuthService : IAuthService
         // 👉 tạo OTP
         var otp = GenerateOtp();
 
-        _memoryCache.Set($"register_otp:{request.Email.ToLower()}", otp, TimeSpan.FromMinutes(5));
+        // Lưu OTP cho cả email và phone để linh hoạt (hoặc chỉ chọn 1 tùy requirement)
+        // Ở đây ưu tiên Phone theo yêu cầu "xác nhận otp số điện thoại"
+        _memoryCache.Set(GetOtpKey(request.Email), otp, TimeSpan.FromMinutes(5));
+        _memoryCache.Set(GetPhoneOtpKey(request.Phone), otp, TimeSpan.FromMinutes(5));
 
-        // 👉 gửi mail
+        // 👉 gửi mail (vẫn giữ gửi mail để demo/debug)
         await _emailService.SendEmailVerificationOtpAsync(request.Email, request.FullName, otp);
+        
+        // Ghi log OTP ra console để dễ test nếu không có SMS service
+        Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
+
+        return (true, new List<string>());
+    }
+
+    public async Task<(bool Succeeded, List<string> Errors)> VerifyPhoneOtpAsync(
+        VerifyPhoneOtpRequestDTO request
+    )
+    {
+        // Tìm user theo số điện thoại
+        var user = _context.Users.FirstOrDefault(u => u.PhoneNumber == request.PhoneNumber);
+        if (user == null)
+        {
+            return (false, new List<string> { "User with this phone number not found." });
+        }
+
+        if (user.PhoneNumberConfirmed)
+        {
+            return (false, new List<string> { "Phone number has already been verified." });
+        }
+
+        var otpKey = GetPhoneOtpKey(request.PhoneNumber);
+
+        // Nếu là Firebase Auth từ Frontend gửi lên, ta tạm thời tin tưởng (hoặc verify idToken nếu có)
+        bool isFirebaseVerified = request.Otp == "FIREBASE_VERIFIED";
+
+        if (!isFirebaseVerified)
+        {
+            if (!_memoryCache.TryGetValue(otpKey, out string? savedOtp) || string.IsNullOrWhiteSpace(savedOtp))
+            {
+                return (false, new List<string> { "OTP expired or not found." });
+            }
+
+            if (!string.Equals(savedOtp, request.Otp, StringComparison.Ordinal))
+            {
+                return (false, new List<string> { "OTP is incorrect." });
+            }
+        }
+
+        user.PhoneNumberConfirmed = true;
+        user.IsPhoneVerified = true;
+        user.PhoneVerifiedAt = DateTime.UtcNow;
+        
+        // Nếu xác thực phone thì cũng coi như xác thực email cho đơn giản trong project này (tùy logic)
+        user.EmailConfirmed = true; 
+        
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            return (false, updateResult.Errors.Select(e => e.Description).ToList());
+        }
+
+        _memoryCache.Remove(otpKey);
+        _memoryCache.Remove(GetPhoneCooldownKey(request.PhoneNumber));
 
         return (true, new List<string>());
     }
@@ -409,22 +468,32 @@ public class AuthService : IAuthService
         return (true, new List<string>());
     }
 
-    public async Task<(bool Succeeded, List<string> Errors)> ResendEmailOtpAsync(
+    public async Task<(bool Succeeded, List<string> Errors)> ResendOtpAsync(
         ResendOtpRequestDTO request
     )
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
+        UserIdentity? user = null;
+        string? identifier = null;
+        bool isEmail = false;
+
+        if (!string.IsNullOrEmpty(request.Email))
+        {
+            user = await _userManager.FindByEmailAsync(request.Email);
+            identifier = request.Email;
+            isEmail = true;
+        }
+        else if (!string.IsNullOrEmpty(request.PhoneNumber))
+        {
+            user = _context.Users.FirstOrDefault(u => u.PhoneNumber == request.PhoneNumber);
+            identifier = request.PhoneNumber;
+        }
+
+        if (user == null || identifier == null)
         {
             return (false, new List<string> { "User not found." });
         }
 
-        if (user.EmailConfirmed)
-        {
-            return (false, new List<string> { "Email has already been verified." });
-        }
-
-        var cooldownKey = GetCooldownKey(request.Email);
+        var cooldownKey = isEmail ? GetCooldownKey(identifier) : GetPhoneCooldownKey(identifier);
 
         if (_memoryCache.TryGetValue(cooldownKey, out _))
         {
@@ -438,15 +507,26 @@ public class AuthService : IAuthService
         }
 
         var otp = GenerateOtp();
-        SetOtpCache(request.Email, otp);
+        if (isEmail)
+            SetOtpCache(identifier, otp);
+        else
+            _memoryCache.Set(GetPhoneOtpKey(identifier), otp, TimeSpan.FromMinutes(OtpExpiredMinutes));
 
         _memoryCache.Set(cooldownKey, true, TimeSpan.FromSeconds(ResendCooldownSeconds));
 
-        await _emailService.SendEmailVerificationOtpAsync(
-            user.Email ?? request.Email,
-            user.FullName ?? user.Email ?? request.Email,
-            otp
-        );
+        if (isEmail)
+        {
+            await _emailService.SendEmailVerificationOtpAsync(
+                user.Email ?? identifier,
+                user.FullName ?? user.Email ?? identifier,
+                otp
+            );
+        }
+        else
+        {
+             // Mock SMS sending
+             Console.WriteLine($"[RESEND OTP for {identifier}]: {otp}");
+        }
 
         return (true, new List<string>());
     }
@@ -457,9 +537,13 @@ public class AuthService : IAuthService
     }
 
     private static string GetOtpKey(string email) => $"register_otp:{email.Trim().ToLower()}";
+    private static string GetPhoneOtpKey(string phone) => $"register_otp_phone:{phone.Trim()}";
 
     private static string GetCooldownKey(string email) =>
         $"register_otp_cooldown:{email.Trim().ToLower()}";
+    
+    private static string GetPhoneCooldownKey(string phone) =>
+        $"register_otp_phone_cooldown:{phone.Trim()}";
 
     private static string GenerateOtp()
     {
