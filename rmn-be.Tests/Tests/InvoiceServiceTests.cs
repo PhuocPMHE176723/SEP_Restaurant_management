@@ -122,7 +122,7 @@ public class InvoiceServicePostTests
         {
             OrderId = orderId,
             OrderCode = $"OD-{orderId}",
-            TableId = tableId,
+            TableId = tableId, OrderTables = tableId.HasValue ? new List<OrderTable> { new OrderTable { TableId = tableId.Value } } : new List<OrderTable>(),
             ReservationId = reservationId,
             CustomerId = customerId,
             OrderType = "DINE_IN",
