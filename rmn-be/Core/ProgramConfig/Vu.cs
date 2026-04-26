@@ -25,6 +25,7 @@ namespace SEP_Restaurant_management.Core.ProgramConfig
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IKitchen2Service, Kitchen2Service>();
             services.AddScoped<IServingService, ServingService>();
+            services.AddScoped<ITableService, TableService>();
             services.AddMemoryCache();
 
             var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();

@@ -30,4 +30,5 @@ export interface ReservationResponse {
     totalTables?: number;
     tableIds?: number[];
     order?: OrderResponse;
+    assignedTableCount?: number;
 }

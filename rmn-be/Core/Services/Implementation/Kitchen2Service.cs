@@ -13,23 +13,18 @@ namespace rmn_be.Core.Services.Implementation
         {
             _unitOfWork = unitOfWork;
         }
-
-
-        public async Task<List<CookingListItemDTO>> GetCookingListAsync()
+        public async Task<List<CookingListItemDTO>> GetCookingListAsync(DateTime? targetDate = null, string shift = "all")
         {
             var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
             var orderRepo = _unitOfWork.GetRepository<Order>();
             var menuItemRepo = _unitOfWork.GetRepository<MenuItem>();
             var reservationRepo = _unitOfWork.GetRepository<Reservation>();
 
-            var today = DateTime.Today;
-            var tomorrow = today.AddDays(1);
+            var date = targetDate ?? DateTime.Today;
 
-            // Chỉ lấy item trong ngày hôm nay và không bị hủy
+            // 1. Lấy OrderItem (chỉ lọc status)
             var orderItems = (await orderItemRepo.FindAsync(x =>
-                    x.Status != "CANCELLED" &&
-                    x.CreatedAt >= today &&
-                    x.CreatedAt < tomorrow))
+                    x.Status != "CANCELLED"))
                 .ToList();
 
             if (!orderItems.Any()) return new List<CookingListItemDTO>();
@@ -37,14 +32,17 @@ namespace rmn_be.Core.Services.Implementation
             var orderIds = orderItems.Select(x => x.OrderId).Distinct().ToList();
             var itemIds = orderItems.Select(x => x.ItemId).Distinct().ToList();
 
+            // 2. Load Orders
             var orders = (await orderRepo.GetAllAsync())
                 .Where(x => orderIds.Contains(x.OrderId))
                 .ToDictionary(x => x.OrderId, x => x);
 
+            // 3. Load MenuItems
             var menuItems = (await menuItemRepo.GetAllAsync())
                 .Where(x => itemIds.Contains(x.ItemId))
                 .ToDictionary(x => x.ItemId, x => x);
 
+            // 4. Load Reservations
             var reservationIds = orders.Values
                 .Where(x => x.ReservationId.HasValue)
                 .Select(x => x.ReservationId!.Value)
@@ -55,21 +53,65 @@ namespace rmn_be.Core.Services.Implementation
                 .Where(x => reservationIds.Contains(x.ReservationId))
                 .ToDictionary(x => x.ReservationId, x => x);
 
-            var validOrderItems = orderItems
-                .Where(oi => orders.ContainsKey(oi.OrderId) && menuItems.ContainsKey(oi.ItemId))
-                .ToList();
+            // 5. FILTER ĐÚNG THEO DATE + SHIFT
+            orderItems = orderItems.Where(oi =>
+            {
+                if (!orders.TryGetValue(oi.OrderId, out var order))
+                    return false;
 
-            var result = validOrderItems
+                DateTime referenceTime;
+
+                // PreOrder → dùng Reservation
+                if (order.ReservationId.HasValue &&
+                    reservations.TryGetValue(order.ReservationId.Value, out var res))
+                {
+                    referenceTime = res.ReservedAt;
+                }
+                else
+                {
+                    // Order thường → dùng Order.CreatedAt
+                    referenceTime = order.OpenedAt;
+                }
+
+                // Filter theo ngày
+                if (referenceTime.Date != date.Date)
+                    return false;
+
+                // Filter theo ca
+                if (shift == "morning")
+                    return referenceTime.Hour >= 6 && referenceTime.Hour < 15;
+
+                if (shift == "afternoon")
+                    return referenceTime.Hour >= 17 && referenceTime.Hour < 22;
+
+                return true; // shift = all
+            }).ToList();
+
+            if (!orderItems.Any()) return new List<CookingListItemDTO>();
+
+            // 6. GROUP & BUSINESS LOGIC
+            var result = orderItems
+                .Where(oi => orders.ContainsKey(oi.OrderId) && menuItems.ContainsKey(oi.ItemId))
                 .GroupBy(x => x.ItemId)
                 .Select(group =>
                 {
                     var menuItem = menuItems[group.Key];
                     var relatedItems = group.ToList();
 
-                    int totalPreOrderQuantity = 0;
-                    int mustCookQuantity = 0;
-                    int cookingQuantity = 0;
-                    int readyServeQuantity = 0;
+                    var dto = new CookingListItemDTO
+                    {
+                        ItemId = menuItem.ItemId,
+                        ItemName = menuItem.ItemName,
+                        Thumbnail = menuItem.Thumbnail,
+                        Unit = menuItem.Unit,
+                        TotalPreOrderQuantity = 0,
+                        MustCookQuantity = 0,
+                        CookingQuantity = 0,
+                        ReadyServeQuantity = 0,
+                        PreOrderDetails = new List<PreOrderSlotDTO>(),
+                    };
+
+                    var hourlySlots = new Dictionary<string, int>();
 
                     foreach (var orderItem in relatedItems)
                     {
@@ -77,73 +119,199 @@ namespace rmn_be.Core.Services.Implementation
 
                         bool isPreOrder = order.ReservationId.HasValue;
                         bool isCheckedIn = false;
+                        DateTime? reservationTime = null;
 
                         if (isPreOrder &&
-                            order.ReservationId.HasValue &&
-                            reservations.ContainsKey(order.ReservationId.Value))
+                            reservations.TryGetValue(order.ReservationId!.Value, out var res))
                         {
-                            var reservation = reservations[order.ReservationId.Value];
-
-                            // Đổi lại nếu project dùng status khác
-                            isCheckedIn = reservation.Status == "CHECKED_IN";
+                            isCheckedIn = res.Status == "CHECKED_IN";
+                            reservationTime = res.ReservedAt;
                         }
 
-                        // 1. Tổng đặt trước = đơn đặt trước, chưa check-in, pending
+                        // A. PreOrder chưa check-in
                         if (isPreOrder && !isCheckedIn && orderItem.Status == "PENDING")
                         {
-                            totalPreOrderQuantity += orderItem.Quantity;
+                            dto.TotalPreOrderQuantity += orderItem.Quantity;
+
+                            var timeKey = reservationTime?.ToString("HH:mm") ?? "N/A";
+
+                            if (hourlySlots.ContainsKey(timeKey))
+                                hourlySlots[timeKey] += orderItem.Quantity;
+                            else
+                                hourlySlots[timeKey] = orderItem.Quantity;
                         }
 
-                        // 2. Cần nấu:
-                        // - đơn đặt trước đã check-in + pending
-                        // - đơn gọi trực tiếp (không đặt trước) + pending
-                        if (
-                            orderItem.Status == "PENDING" &&
-                            (
-                                (isPreOrder && isCheckedIn) ||
-                                !isPreOrder
-                            )
-                        )
+                        // B. Cần nấu
+                        if (orderItem.Status == "PENDING" &&
+                            ((isPreOrder && isCheckedIn) || !isPreOrder))
                         {
-                            mustCookQuantity += orderItem.Quantity;
+                            dto.MustCookQuantity += orderItem.Quantity;
                         }
 
-                        // 3. Đang nấu
+                        // C. Đang nấu
                         if (orderItem.Status == "COOKING")
                         {
-                            cookingQuantity += orderItem.Quantity;
+                            dto.CookingQuantity += orderItem.Quantity;
                         }
 
-                        // 4. Sẵn sàng phục vụ
+                        // D. Sẵn sàng
                         if (orderItem.Status == "READY_SERVE")
                         {
-                            readyServeQuantity += orderItem.Quantity;
+                            dto.ReadyServeQuantity += orderItem.Quantity;
                         }
                     }
+                    // Map dropdown giờ
+                    dto.PreOrderDetails = hourlySlots
+                        .OrderBy(x => x.Key)
+                        .Select(x => new PreOrderSlotDTO
+                        {
+                            Time = x.Key,
+                            Quantity = x.Value
+                        })
+                        .ToList();
 
-                    return new CookingListItemDTO
-                    {
-                        ItemId = menuItem.ItemId,
-                        ItemName = menuItem.ItemName,
-                        Thumbnail = menuItem.Thumbnail,
-                        Unit = menuItem.Unit,
-                        TotalPreOrderQuantity = totalPreOrderQuantity,
-                        MustCookQuantity = mustCookQuantity,
-                        CookingQuantity = cookingQuantity,
-                        ReadyServeQuantity = readyServeQuantity
-                    };
+                    return dto;
                 })
-                .Where(x =>
-                    x.TotalPreOrderQuantity > 0 ||
-                    x.MustCookQuantity > 0 ||
-                    x.CookingQuantity > 0 ||
-                    x.ReadyServeQuantity > 0)
-                .OrderByDescending(x => x.MustCookQuantity + x.CookingQuantity + x.ReadyServeQuantity)
+                .Where(x => x.TotalPreOrderQuantity > 0
+                         || x.MustCookQuantity > 0
+                         || x.CookingQuantity > 0
+                         || x.ReadyServeQuantity > 0)
+                .OrderByDescending(x => x.MustCookQuantity)
                 .ThenBy(x => x.ItemName)
                 .ToList();
 
             return result;
         }
+
+        //public async Task<List<CookingListItemDTO>> GetCookingListAsync()
+        //{
+        //    var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
+        //    var orderRepo = _unitOfWork.GetRepository<Order>();
+        //    var menuItemRepo = _unitOfWork.GetRepository<MenuItem>();
+        //    var reservationRepo = _unitOfWork.GetRepository<Reservation>();
+
+        //    var today = DateTime.Today;
+        //    var tomorrow = today.AddDays(1);
+
+        //    // Chỉ lấy item trong ngày hôm nay và không bị hủy
+        //    var orderItems = (await orderItemRepo.FindAsync(x =>
+        //            x.Status != "CANCELLED" &&
+        //            x.CreatedAt >= today &&
+        //            x.CreatedAt < tomorrow))
+        //        .ToList();
+
+        //    if (!orderItems.Any()) return new List<CookingListItemDTO>();
+
+        //    var orderIds = orderItems.Select(x => x.OrderId).Distinct().ToList();
+        //    var itemIds = orderItems.Select(x => x.ItemId).Distinct().ToList();
+
+        //    var orders = (await orderRepo.GetAllAsync())
+        //        .Where(x => orderIds.Contains(x.OrderId))
+        //        .ToDictionary(x => x.OrderId, x => x);
+
+        //    var menuItems = (await menuItemRepo.GetAllAsync())
+        //        .Where(x => itemIds.Contains(x.ItemId))
+        //        .ToDictionary(x => x.ItemId, x => x);
+
+        //    var reservationIds = orders.Values
+        //        .Where(x => x.ReservationId.HasValue)
+        //        .Select(x => x.ReservationId!.Value)
+        //        .Distinct()
+        //        .ToList();
+
+        //    var reservations = (await reservationRepo.GetAllAsync())
+        //        .Where(x => reservationIds.Contains(x.ReservationId))
+        //        .ToDictionary(x => x.ReservationId, x => x);
+
+        //    var validOrderItems = orderItems
+        //        .Where(oi => orders.ContainsKey(oi.OrderId) && menuItems.ContainsKey(oi.ItemId))
+        //        .ToList();
+
+        //    var result = validOrderItems
+        //        .GroupBy(x => x.ItemId)
+        //        .Select(group =>
+        //        {
+        //            var menuItem = menuItems[group.Key];
+        //            var relatedItems = group.ToList();
+
+        //            int totalPreOrderQuantity = 0;
+        //            int mustCookQuantity = 0;
+        //            int cookingQuantity = 0;
+        //            int readyServeQuantity = 0;
+
+        //            foreach (var orderItem in relatedItems)
+        //            {
+        //                var order = orders[orderItem.OrderId];
+
+        //                bool isPreOrder = order.ReservationId.HasValue;
+        //                bool isCheckedIn = false;
+
+        //                if (isPreOrder &&
+        //                    order.ReservationId.HasValue &&
+        //                    reservations.ContainsKey(order.ReservationId.Value))
+        //                {
+        //                    var reservation = reservations[order.ReservationId.Value];
+
+        //                    // Đổi lại nếu project dùng status khác
+        //                    isCheckedIn = reservation.Status == "CHECKED_IN";
+        //                }
+
+        //                // 1. Tổng đặt trước = đơn đặt trước, chưa check-in, pending
+        //                if (isPreOrder && !isCheckedIn && orderItem.Status == "PENDING")
+        //                {
+        //                    totalPreOrderQuantity += orderItem.Quantity;
+        //                }
+
+        //                // 2. Cần nấu:
+        //                // - đơn đặt trước đã check-in + pending
+        //                // - đơn gọi trực tiếp (không đặt trước) + pending
+        //                if (
+        //                    orderItem.Status == "PENDING" &&
+        //                    (
+        //                        (isPreOrder && isCheckedIn) ||
+        //                        !isPreOrder
+        //                    )
+        //                )
+        //                {
+        //                    mustCookQuantity += orderItem.Quantity;
+        //                }
+
+        //                // 3. Đang nấu
+        //                if (orderItem.Status == "COOKING")
+        //                {
+        //                    cookingQuantity += orderItem.Quantity;
+        //                }
+
+        //                // 4. Sẵn sàng phục vụ
+        //                if (orderItem.Status == "READY_SERVE")
+        //                {
+        //                    readyServeQuantity += orderItem.Quantity;
+        //                }
+        //            }
+
+        //            return new CookingListItemDTO
+        //            {
+        //                ItemId = menuItem.ItemId,
+        //                ItemName = menuItem.ItemName,
+        //                Thumbnail = menuItem.Thumbnail,
+        //                Unit = menuItem.Unit,
+        //                TotalPreOrderQuantity = totalPreOrderQuantity,
+        //                MustCookQuantity = mustCookQuantity,
+        //                CookingQuantity = cookingQuantity,
+        //                ReadyServeQuantity = readyServeQuantity
+        //            };
+        //        })
+        //        .Where(x =>
+        //            x.TotalPreOrderQuantity > 0 ||
+        //            x.MustCookQuantity > 0 ||
+        //            x.CookingQuantity > 0 ||
+        //            x.ReadyServeQuantity > 0)
+        //        .OrderByDescending(x => x.MustCookQuantity + x.CookingQuantity + x.ReadyServeQuantity)
+        //        .ThenBy(x => x.ItemName)
+        //        .ToList();
+
+        //    return result;
+        //}
 
         public async Task<bool> StartCookingByItemAsync(long itemId)
         {
@@ -159,7 +327,7 @@ namespace rmn_be.Core.Services.Implementation
 
         public async Task<bool> MarkReadyServeByItemAsync(long itemId)
         {
-            var candidate = await GetOldestCookingOrderItemAsync(itemId);
+            var candidate = await GetOldestPendingOrderItemCanCookAsync(itemId);
             if (candidate == null) return false;
 
             candidate.Status = "READY_SERVE";

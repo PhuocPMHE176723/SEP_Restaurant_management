@@ -62,11 +62,17 @@ export type CookingListItem = {
   cookingQuantity: number;
   readyServeQuantity: number;
   lastUpdatedAt?: string | null;
+  preOrderDetails: PreOrderSlot[];
 };
+export type PreOrderSlot = { time: string; quantity: number; };
 
 export const cookingApi = {
-  async getCookingList(): Promise<CookingListItem[]> {
-    const response = await fetch(`${apiBaseUrl}/api/Kitchen/cooking-list`, {
+  async getCookingList(date?: string, shift: string = "all"): Promise<CookingListItem[]> {
+    // Tạo URL với query parameters 
+    const params = new URLSearchParams(); 
+    if (date) params.append("date", date); 
+    if (shift) params.append("shift", shift);
+    const response = await fetch(`${apiBaseUrl}/api/Kitchen/cooking-list?${params.toString()}`, {
       headers: authHeaders(),
       cache: "no-store",
     });

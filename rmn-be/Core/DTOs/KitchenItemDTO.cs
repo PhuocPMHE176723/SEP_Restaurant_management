@@ -18,6 +18,11 @@
 
         // status = READY_SERVE
         public int ReadyServeQuantity { get; set; }
-
+        public List<PreOrderSlotDTO> PreOrderDetails { get; set; } = new();
+    }
+    public class PreOrderSlotDTO
+    {
+        public string Time { get; set; } // Ví dụ: "11:30"
+        public int Quantity { get; set; }
     }
 }

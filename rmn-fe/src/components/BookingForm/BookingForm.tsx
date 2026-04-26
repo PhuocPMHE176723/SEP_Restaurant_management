@@ -55,6 +55,16 @@ type SeatingPlan = {
   counts: { 4: number; 6: number; 8: number };
 };
 
+type TableCapacity = 4 | 6 | 8;
+
+type TableTypeCounts = Record<TableCapacity, number>;
+
+const EMPTY_TABLE_TYPE_COUNTS: TableTypeCounts = {
+  4: 0,
+  6: 0,
+  8: 0,
+};
+
 function buildSeatingPlan(partySize: number): SeatingPlan {
   const target = Math.max(0, Math.floor(partySize));
   let best: SeatingPlan = {
@@ -169,6 +179,21 @@ export default function BookingForm() {
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [tableTypeCounts, setTableTypeCounts] =
+    useState<TableTypeCounts>(EMPTY_TABLE_TYPE_COUNTS);
+
+  const selectedTableCount =
+    tableTypeCounts[4] + tableTypeCounts[6] + tableTypeCounts[8];
+
+  const selectedSeatCount =
+    tableTypeCounts[4] * 4 + tableTypeCounts[6] * 6 + tableTypeCounts[8] * 8;
+
+  const updateTableTypeCount = (capacity: TableCapacity, delta: number) => {
+    setTableTypeCounts((prev) => ({
+      ...prev,
+      [capacity]: Math.max(0, prev[capacity] + delta),
+    }));
+  };
   useEffect(() => {
     setMounted(true);
     getSepayConfig()
@@ -398,10 +423,10 @@ export default function BookingForm() {
     }
 
     if (bookingMode === "table") {
-      if (tableCount < 1) {
+      if (selectedTableCount < 1) {
         e.totalTables = "Số lượng bàn phải từ 1 trở lên";
         missingNames.push("Số lượng bàn");
-      } else if (tableCount > MAX_TABLES) {
+      } else if (selectedTableCount > MAX_TABLES) {
         e.totalTables = `Tối đa ${MAX_TABLES} bàn mỗi lần đặt`;
       }
     }
@@ -444,36 +469,18 @@ export default function BookingForm() {
       const noteCombined = [phoneLine, form.note].filter(Boolean).join("\n");
 
       // Auto-assign tables based on requested table count and party size
-      const availability = await getPublicTableAvailability(
-        form.date,
-        form.timeSlot,
-      );
-      const partySizeForPicking = bookingMode === "table" ? 0 : form.partySize;
-      const pickedTables = pickTablesFromAvailability(
-        availability,
-        tableCount,
-        partySizeForPicking,
-      );
-      if (pickedTables.length === 0) {
-        throw new Error(
-          "Không đủ bàn trống phù hợp cho số bàn/số khách đã chọn. Vui lòng thử giờ khác hoặc giảm số bàn.",
-        );
-      }
-      const tableIds = pickedTables.map((t) => t.tableId);
-      const maxSeats = pickedTables.reduce(
-        (sum, t) => sum + (t.capacity || 0),
-        0,
-      );
-      const partySizeToSend =
-        bookingMode === "table" ? Math.max(1, maxSeats) : form.partySize;
+      const tableIds: number[] = [];
 
       const result = await createReservation({
         reservedAt,
-        partySize: partySizeToSend,
+        partySize: bookingMode === "party" ? form.partySize : 0,
         durationMinutes: 90,
         note: noteCombined || undefined,
         contactEmail: form.email || undefined,
-        totalTables: tableCount,
+        totalTables: bookingMode === "party" ? 0 : selectedTableCount,
+        table4Count: bookingMode === "table" ? tableTypeCounts[4] : 0,
+        table6Count: bookingMode === "table" ? tableTypeCounts[6] : 0,
+        table8Count: bookingMode === "table" ? tableTypeCounts[8] : 0,
         tableIds,
         menuItems: orderItems,
       });
@@ -495,7 +502,7 @@ export default function BookingForm() {
       console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
 
       if (sepayConfig?.account) {
-        const depositAmount = Math.max(200000, Math.round(_totalAmount * 0.2)); // Min 200k or 20%
+        const depositAmount = Math.max(2000, Math.round(_totalAmount * 0.2)); // Min 200k or 20%
         console.log(`[BookingForm] Calculated depositAmount: ${depositAmount}`);
         setQrAmount(depositAmount);
         setCurrentReservationId(result.reservationId);
@@ -822,14 +829,20 @@ export default function BookingForm() {
           <button
             type="button"
             className={`${styles.modeTab} ${bookingMode === "party" ? styles.modeTabActive : ""}`}
-            onClick={() => setBookingMode("party")}
+            onClick={() => {
+              setBookingMode("party");
+              setTableTypeCounts(EMPTY_TABLE_TYPE_COUNTS);
+            }}
           >
             Đặt theo số khách
           </button>
           <button
             type="button"
             className={`${styles.modeTab} ${bookingMode === "table" ? styles.modeTabActive : ""}`}
-            onClick={() => setBookingMode("table")}
+            onClick={() => {
+              setBookingMode("table");
+              set("partySize", 0);
+            }}
           >
             Đặt theo số bàn
           </button>
@@ -899,57 +912,51 @@ export default function BookingForm() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className={styles.modePanel}>
-            <div className={styles.field}>
-              <div className={styles.fieldHeaderRow}>
-                <label className={styles.label} style={{ marginBottom: 0 }}>
-                  Số lượng bàn *
-                </label>
-                <a href="/reservations" className={styles.historyLink}>
-                  Lịch sử đặt bàn của bạn →
-                </a>
-              </div>
-              <input
-                type="number"
-                min="1"
-                max={MAX_TABLES}
-                value={tableCount === 0 ? "" : tableCount}
-                onChange={(e) => {
-                  const rawValue = e.target.value;
-                  setTableCountTouched(true);
-                  if (rawValue === "") {
-                    setTableCount(0);
-                    return;
-                  }
-                  const raw = parseInt(rawValue, 10);
-                  const safe = Number.isFinite(raw) ? raw : 0;
-                  const clamped = Math.min(Math.max(safe, 1), MAX_TABLES);
-                  setTableCount(clamped);
-                  setErrors((prev) => ({ ...prev, totalTables: "" }));
-                }}
-                className={`${styles.input} ${errors.totalTables ? styles.inputError : ""}`}
-                style={{ maxWidth: 220 }}
-                required
-              />
-              {errors.totalTables && (
-                <p className={styles.error}>{errors.totalTables}</p>
-              )}
-              <p className={styles.hint}>Nhập số bàn bạn muốn đặt/ghép.</p>
-              <p className={styles.hint}>
-                <strong>Số khách sẽ được tự động đặt</strong> theo tổng sức chứa
-                của các bàn được gán (ví dụ:{" "}
-                <strong>2 bàn ≈ tối đa 8 khách</strong>
-                nếu bàn 4 chỗ).
-              </p>
-              <p className={styles.hint}>
-                Sau khi check-in, nhân viên/thu ngân sẽ tự ghép bàn trống hoặc
-                chọn thủ công theo nhu cầu.
-              </p>
-              <p className={styles.hint}>
-                Hệ thống sẽ tự gán bàn trống theo ngày/giờ bạn chọn.
-              </p>
+        ) : bookingMode === "table" && (
+          <div className={styles.formGroup}>
+            <label>Chọn loại bàn</label>
+
+            <div className={styles.tableTypeList}>
+              {([4, 6, 8] as TableCapacity[]).map((capacity) => (
+                <div key={capacity} className={styles.tableTypeItem}>
+                  <span className={styles.tableTypeLabel}>
+                    Bàn {capacity} Chỗ
+                  </span>
+
+                  <div className={styles.tableCounter}>
+                    <button
+                      type="button"
+                      className={styles.tableCounterBtn}
+                      onClick={() => updateTableTypeCount(capacity, -1)}
+                      disabled={tableTypeCounts[capacity] === 0}
+                    >
+                      −
+                    </button>
+
+                    <span className={styles.tableCounterValue}>
+                      {tableTypeCounts[capacity]}
+                    </span>
+
+                    <button
+                      type="button"
+                      className={styles.tableCounterBtn}
+                      onClick={() => updateTableTypeCount(capacity, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            <p className={styles.hint}>
+              Đã chọn <strong>{selectedTableCount}</strong> bàn · Tổng sức chứa{" "}
+              <strong>{selectedSeatCount}</strong> khách
+            </p>
+
+            {errors.totalTables && (
+              <p className={styles.error}>{errors.totalTables}</p>
+            )}
           </div>
         )}
       </div>
@@ -1280,7 +1287,7 @@ export default function BookingForm() {
                       }}
                     >
                       {Math.max(
-                        200000,
+                        2000,
                         Math.round(totalAmount * 0.2),
                       ).toLocaleString("vi-VN")}{" "}
                       đ

@@ -6,14 +6,18 @@ import { adminReservationApi } from "../../../lib/api/admin-reservation";
 import type { ReservationResponse } from "../../../types/models";
 import Pagination from "../../../components/Pagination";
 import styles from "../../manager/manager.module.css";
-
+import AssignTablesModal from "../../../components/AssignTablesModal/AssignTablesModal";
+import type { ReservationAssignTablesResponse } from "@/lib/api/table-reservation";
+import { tableReservationApi } from "@/lib/api/table-reservation";
+import { useRouter } from "next/dist/client/components/navigation";
+import ViewAssignTablesModal from "@/components/ViewAssignTablesModal/ViewAssignTablesModal";
 export default function CashierReservationsPage() {
   const [reservations, setReservations] = useState<ReservationResponse[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<
     ReservationResponse[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("ALL");
+  const [filter, setFilter] = useState("CONFIRMED");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [startDate, setStartDate] = useState(
@@ -28,14 +32,50 @@ export default function CashierReservationsPage() {
     direction: "asc" | "desc";
   } | null>({ key: "reservationId", direction: "desc" });
 
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignData, setAssignData] =
+    useState<ReservationAssignTablesResponse | null>(null);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [viewAssignedModalOpen, setViewAssignedModalOpen] = useState(false);
+  const getCurrentShift = (): "MORNING" | "EVENING" => {
+    const now = new Date();
+    const hour = now.getHours();
+
+    // Trước 17h mặc định là ca sáng, từ 17h trở đi là ca chiều
+    return hour < 17 ? "MORNING" : "EVENING";
+  };
+  const [shiftFilter, setShiftFilter] = useState<"MORNING" | "EVENING">(getCurrentShift());
   useEffect(() => {
     fetchReservations();
   }, [startDate, endDate]);
 
   useEffect(() => {
     filterReservations();
-  }, [reservations, filter, search, sortConfig]);
+  }, [reservations, filter, shiftFilter, search, sortConfig]);
 
+  const getReservationShift = (reservedAt: string) => {
+    const date = new Date(reservedAt);
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const totalMinutes = hour * 60 + minute;
+
+    const morningStart = 11 * 60;
+    const morningEnd = 14 * 60;
+
+    const eveningStart = 17 * 60;
+    const eveningEnd = 22 * 60;
+
+    if (totalMinutes >= morningStart && totalMinutes <= morningEnd) {
+      return "MORNING";
+    }
+
+    if (totalMinutes >= eveningStart && totalMinutes <= eveningEnd) {
+      return "EVENING";
+    }
+
+    return "OTHER";
+  };
   const fetchReservations = async () => {
     try {
       setLoading(true);
@@ -59,7 +99,10 @@ export default function CashierReservationsPage() {
         (reservation) => reservation.status === filter,
       );
     }
-
+    filtered = filtered.filter(
+      (reservation) =>
+        getReservationShift(reservation.reservedAt) === shiftFilter,
+    );
     if (search) {
       const term = search.toLowerCase();
       filtered = filtered.filter(
@@ -86,6 +129,78 @@ export default function CashierReservationsPage() {
     setCurrentPage(1); // Reset to first page when filtering
   };
 
+  const handleOpenAssignModal = async (reservationId: number) => {
+    try {
+      setAssignModalOpen(true);
+      setAssignLoading(true);
+
+      const data = await tableReservationApi.getAssignableTables(reservationId);
+      setAssignData(data);
+    } catch (error) {
+      console.error("Failed to load assignable tables:", error);
+
+      Swal.fire({
+        title: "Lỗi",
+        text: "Không thể tải danh sách bàn!",
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+
+      setAssignModalOpen(false);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleAssignTables = async (payload: {
+    reservationId: number;
+    tableIds: number[];
+  }) => {
+    try {
+      setAssignSubmitting(true);
+
+      await tableReservationApi.assignTables(payload.reservationId, {
+        tableIds: payload.tableIds,
+      });
+
+      await fetchReservations();
+
+      Swal.fire({
+        title: "Thành công",
+        text: "Gán bàn thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)",
+      });
+
+      setAssignModalOpen(false);
+      setAssignData(null);
+    } catch (error) {
+      console.error("Failed to assign tables:", error);
+
+      Swal.fire({
+        title: "Lỗi",
+        text: "Gán bàn thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
+  const handleOpenViewAssignedTables = async (reservationId: number) => {
+    try {
+      setViewAssignedModalOpen(true);
+      setAssignLoading(true);
+
+      const data = await tableReservationApi.getAssignableTables(reservationId);
+      setAssignData(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
   // Pagination calculations
   const totalItems = filteredReservations.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -122,6 +237,44 @@ export default function CashierReservationsPage() {
     }
   };
 
+  const router = useRouter();
+  const handleCheckIn = async (reservationId: number) => {
+    try {
+      const confirm = await Swal.fire({
+        title: "Xác nhận check-in?",
+        text: "Hệ thống sẽ mở order và chuyển trạng thái bàn sang đang có khách.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Check-in",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "var(--brand-primary)",
+        cancelButtonColor: "var(--error)",
+      });
+
+      if (!confirm.isConfirmed) return;
+
+      const result = await tableReservationApi.checkInReservation(reservationId);
+
+      await Swal.fire({
+        title: "Thành công",
+        text: "Check-in thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)",
+      });
+
+      router.push(`/cashier/orders`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Check-in thất bại!";
+
+      Swal.fire({
+        title: "Lỗi",
+        text: message,
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+    }
+  };
   const requestSort = (key: keyof ReservationResponse) => {
     let direction: "asc" | "desc" = "asc";
     if (
@@ -203,9 +356,9 @@ export default function CashierReservationsPage() {
           </span>
           <div className={styles.statusButtonGroup}>
             {[
-              { value: "ALL", label: "Tất cả" },
               { value: "PENDING", label: "Đang chờ" },
               { value: "CONFIRMED", label: "Đã xác nhận" },
+              { value: "CHECKED_IN", label: "Đã check-in" },
               { value: "CANCELLED", label: "Đã hủy" },
             ].map((s) => (
               <button
@@ -218,7 +371,31 @@ export default function CashierReservationsPage() {
             ))}
           </div>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span
+            style={{ fontSize: "0.85rem", fontWeight: 700, color: "#475569" }}
+          >
+            Ca:
+          </span>
 
+          <div className={styles.statusButtonGroup}>
+            {[
+              { value: "MORNING", label: "Ca sáng" },
+              { value: "EVENING", label: "Ca chiều" },
+            ].map((s) => (
+              <button
+                key={s.value}
+                onClick={() =>
+                  setShiftFilter(s.value as "MORNING" | "EVENING")
+                }
+                className={`${styles.statusBtn} ${shiftFilter === s.value ? styles.statusBtnActive : ""
+                  }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div
           style={{
             flex: 1,
@@ -322,34 +499,42 @@ export default function CashierReservationsPage() {
                     </td>
                   </tr>
                 ) : (
-                  currentReservations.map((reservation) => (
-                    <tr key={reservation.reservationId}>
-                      <td>#{reservation.reservationId}</td>
-                      <td>{reservation.customerName}</td>
-                      <td>{reservation.customerPhone}</td>
-                      <td style={{ textAlign: "center" }}>
-                        <div style={{ fontWeight: 700 }}>
-                          {reservation.partySize}
-                        </div>
-                        <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                          {Math.max(
-                            1,
-                            reservation.totalTables ??
-                              reservation.tableIds?.length ??
-                              1,
-                          )}{" "}
-                          bàn
-                        </div>
-                      </td>
-                      <td>
-                        {new Date(reservation.reservedAt).toLocaleString(
-                          "vi-VN",
-                        )}
-                      </td>
-                      <td>
-                        <span
-                          className={`${styles.statusBadge} ${
-                            reservation.status === "PENDING"
+
+                  currentReservations.map((reservation) => {
+                    const assignedTableCount =
+                      reservation.assignedTableCount ??
+                      reservation.tableIds?.length ??
+                      0;
+                    const hasAssignedTable = assignedTableCount > 0;
+
+                    return (
+                      <tr key={reservation.reservationId}>
+                        <td>#{reservation.reservationId}</td>
+                        <td>{reservation.customerName}</td>
+                        <td>{reservation.customerPhone}</td>
+                        <td style={{ textAlign: "center" }}>
+
+                          {reservation.partySize === 0 ? (
+                            <>
+                              <strong>{reservation.totalTables}</strong>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>bàn</div>
+                            </>
+                          ) : (
+                            <>
+                              <strong>{reservation.partySize}</strong>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>khách</div>
+                            </>
+                          )}
+
+                        </td>
+                        <td>
+                          {new Date(reservation.reservedAt).toLocaleString(
+                            "vi-VN",
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className={`${styles.statusBadge} ${reservation.status === "PENDING"
                               ? styles.statusPending
                               : reservation.status === "CONFIRMED"
                                 ? styles.statusConfirmed
@@ -358,58 +543,114 @@ export default function CashierReservationsPage() {
                                   : reservation.status === "CANCELLED"
                                     ? styles.statusCancelled
                                     : styles.statusDefault
-                          }`}
-                        >
-                          {reservation.status === "PENDING"
-                            ? "Đang chờ"
-                            : reservation.status === "CONFIRMED"
-                              ? "Đã xác nhận"
-                              : reservation.status === "CHECKED_IN"
-                                ? "Check-in"
-                                : reservation.status === "CANCELLED"
-                                  ? "Đã hủy"
-                                  : reservation.status}
-                        </span>
-                      </td>
-                      <td>{reservation.note || "-"}</td>
-                      <td>
-                        <div className={styles.actionButtons}>
-                          {reservation.status === "PENDING" && (
-                            <button
-                              className={styles.btnSuccess}
-                              onClick={() =>
-                                handleStatusUpdate(
-                                  reservation.reservationId,
-                                  "CONFIRMED",
-                                )
-                              }
-                            >
-                              Xác nhận
-                            </button>
-                          )}
-                          {(reservation.status === "PENDING" ||
-                            reservation.status === "CONFIRMED") && (
-                            <button
-                              className={styles.btnDanger}
-                              onClick={() =>
-                                handleStatusUpdate(
-                                  reservation.reservationId,
-                                  "CANCELLED",
-                                )
-                              }
-                            >
-                              Hủy
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                              }`}
+                          >
+                            {reservation.status === "PENDING"
+                              ? "Đang chờ"
+                              : reservation.status === "CONFIRMED"
+                                ? "Đã xác nhận"
+                                : reservation.status === "CHECKED_IN"
+                                  ? "Check-in"
+                                  : reservation.status === "CANCELLED"
+                                    ? "Đã hủy"
+                                    : reservation.status}
+                          </span>
+                        </td>
+                        <td>{reservation.note || "-"}</td>
+                        <td>
+                          <div className={styles.actionButtons}>
+                            {reservation.status === "PENDING" && (
+                              <button
+                                className={styles.btnSuccess}
+                                onClick={() =>
+                                  handleStatusUpdate(
+                                    reservation.reservationId,
+                                    "CONFIRMED",
+                                  )
+                                }
+                              >
+                                Xác nhận
+                              </button>
+                            )}
+                            {(reservation.status === "PENDING" ||
+                              reservation.status === "CONFIRMED") && (
+                                <button
+                                  className={styles.btnDanger}
+                                  onClick={() =>
+                                    handleStatusUpdate(
+                                      reservation.reservationId,
+                                      "CANCELLED",
+                                    )
+                                  }
+                                >
+                                  Hủy
+                                </button>
+                              )}
+                            {(reservation.status === "PENDING" ||
+                              reservation.status === "CONFIRMED") && (
+                                <button
+                                  className={styles.btnSave}
+                                  onClick={() => {
+                                    if (hasAssignedTable) {
+                                      handleOpenViewAssignedTables(reservation.reservationId);
+                                    } else {
+                                      handleOpenAssignModal(reservation.reservationId);
+                                    }
+                                  }}
+                                >
+                                  {hasAssignedTable ? "Xem bàn" : "Gán bàn"}
+                                </button>
+                              )}
+
+                            {reservation.status === "CONFIRMED" && (
+                              <button
+                                className={styles.btnSuccess}
+                                onClick={() => {
+                                  if (!hasAssignedTable) {
+                                    Swal.fire({
+                                      title: "Chưa gán bàn",
+                                      text: "Vui lòng gán bàn trước khi check-in",
+                                      icon: "warning",
+                                      confirmButtonColor: "var(--brand-primary)",
+                                    });
+                                    return;
+                                  }
+
+                                  handleCheckIn(reservation.reservationId);
+                                }}
+                              >
+                                Check-in
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
-          </div>
 
+          </div>
+          <AssignTablesModal
+            open={assignModalOpen}
+            assignData={assignData}
+            loading={assignLoading}
+            submitting={assignSubmitting}
+            onClose={() => {
+              setAssignModalOpen(false);
+              setAssignData(null);
+            }}
+            onSubmit={handleAssignTables}
+          />
+          <ViewAssignTablesModal
+            open={viewAssignedModalOpen}
+            data={assignData}
+            onClose={() => {
+              setViewAssignedModalOpen(false);
+              setAssignData(null);
+            }}
+          />
           {totalPages > 1 && (
             <div style={{ marginTop: "1rem" }}>
               <Pagination
@@ -424,5 +665,7 @@ export default function CashierReservationsPage() {
         </>
       )}
     </div>
+
   );
+
 }

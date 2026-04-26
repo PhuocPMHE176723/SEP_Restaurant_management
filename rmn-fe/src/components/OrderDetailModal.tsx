@@ -209,7 +209,7 @@ export default function OrderDetailModal({
                         <th style={{ width: "110px", textAlign: "right" }}>
                           Thành tiền
                         </th>
-                        {order?.status !== "CLOSED" &&
+                        {/* {order?.status !== "CLOSED" &&
                           order?.status !== "CANCELLED" &&
                           order?.orderItems.some(
                             (i) => i.status === "WAIT_CONFIRM",
@@ -217,7 +217,7 @@ export default function OrderDetailModal({
                             <th style={{ textAlign: "center", width: "80px" }}>
                               Duyệt
                             </th>
-                          )}
+                          )} */}
                         {order?.status !== "CLOSED" &&
                           order?.status !== "CANCELLED" && (
                             <th style={{ textAlign: "center", width: "80px" }}>
@@ -278,7 +278,7 @@ export default function OrderDetailModal({
                             )}
                             đ
                           </td>
-                          {order?.status !== "CLOSED" &&
+                          {/* {order?.status !== "CLOSED" &&
                             order?.status !== "CANCELLED" &&
                             order?.orderItems.some(
                               (i) => i.status === "WAIT_CONFIRM",
@@ -309,7 +309,7 @@ export default function OrderDetailModal({
                                   </button>
                                 )}
                               </td>
-                            )}
+                            )} */}
                           {order?.status !== "CLOSED" &&
                             order?.status !== "CANCELLED" && (
                               <td style={{ textAlign: "center" }}>
@@ -393,7 +393,7 @@ export default function OrderDetailModal({
                   </table>
                 </div>
 
-                {order?.orderItems.some((i) => i.status === "WAIT_CONFIRM") &&
+                {/* {order?.orderItems.some((i) => i.status === "WAIT_CONFIRM") &&
                   order?.status !== "CLOSED" &&
                   order?.status !== "CANCELLED" && (
                     <div style={{ marginTop: "1rem", textAlign: "right" }}>
@@ -417,7 +417,7 @@ export default function OrderDetailModal({
                         Duyệt tất cả món khách chọn
                       </button>
                     </div>
-                  )}
+                  )} */}
               </div>
 
               {/* Menu Selection Side Panel */}

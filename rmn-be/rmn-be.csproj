@@ -31,7 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="DTOs\" />
     <Folder Include="Repositories\Interface\" />
     <Folder Include="Repositories\Implementation\" />

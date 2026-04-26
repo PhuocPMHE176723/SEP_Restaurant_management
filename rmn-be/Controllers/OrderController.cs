@@ -262,7 +262,7 @@ public class OrderController : BaseController
             ItemNameSnapshot = menuItem.ItemName,
             Note = request.Note,
             // Only show in kitchen after explicit confirmation
-            Status = "WAIT_CONFIRM",
+            Status = "PENDING",
             CreatedAt = DateTimeHelper.VietnamNow(),
         };
 
