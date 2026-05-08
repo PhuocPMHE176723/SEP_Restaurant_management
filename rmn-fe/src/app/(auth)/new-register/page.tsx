@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,12 +20,6 @@ export default function RegisterPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) return "Email không được để trống";
     if (!emailRegex.test(email)) return "Email không đúng định dạng";
-    return null;
-  };
-
-  const validatePhone = (phone: string): string | null => {
-    if (!phone) return "Số điện thoại không được để trống";
-    if (!isValidVNPhone(phone)) return "SĐT không đúng định dạng VN (ví dụ: 0912345678, +84...)";
     return null;
   };
 
@@ -47,11 +40,10 @@ export default function RegisterPage() {
     // Validate all fields
     const nameError = !name.trim() ? "Họ và tên không được để trống" : null;
     const emailError = validateEmail(email);
-    const phoneError = validatePhone(phone);
     const passwordError = validatePassword(password);
 
-    if (nameError || emailError || phoneError || passwordError) {
-      setError(nameError || emailError || phoneError || passwordError);
+    if (nameError || emailError || passwordError) {
+      setError(nameError || emailError || passwordError);
       return;
     }
 
@@ -61,11 +53,10 @@ export default function RegisterPage() {
         email,
         password,
         fullName: name,
-        phone,
       });
 
-      // Chuyển hướng đến trang xác thực OTP bằng số điện thoại
-      router.push(`/verify-otp?phone=${encodeURIComponent(phone)}`);
+      // Chuyển hướng đến trang xác thực OTP bằng email
+      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const apiErr = err as { message?: string; errors?: string[] };
       setError(apiErr.errors?.[0] ?? apiErr.message ?? "Đăng ký thất bại");
@@ -126,24 +117,6 @@ export default function RegisterPage() {
                 required
                 autoComplete="email"
               />
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="reg-phone" className={styles.label}>Số điện thoại *</label>
-              <input
-                id="reg-phone"
-                type="tel"
-                className={styles.input}
-                placeholder="0912345678"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                pattern="\d{10}"
-                maxLength={10}
-              />
-              <small style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.25rem" }}>
-                Số điện thoại phải là 10 chữ số
-              </small>
             </div>
 
             <div className={styles.field}>

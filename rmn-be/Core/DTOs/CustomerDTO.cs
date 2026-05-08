@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace rmn_be.Core.DTOs
 {
@@ -11,6 +11,7 @@ namespace rmn_be.Core.DTOs
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public int TotalPoints { get; set; }
+        public bool IsPhoneVerified { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 

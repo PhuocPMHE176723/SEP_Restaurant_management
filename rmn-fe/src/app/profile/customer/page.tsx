@@ -6,14 +6,17 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { profileApi } from "../../../lib/api/profile";
 import { forgotPasswordApi } from "../../../lib/api/auth";
 import type { CustomerProfileDTO } from "../../../types/models/profile";
-import PasswordSecuritySection from "../PasswordSecuritySection";
-import styles from "../staff/newprofile.module.css";
-import Header from "@/components/Header/Header";
+import { auth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { verifyOtpApi } from "@/lib/api/auth";
+import { isValidVNPhone } from "@/lib/validation";
+import Swal from "sweetalert2";
 
 type TabKey = "profile" | "security";
 
 type CustomerProfileWithUsername = CustomerProfileDTO & {
   username?: string;
+  isPhoneVerified?: boolean;
 };
 
 type StatusState = {

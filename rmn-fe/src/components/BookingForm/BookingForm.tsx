@@ -699,6 +699,23 @@ export default function BookingForm() {
     );
   }
 
+  // 👉 NEW: Check if phone is verified
+  if (!user?.isPhoneVerified) {
+    return (
+      <div className={styles.form}>
+        <div className={styles.authPrompt}>
+          <h3>Cần xác thực số điện thoại</h3>
+          <p>Để đảm bảo an toàn cho việc đặt bàn, vui lòng cập nhật và xác thực số điện thoại trong hồ sơ của bạn.</p>
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", marginTop: "1rem" }}>
+            <a href="/profile/customer" className="btn btn-primary">
+              Cập nhật Hồ sơ
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
       {errors.submit && (

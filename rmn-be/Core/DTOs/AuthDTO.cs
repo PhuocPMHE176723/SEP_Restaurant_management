@@ -31,9 +31,8 @@ public class RegisterRequestDTO
     [Required(ErrorMessage = "Full name is required")]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
     [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
-    public string Phone { get; set; } = string.Empty;
+    public string? Phone { get; set; } = string.Empty;
 
     /// <summary>
     /// Cho phép: Admin, Staff, Customer, Warehouse, Kitchen, Cashier
@@ -53,6 +52,7 @@ public class LoginResponseDTO
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
+    public bool IsPhoneVerified { get; set; }
     public List<string> Roles { get; set; } = new();
 }
 

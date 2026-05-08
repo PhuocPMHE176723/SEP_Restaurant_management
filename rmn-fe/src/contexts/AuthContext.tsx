@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: data.email,
             fullName: data.fullName,
             phoneNumber: data.phoneNumber ?? null,
+            isPhoneVerified: data.isPhoneVerified,
             roles: data.roles,
             expiresAt: data.expiresAt,
         });

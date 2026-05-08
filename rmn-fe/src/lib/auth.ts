@@ -33,6 +33,7 @@ export function saveAuth(data: LoginResponse): void {
         email: data.email,
         fullName: data.fullName,
         phoneNumber: data.phoneNumber ?? null,
+        isPhoneVerified: data.isPhoneVerified,
         roles: data.roles,
         expiresAt: data.expiresAt,   // lưu nguyên gốc từ backend
     });
@@ -50,6 +51,7 @@ export interface UserInfo {
     email: string;
     fullName: string;
     phoneNumber: string | null;
+    isPhoneVerified: boolean;
     roles: string[];
     expiresAt: string;
 }

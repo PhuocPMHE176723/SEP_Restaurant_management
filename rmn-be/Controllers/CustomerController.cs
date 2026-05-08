@@ -68,10 +68,12 @@ public class CustomerController : BaseController
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Failure("Không tìm thấy thông tin đăng nhập");
 
+        var user = await _context.Users.FindAsync(userId);
         var customer = await _context.Customers
             .FirstOrDefaultAsync(c => c.UserId == userId);
 
         if (customer == null) return Failure("Tài khoản chưa được liên kết với hồ sơ khách hàng.");
+        bool isPhoneVerified = user?.IsPhoneVerified ?? false;
 
         // Lấy lịch sử tích/trừ điểm
         var ledgers = await _context.CustomerPointsLedgers
@@ -114,11 +116,58 @@ public class CustomerController : BaseController
             customer.Phone,
             customer.Email,
             customer.TotalPoints,
+            IsPhoneVerified = isPhoneVerified,
             CurrentTier = currentTier,
             PointHistory = ledgers,
             DiscountHistory = discountHistory
         });
     }
+    
+    [HttpPut("me")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Failure("Không tìm thấy thông tin đăng nhập");
+
+        var user = await _context.Users.FindAsync(userId);
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (user == null || customer == null) return Failure("Không tìm thấy thông tin người dùng");
+
+        if (!string.IsNullOrEmpty(request.FullName))
+        {
+            user.FullName = request.FullName;
+            customer.FullName = request.FullName;
+        }
+
+        if (!string.IsNullOrEmpty(request.Email))
+        {
+            user.Email = request.Email;
+            customer.Email = request.Email;
+        }
+
+        if (!string.IsNullOrEmpty(request.Phone))
+        {
+            if (user.PhoneNumber != request.Phone)
+            {
+                user.PhoneNumber = request.Phone;
+                user.IsPhoneVerified = false;
+                user.PhoneNumberConfirmed = false;
+                customer.Phone = request.Phone;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return Success(new { }, "Cập nhật hồ sơ thành công");
+    }
+}
+
+public class UpdateProfileRequest
+{
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+    public string? Email { get; set; }
 }
 
 public class CreateCustomerRequest

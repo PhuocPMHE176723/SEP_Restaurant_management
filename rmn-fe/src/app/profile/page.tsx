@@ -6,16 +6,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { customerApi, CustomerProfileResponse } from "@/lib/api/customer";
 import styles from "./Profile.module.css";
 import Header from "@/components/Header/Header";
+import { auth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { verifyOtpApi } from "@/lib/api/auth";
+import { isValidVNPhone } from "@/lib/validation";
+import Swal from "sweetalert2";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, login } = useAuth();
   
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"INFO" | "POINTS" | "DISCOUNTS">("POINTS");
+  const [activeTab, setActiveTab] = useState<"INFO" | "POINTS" | "DISCOUNTS">("INFO");
   const [profile, setProfile] = useState<CustomerProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [updating, setUpdating] = useState(false);
+
+  // Verification state
+  const [verifying, setVerifying] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otp, setOtp] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -30,16 +46,100 @@ export default function ProfilePage() {
     fetchProfile();
   }, [mounted, isLoggedIn, router]);
 
-
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const data = await customerApi.getMyProfile();
+      const res = await customerApi.getMyProfile();
+      
+      // 👉 Map PascalCase from Backend to camelCase for Frontend
+      const data: CustomerProfileResponse = {
+        customerId: res.customerId || (res as any).CustomerId,
+        fullName: res.fullName || (res as any).FullName,
+        phone: res.phone || (res as any).Phone,
+        email: res.email || (res as any).Email,
+        isPhoneVerified: res.isPhoneVerified ?? (res as any).IsPhoneVerified ?? false,
+        totalPoints: res.totalPoints ?? (res as any).TotalPoints ?? 0,
+        currentTier: res.currentTier || (res as any).CurrentTier || "Thành viên",
+        pointHistory: res.pointHistory || (res as any).PointHistory || [],
+        discountHistory: res.discountHistory || (res as any).DiscountHistory || [],
+      };
+
+      console.log("[Profile] Fetched Data:", data);
       setProfile(data);
+      setEditName(data.fullName || "");
+      setEditPhone(data.phone || "");
     } catch (err: any) {
+      console.error("[Profile] Fetch Error:", err);
       setError(err.message || "Không thể tải hồ sơ");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editName.trim()) return Swal.fire("Lỗi", "Họ tên không được để trống", "error");
+    if (editPhone && !isValidVNPhone(editPhone)) return Swal.fire("Lỗi", "Số điện thoại không hợp lệ", "error");
+
+    try {
+      setUpdating(true);
+      await customerApi.updateProfile({ fullName: editName, phone: editPhone });
+      await fetchProfile();
+      setIsEditing(false);
+      Swal.fire("Thành công", "Cập nhật hồ sơ thành công", "success");
+    } catch (err: any) {
+      Swal.fire("Lỗi", err.message || "Không thể cập nhật hồ sơ", "error");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const setupRecaptcha = () => {
+    if ((window as any).recaptchaVerifier) return;
+    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+    });
+  };
+
+  const sendOtp = async () => {
+    if (!profile?.phone || !isValidVNPhone(profile.phone)) {
+        return Swal.fire("Lỗi", "Vui lòng cập nhật số điện thoại hợp lệ trước", "error");
+    }
+
+    try {
+      setVerifying(true);
+      setupRecaptcha();
+      const appVerifier = (window as any).recaptchaVerifier;
+      const formattedPhone = profile.phone.startsWith("0") 
+        ? "+84" + profile.phone.slice(1) 
+        : profile.phone;
+      
+      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(result);
+      Swal.fire("Đã gửi mã", "Một mã xác thực đã được gửi đến số điện thoại của bạn", "info");
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire("Lỗi", "Không thể gửi SMS. Vui lòng thử lại sau.", "error");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!confirmationResult || !otp) return;
+    try {
+      setVerifying(true);
+      await confirmationResult.confirm(otp);
+      // Firebase success, now tell backend
+      await verifyOtpApi({ phone: profile!.phone, otp: "FIREBASE_VERIFIED" });
+      
+      Swal.fire("Thành công", "Xác thực số điện thoại thành công!", "success");
+      setConfirmationResult(null);
+      setOtp("");
+      await fetchProfile();
+    } catch (err: any) {
+      Swal.fire("Lỗi", "Mã xác thực không chính xác", "error");
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -68,6 +168,7 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
+      <div id="recaptcha-container"></div>
       <div className={styles.container}>
         <h1 className={styles.title}>Hồ sơ cá nhân</h1>
         
@@ -96,10 +197,64 @@ export default function ProfilePage() {
           <div className={styles.tabContent}>
             {activeTab === "INFO" && (
               <div style={{ color: "#e2e8f0" }}>
-                <p style={{ marginBottom: "1rem" }}><strong>Họ và tên:</strong> {profile.fullName}</p>
-                <p style={{ marginBottom: "1rem" }}><strong>Số điện thoại:</strong> {profile.phone}</p>
-                <p style={{ marginBottom: "1rem" }}><strong>Email:</strong> {profile.email || "Chưa cập nhật"}</p>
-                <button className="btn btn-primary" style={{ marginTop: "1rem" }} disabled>Cập nhật thông tin</button>
+                {!isEditing ? (
+                  <>
+                    <p style={{ marginBottom: "1rem" }}><strong>Họ và tên:</strong> {profile.fullName}</p>
+                    <p style={{ marginBottom: "1rem" }}>
+                        <strong>Số điện thoại:</strong> {profile.phone || "Chưa cập nhật"}
+                        {profile.phone && (
+                            profile.isPhoneVerified 
+                                ? <span style={{ color: "#10b981", marginLeft: "8px", fontSize: "0.85rem" }}>✓ Đã xác thực</span>
+                                : <span style={{ color: "#f59e0b", marginLeft: "8px", fontSize: "0.85rem" }}>⚠ Chưa xác thực</span>
+                        )}
+                    </p>
+                    <p style={{ marginBottom: "1rem" }}><strong>Email:</strong> {profile.email || "Chưa cập nhật"}</p>
+                    
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                        <button className="btn btn-primary" onClick={() => setIsEditing(true)}>Cập nhật thông tin</button>
+                        
+                        {profile.phone && !profile.isPhoneVerified && !confirmationResult && (
+                            <button className="btn" style={{ backgroundColor: "#f59e0b", color: "white" }} onClick={sendOtp} disabled={verifying}>
+                                {verifying ? "Đang xử lý..." : "Xác thực ngay"}
+                            </button>
+                        )}
+                    </div>
+
+                    {confirmationResult && (
+                        <div style={{ marginTop: "1.5rem", padding: "1rem", border: "1px solid #475569", borderRadius: "8px" }}>
+                            <p style={{ marginBottom: "0.5rem" }}>Nhập mã OTP đã gửi tới {profile.phone}:</p>
+                            <input 
+                                type="text" 
+                                className={styles.input} 
+                                value={otp} 
+                                onChange={(e) => setOtp(e.target.value)} 
+                                placeholder="123456"
+                                style={{ maxWidth: "200px" }}
+                            />
+                            <button className="btn btn-primary" style={{ marginLeft: "1rem" }} onClick={verifyOtp} disabled={verifying}>
+                                {verifying ? "Đang kiểm tra..." : "Xác thực"}
+                            </button>
+                        </div>
+                    )}
+                  </>
+                ) : (
+                  <div className={styles.form}>
+                    <div className={styles.field} style={{ marginBottom: "1rem" }}>
+                        <label>Họ và tên</label>
+                        <input type="text" className={styles.input} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div className={styles.field} style={{ marginBottom: "1rem" }}>
+                        <label>Số điện thoại</label>
+                        <input type="text" className={styles.input} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="09xxxxxxxx" />
+                    </div>
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                        <button className="btn btn-primary" onClick={handleUpdate} disabled={updating}>
+                            {updating ? "Đang lưu..." : "Lưu thay đổi"}
+                        </button>
+                        <button className="btn" style={{ backgroundColor: "#64748b", color: "white" }} onClick={() => setIsEditing(false)}>Hủy</button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

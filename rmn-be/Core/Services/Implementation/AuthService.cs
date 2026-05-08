@@ -88,6 +88,7 @@ public class AuthService : IAuthService
             Email = user.Email!,
             FullName = user.FullName ?? string.Empty,
             PhoneNumber = user.PhoneNumber,
+            IsPhoneVerified = user.IsPhoneVerified,
             Roles = roles,
         };
     }
@@ -357,17 +358,22 @@ public class AuthService : IAuthService
 
         // 👉 tạo OTP
         var otp = GenerateOtp();
-
-        // Lưu OTP cho cả email và phone để linh hoạt (hoặc chỉ chọn 1 tùy requirement)
-        // Ở đây ưu tiên Phone theo yêu cầu "xác nhận otp số điện thoại"
         _memoryCache.Set(GetOtpKey(request.Email), otp, TimeSpan.FromMinutes(5));
-        _memoryCache.Set(GetPhoneOtpKey(request.Phone), otp, TimeSpan.FromMinutes(5));
+
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            _memoryCache.Set(GetPhoneOtpKey(request.Phone), otp, TimeSpan.FromMinutes(5));
+            // Ghi log OTP ra console để dễ test nếu không có SMS service
+            Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
+        }
+        else 
+        {
+             // Log for email only if no phone
+             Console.WriteLine($"[OTP for Email {request.Email}]: {otp}");
+        }
 
         // 👉 gửi mail (vẫn giữ gửi mail để demo/debug)
         await _emailService.SendEmailVerificationOtpAsync(request.Email, request.FullName, otp);
-        
-        // Ghi log OTP ra console để dễ test nếu không có SMS service
-        Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
 
         return (true, new List<string>());
     }
