@@ -11,6 +11,9 @@ import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "fi
 import { verifyOtpApi } from "@/lib/api/auth";
 import { isValidVNPhone } from "@/lib/validation";
 import Swal from "sweetalert2";
+import Header from "@/components/Header/Header";
+import PasswordSecuritySection from "../PasswordSecuritySection";
+import styles from "../Profile.module.css";
 
 type TabKey = "profile" | "security";
 
