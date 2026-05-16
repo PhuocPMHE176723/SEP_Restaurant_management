@@ -16,6 +16,7 @@ export interface MenuItem {
     prepTimeMinutes?: number;
     rating?: number;
     reviewCount?: number;
+    itemType?: string;
     createdAt?: string;
 }
 

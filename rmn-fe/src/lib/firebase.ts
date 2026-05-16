@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
 
 // Firebase configuration của bạn
 const firebaseConfig = {
@@ -17,6 +17,20 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 
 // Cấu hình ngôn ngữ tiếng Việt cho Firebase Auth
-auth.languageCode = 'vi';
+auth.languageCode = "vi";
+
+// Firebase Auth Emulator (dev only)
+const useEmulator = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true";
+const emulatorHost = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || "localhost";
+const emulatorPort = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_PORT || "9099";
+
+if (useEmulator && typeof window !== "undefined") {
+  const authAny = auth as typeof auth & { __emulatorInitialized?: boolean };
+  if (!authAny.__emulatorInitialized) {
+    connectAuthEmulator(auth, `http://${emulatorHost}:${emulatorPort}`);
+    auth.settings.appVerificationDisabledForTesting = true;
+    authAny.__emulatorInitialized = true;
+  }
+}
 
 export { auth };

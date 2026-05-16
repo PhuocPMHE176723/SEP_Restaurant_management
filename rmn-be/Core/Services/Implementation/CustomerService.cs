@@ -6,6 +6,7 @@ using rmn_be.Core.Services.Interface;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Repositories.Interface;
+using SEP_Restaurant_management.Core.Services.Interface;
 using static rmn_be.Core.DTOs.CustomerOrderDTO;
 
 namespace rmn_be.Core.Services.Implementation
@@ -16,18 +17,21 @@ namespace rmn_be.Core.Services.Implementation
         private readonly IMapper _mapper;
         private readonly UserManager<UserIdentity> _userManager;
         private readonly SepDatabaseContext _context;
+        private readonly IAuthService _authService;
 
         public CustomerService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             UserManager<UserIdentity> userManager,
-            SepDatabaseContext context
+            SepDatabaseContext context,
+            IAuthService authService
         )
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _userManager = userManager;
             _context = context;
+            _authService = authService;
         }
 
         public async Task<CustomerDTO> CreateCustomerAsync(CreateCustomerDTO createDto)
@@ -152,38 +156,76 @@ namespace rmn_be.Core.Services.Implementation
             return _mapper.Map<CustomerDTO>(customer);
         }
 
-        public async Task<bool> UpdateCustomerAsync(long id, UpdateCustomerDTO updateDto)
+        public async Task<UpdateCustomerResultDTO> UpdateCustomerAsync(
+            long id,
+            UpdateCustomerDTO updateDto
+        )
         {
             var customerRepo = _unitOfWork.GetRepository<Customer>();
             var existingCustomer = await customerRepo.GetByIdAsync(id);
 
             if (existingCustomer == null)
-                return false;
+                return new UpdateCustomerResultDTO { Message = $"Customer with ID {id} not found" };
 
-            var normalizedFullName = updateDto.FullName.Trim();
-            var normalizedPhone = updateDto.Phone.Trim();
-            var normalizedEmail = updateDto.Email.Trim();
-            var normalizedUsername = updateDto.Username.Trim();
+            var normalizedFullName = updateDto.FullName?.Trim() ?? string.Empty;
+            var normalizedPhone = updateDto.Phone?.Trim() ?? string.Empty;
+            var normalizedEmail = updateDto.Email?.Trim() ?? string.Empty;
+            var normalizedUsername = updateDto.Username?.Trim() ?? string.Empty;
 
             var customers = await customerRepo.GetAllAsync();
+            var duplicateCustomers = customers
+                .Where(x =>
+                    x.CustomerId != id
+                    && !string.IsNullOrWhiteSpace(x.Phone)
+                    && x.Phone.Trim() == normalizedPhone
+                )
+                .ToList();
 
-            var duplicatedPhone = customers.Any(x =>
-                x.CustomerId != id
-                && !string.IsNullOrWhiteSpace(x.Phone)
-                && x.Phone.Trim() == normalizedPhone
-            );
+            var phoneChanged = false;
+            if (!string.IsNullOrWhiteSpace(normalizedPhone))
+            {
+                phoneChanged = !string.Equals(
+                    existingCustomer.Phone?.Trim(),
+                    normalizedPhone,
+                    StringComparison.Ordinal
+                );
 
-            if (duplicatedPhone)
-                throw new Exception("Phone already exists.");
+                foreach (var dup in duplicateCustomers)
+                {
+                    bool isVerified = false;
+                    if (!string.IsNullOrWhiteSpace(dup.UserId))
+                    {
+                        var otherUser = await _userManager.FindByIdAsync(dup.UserId);
+                        if (otherUser is UserIdentity ui && ui.IsPhoneVerified)
+                        {
+                            isVerified = true;
+                        }
+                    }
 
-            var duplicatedEmail = customers.Any(x =>
-                x.CustomerId != id
-                && !string.IsNullOrWhiteSpace(x.Email)
-                && x.Email!.Trim().ToLower() == normalizedEmail.ToLower()
-            );
+                    if (isVerified)
+                    {
+                        throw new Exception(
+                            "Số điện thoại này đã được xác thực bởi một tài khoản khác."
+                        );
+                    }
+                    else
+                    {
+                        dup.Phone = null;
+                        if (!string.IsNullOrWhiteSpace(dup.UserId))
+                        {
+                            var otherUser = await _userManager.FindByIdAsync(dup.UserId);
+                            if (otherUser != null)
+                            {
+                                otherUser.PhoneNumber = null;
+                                await _userManager.UpdateAsync(otherUser);
+                            }
+                        }
+                        customerRepo.Update(dup);
+                    }
+                }
+            }
 
-            if (duplicatedEmail)
-                throw new Exception("Email already exists.");
+            // Remove redundant email check on Customers table as UserManager handles it more accurately below.
 
             if (!string.IsNullOrWhiteSpace(existingCustomer.UserId))
             {
@@ -193,15 +235,25 @@ namespace rmn_be.Core.Services.Implementation
                 {
                     var userByEmail = await _userManager.FindByEmailAsync(normalizedEmail);
                     if (userByEmail != null && userByEmail.Id != user.Id)
-                        throw new Exception("Email already exists in system.");
+                        throw new Exception("Email đã tồn tại trong hệ thống.");
 
                     var userByUsername = await _userManager.FindByNameAsync(normalizedUsername);
                     if (userByUsername != null && userByUsername.Id != user.Id)
-                        throw new Exception("Username already exists.");
+                        throw new Exception("Tên đăng nhập (Username) đã tồn tại.");
 
                     user.Email = normalizedEmail;
                     user.UserName = normalizedUsername;
-                    user.PhoneNumber = normalizedPhone;
+
+                    if (phoneChanged)
+                    {
+                        user.PendingPhoneNumber = normalizedPhone;
+                        user.IsPhoneVerified = false;
+                        user.PhoneNumberConfirmed = false;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(normalizedPhone))
+                    {
+                        user.PhoneNumber = normalizedPhone;
+                    }
 
                     var updateUserResult = await _userManager.UpdateAsync(user);
                     if (!updateUserResult.Succeeded)
@@ -214,13 +266,50 @@ namespace rmn_be.Core.Services.Implementation
             }
 
             existingCustomer.FullName = normalizedFullName;
-            existingCustomer.Phone = normalizedPhone;
+            if (phoneChanged)
+            {
+                // Keep the current stored phone until OTP verification succeeds.
+                // The pending value is stored on AspNetUsers.
+            }
+            else
+            {
+                existingCustomer.Phone = normalizedPhone;
+            }
             existingCustomer.Email = normalizedEmail;
 
             customerRepo.Update(existingCustomer);
             var result = await _unitOfWork.SaveChangesAsync();
 
-            return result > 0;
+            if (result <= 0)
+                return new UpdateCustomerResultDTO { Message = "Không thể cập nhật khách hàng" };
+
+            if (phoneChanged && !string.IsNullOrWhiteSpace(normalizedPhone))
+            {
+                var resendResult = await _authService.ResendOtpAsync(
+                    new ResendOtpRequestDTO { PhoneNumber = normalizedPhone }
+                );
+
+                if (!resendResult.Succeeded)
+                {
+                    return new UpdateCustomerResultDTO
+                    {
+                        Message = "Cập nhật thành công nhưng không thể gửi OTP. Vui lòng thử lại.",
+                        PhoneRequiresVerification = true,
+                    };
+                }
+
+                return new UpdateCustomerResultDTO
+                {
+                    Message = "Vui lòng xác minh số điện thoại mới qua OTP để hoàn tất cập nhật.",
+                    PhoneRequiresVerification = true,
+                };
+            }
+
+            return new UpdateCustomerResultDTO
+            {
+                Message = "Customer updated successfully",
+                PhoneRequiresVerification = false,
+            };
         }
 
         public async Task<CustomerDTO?> GetMyProfileAsync(string userId)
@@ -235,6 +324,29 @@ namespace rmn_be.Core.Services.Implementation
 
             var dto = _mapper.Map<CustomerDTO>(entity);
             dto.Username = user?.UserName;
+
+            if (
+                string.IsNullOrWhiteSpace(dto.Phone)
+                && user != null
+                && !string.IsNullOrWhiteSpace(user.PhoneNumber)
+            )
+            {
+                dto.Phone = user.PhoneNumber;
+            }
+
+            if (
+                string.IsNullOrWhiteSpace(dto.Email)
+                && user != null
+                && !string.IsNullOrWhiteSpace(user.Email)
+            )
+            {
+                dto.Email = user.Email;
+            }
+
+            if (user is UserIdentity userIdentity)
+            {
+                dto.IsPhoneVerified = userIdentity.IsPhoneVerified;
+            }
 
             return dto;
         }
@@ -308,10 +420,7 @@ namespace rmn_be.Core.Services.Implementation
         {
             var tableNames = order.OrderTables.ToList();
 
-            var tableDisplay = tableNames.Any()
-                ? string.Join(", ", tableNames)
-                : "Ch?a c� b�n";
-
+            var tableDisplay = tableNames.Any() ? string.Join(", ", tableNames) : "Ch?a c bn";
 
             return new OrderDTO
             {

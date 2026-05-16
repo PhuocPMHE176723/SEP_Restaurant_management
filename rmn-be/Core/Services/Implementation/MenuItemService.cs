@@ -54,6 +54,7 @@ public class MenuItemService : IMenuItemService
             Unit        = dto.Unit,
             Description = dto.Description,
             BasePrice   = dto.BasePrice,
+            ItemType    = dto.ItemType,
             Thumbnail   = dto.Thumbnail,
             IsActive    = true,
             CreatedAt   = DateTime.UtcNow,
@@ -81,6 +82,7 @@ public class MenuItemService : IMenuItemService
         if (dto.Description != null)  item.Description = dto.Description;
         if (dto.Unit != null)         item.Unit        = dto.Unit;
         if (dto.BasePrice.HasValue)   item.BasePrice   = dto.BasePrice.Value;
+        if (dto.ItemType != null)     item.ItemType    = dto.ItemType;
         if (dto.Thumbnail  != null)   item.Thumbnail   = dto.Thumbnail;
         if (dto.IsActive.HasValue)    item.IsActive    = dto.IsActive.Value;
 
@@ -107,6 +109,7 @@ public class MenuItemService : IMenuItemService
         BasePrice    = m.BasePrice,
         Thumbnail    = m.Thumbnail,
         IsActive     = m.IsActive,
+        ItemType     = m.ItemType,
         CreatedAt    = m.CreatedAt,
     };
 }

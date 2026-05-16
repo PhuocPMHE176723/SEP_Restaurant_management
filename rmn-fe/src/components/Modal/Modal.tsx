@@ -10,9 +10,10 @@ interface ModalProps {
   type?: "success" | "error" | "info";
   children?: React.ReactNode;
   showFooter?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
-export default function Modal({ isOpen, onClose, title, type = "success", children, showFooter = true }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, type = "success", children, showFooter = true, size = "sm" }: ModalProps) {
   const handleEscape = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       onClose();
@@ -37,7 +38,7 @@ export default function Modal({ isOpen, onClose, title, type = "success", childr
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modal} ${styles[size]}`} onClick={(e) => e.stopPropagation()}>
         <div className={`${styles.header} ${
           type === "error" ? styles.headerError : 
           type === "info" ? styles.headerInfo : 

@@ -73,4 +73,37 @@ export const diningTableApi = {
             throw new Error(json.message ?? `Delete failed (${res.status})`);
         }
     },
+    async getCleanupRecommendations(date?: string): Promise<CleanupRecommendationResponse> {
+        const query = date ? `?date=${encodeURIComponent(date)}` : "";
+        const res = await fetch(`${apiBaseUrl}/api/diningtable/cleanup-recommendations${query}`, {
+            method: "GET",
+            headers: authHeaders(),
+        });
+        return handleResponse<CleanupRecommendationResponse>(res);
+    },
 };
+
+export interface CleanupWindowResponse {
+    label: string;
+    start: string;
+    end: string;
+}
+
+export interface TableReminderResponse {
+    tableId: number;
+    tableCode: string;
+    tableName?: string | null;
+    status: string;
+    orderId?: number | null;
+    orderOpenedAt?: string | null;
+    minutesOccupied: number;
+    reason: string;
+    priority: number;
+}
+
+export interface CleanupRecommendationResponse {
+    date: string;
+    generatedAt: string;
+    windows: CleanupWindowResponse[];
+    reminders: TableReminderResponse[];
+}

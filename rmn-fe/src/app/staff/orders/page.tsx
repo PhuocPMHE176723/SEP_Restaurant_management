@@ -47,11 +47,30 @@ export default function StaffOrdersPage() {
   };
 
   const filterOrders = () => {
-    const allowed = ["OPEN", "SENT_TO_KITCHEN", "SERVED", "CLOSED"];
-    let filtered = allOrders.filter((o) => allowed.includes(o.status));
+    let filtered = [...allOrders];
 
-    if (statusFilter !== "ALL") {
-      filtered = filtered.filter((order) => order.status === statusFilter);
+    if (statusFilter === "OPEN") {
+      // Mới mở: Chưa có món nào được gọi
+      filtered = filtered.filter(
+        (o) => o.status === "OPEN" && o.orderItems.length === 0,
+      );
+    } else if (statusFilter === "SENT_TO_KITCHEN") {
+      // Chờ bếp: Có ít nhất một món đang chờ, đang nấu hoặc chờ duyệt
+      filtered = filtered.filter((o) => {
+        if (o.status === "CLOSED" || o.status === "CANCELLED") return false;
+        return o.orderItems.some((i) => {
+          const s = i.status?.toUpperCase();
+          return s === "PENDING" || s === "COOKING" || s === "WAIT_CONFIRM";
+        });
+      });
+    } else if (statusFilter === "SERVED") {
+      // Đã phục vụ: Có ít nhất một món đã lên bàn và chưa thanh toán
+      filtered = filtered.filter((o) => {
+        if (o.status === "CLOSED" || o.status === "CANCELLED") return false;
+        return o.orderItems.some((i) => i.status?.toUpperCase() === "SERVED");
+      });
+    } else if (statusFilter === "CLOSED") {
+      filtered = filtered.filter((o) => o.status === "CLOSED");
     }
 
     if (searchTerm) {
@@ -81,42 +100,34 @@ export default function StaffOrdersPage() {
     ? filteredOrders.slice(startIndex, startIndex + itemsPerPage)
     : [];
 
-  const getStatusText = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case "OPEN":
-        return "Mới mở";
-      case "SENT_TO_KITCHEN":
-        return "Đang chờ bếp";
-      case "SERVED":
-        return "Đã phục vụ";
-      case "CANCELLED":
-        return "Đã hủy";
-      case "CLOSED":
-        return "Đã thanh toán";
-      case "RESERVED":
-        return "Đã đặt bàn";
-      default:
-        return status;
-    }
-  };
+  const getDisplayStatus = (order: OrderResponse) => {
+    if (order.status?.toUpperCase() === "CLOSED")
+      return { text: "Đã thanh toán", class: styles.statusClosed };
+    if (order.status?.toUpperCase() === "CANCELLED")
+      return { text: "Đã hủy", class: styles.statusCancelled };
 
-  const getStatusClass = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case "OPEN":
-        return styles.statusOpen;
-      case "SENT_TO_KITCHEN":
-        return styles.statusSentToKitchen;
-      case "SERVED":
-        return styles.statusServed;
-      case "CANCELLED":
-        return styles.statusCancelled;
-      case "CLOSED":
-        return styles.statusClosed;
-      case "RESERVED":
-        return styles.statusReserved;
-      default:
-        return styles.statusDefault;
+    if (order.orderItems.length === 0)
+      return { text: "Mới mở", class: styles.statusOpen };
+
+    if (
+      order.orderItems.some((i) => {
+        const s = i.status?.toUpperCase();
+        return s === "PENDING" || s === "COOKING" || s === "WAIT_CONFIRM";
+      })
+    ) {
+      return { text: "Chờ bếp", class: styles.statusSentToKitchen };
     }
+
+    if (
+      order.orderItems.every((i) => {
+        const s = i.status?.toUpperCase();
+        return s === "SERVED" || s === "CANCELLED";
+      })
+    ) {
+      return { text: "Đã phục vụ", class: styles.statusServed };
+    }
+
+    return { text: "Đang xử lý", class: styles.statusOpen };
   };
 
   const formatCurrency = (amount: number) => {
@@ -278,29 +289,16 @@ export default function StaffOrdersPage() {
                       <td>{order.tableName || "-"}</td>
                       <td>{order.customerName || "Khách lẻ"}</td>
                       <td>
-                        <span
-                          className={`${styles.statusBadge} ${getStatusClass(order.status)}`}
-                        >
-                          {getStatusText(order.status)}
-                        </span>
-                        {order.orderItems.some(
-                          (i) => i.status === "WAIT_CONFIRM",
-                        ) && (
-                          <span
-                            style={{
-                              marginLeft: "5px",
-                              fontSize: "0.65rem",
-                              backgroundColor: "#fb7185",
-                              color: "white",
-                              padding: "2px 5px",
-                              borderRadius: "10px",
-                              fontWeight: "bold",
-                              animation: "pulse 2s infinite",
-                            }}
-                          >
-                            MÓN MỚI
-                          </span>
-                        )}
+                        {(() => {
+                          const status = getDisplayStatus(order);
+                          return (
+                            <span
+                              className={`${styles.statusBadge} ${status.class}`}
+                            >
+                              {status.text}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td>{order.orderItems.length} món</td>
                       <td>
@@ -360,6 +358,7 @@ export default function StaffOrdersPage() {
         onClose={() => setIsModalOpen(false)}
         orderId={selectedOrderId}
         onOrderUpdate={fetchOrders}
+        filterStatus={statusFilter}
       />
     </div>
   );

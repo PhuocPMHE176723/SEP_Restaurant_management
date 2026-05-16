@@ -116,7 +116,7 @@ function MenuContent() {
               <div className="spinner" />
             ) : filtered.length === 0 ? (
               <div className={styles.empty}>
-                <p>🍽️</p>
+              
                 <p className={styles.emptyText}>Không tìm thấy món phù hợp</p>
                 <button
                   onClick={() => {

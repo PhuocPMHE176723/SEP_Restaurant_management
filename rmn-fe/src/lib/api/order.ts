@@ -24,6 +24,7 @@ export interface OrderItemResponse {
   unitPrice: number;
   status?: string;
   note?: string;
+  itemType?: string;
 }
 
 export interface UpdateOrderStatusRequest {

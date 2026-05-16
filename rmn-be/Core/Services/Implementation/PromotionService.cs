@@ -17,13 +17,13 @@ public class PromotionService : IPromotionService
     // ── System Configs ───────────────────────────────────────────────
     public async Task<List<SystemConfigDTO>> GetAllConfigsAsync()
     {
-        return await _context.SystemConfigs
-            .Select(c => new SystemConfigDTO
+        return await _context
+            .SystemConfigs.Select(c => new SystemConfigDTO
             {
                 ConfigKey = c.ConfigKey,
                 ConfigValue = c.ConfigValue,
                 Description = c.Description,
-                UpdatedAt = c.UpdatedAt
+                UpdatedAt = c.UpdatedAt,
             })
             .ToListAsync();
     }
@@ -31,14 +31,15 @@ public class PromotionService : IPromotionService
     public async Task<SystemConfigDTO?> GetConfigByKeyAsync(string key)
     {
         var config = await _context.SystemConfigs.FindAsync(key);
-        if (config == null) return null;
+        if (config == null)
+            return null;
 
         return new SystemConfigDTO
         {
             ConfigKey = config.ConfigKey,
             ConfigValue = config.ConfigValue,
             Description = config.Description,
-            UpdatedAt = config.UpdatedAt
+            UpdatedAt = config.UpdatedAt,
         };
     }
 
@@ -59,14 +60,18 @@ public class PromotionService : IPromotionService
             ConfigKey = config.ConfigKey,
             ConfigValue = config.ConfigValue,
             Description = config.Description,
-            UpdatedAt = config.UpdatedAt
+            UpdatedAt = config.UpdatedAt,
         };
     }
 
-    public async Task<List<SystemConfigDTO>> UpdateMultipleConfigsAsync(List<UpdateSystemConfigDTO> requests)
+    public async Task<List<SystemConfigDTO>> UpdateMultipleConfigsAsync(
+        List<UpdateSystemConfigDTO> requests
+    )
     {
         var keys = requests.Select(r => r.ConfigKey).ToList();
-        var configs = await _context.SystemConfigs.Where(c => keys.Contains(c.ConfigKey)).ToListAsync();
+        var configs = await _context
+            .SystemConfigs.Where(c => keys.Contains(c.ConfigKey))
+            .ToListAsync();
 
         foreach (var req in requests)
         {
@@ -74,7 +79,8 @@ public class PromotionService : IPromotionService
             if (config != null)
             {
                 config.ConfigValue = req.ConfigValue;
-                config.UpdatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
+                config.UpdatedAt =
+                    SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
             }
         }
 
@@ -105,7 +111,7 @@ public class PromotionService : IPromotionService
                 UsedCount = d.UsedCount,
                 ValidFrom = d.ValidFrom,
                 ValidTo = d.ValidTo,
-                IsActive = d.IsActive
+                IsActive = d.IsActive,
             })
             .ToListAsync();
     }
@@ -113,7 +119,8 @@ public class PromotionService : IPromotionService
     public async Task<DiscountCodeDTO?> GetDiscountCodeAsync(int id)
     {
         var d = await _context.DiscountCodes.FindAsync(id);
-        if (d == null) return null;
+        if (d == null)
+            return null;
 
         return new DiscountCodeDTO
         {
@@ -127,14 +134,17 @@ public class PromotionService : IPromotionService
             UsedCount = d.UsedCount,
             ValidFrom = d.ValidFrom,
             ValidTo = d.ValidTo,
-            IsActive = d.IsActive
+            IsActive = d.IsActive,
         };
     }
 
     public async Task<DiscountCodeDTO?> GetDiscountCodeByCodeAsync(string code)
     {
-        var d = await _context.DiscountCodes.FirstOrDefaultAsync(x => x.Code.ToUpper() == code.ToUpper());
-        if (d == null) return null;
+        var d = await _context.DiscountCodes.FirstOrDefaultAsync(x =>
+            x.Code.ToUpper() == code.ToUpper()
+        );
+        if (d == null)
+            return null;
 
         return new DiscountCodeDTO
         {
@@ -148,7 +158,7 @@ public class PromotionService : IPromotionService
             UsedCount = d.UsedCount,
             ValidFrom = d.ValidFrom,
             ValidTo = d.ValidTo,
-            IsActive = d.IsActive
+            IsActive = d.IsActive,
         };
     }
 
@@ -168,7 +178,7 @@ public class PromotionService : IPromotionService
             UsedCount = 0,
             ValidFrom = request.ValidFrom,
             ValidTo = request.ValidTo,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
         };
 
         _context.DiscountCodes.Add(discount);
@@ -177,14 +187,22 @@ public class PromotionService : IPromotionService
         return await GetDiscountCodeAsync(discount.DiscountId);
     }
 
-    public async Task<DiscountCodeDTO?> UpdateDiscountCodeAsync(int id, UpdateDiscountCodeDTO request)
+    public async Task<DiscountCodeDTO?> UpdateDiscountCodeAsync(
+        int id,
+        UpdateDiscountCodeDTO request
+    )
     {
         var discount = await _context.DiscountCodes.FindAsync(id);
-        if (discount == null) throw new Exception("Không tìm thấy mã giảm giá.");
+        if (discount == null)
+            throw new Exception("Không tìm thấy mã giảm giá.");
 
         // Check unique code if changed
-        if (discount.Code.ToUpper() != request.Code.ToUpper() &&
-            await _context.DiscountCodes.AnyAsync(c => c.Code.ToUpper() == request.Code.ToUpper()))
+        if (
+            discount.Code.ToUpper() != request.Code.ToUpper()
+            && await _context.DiscountCodes.AnyAsync(c =>
+                c.Code.ToUpper() == request.Code.ToUpper()
+            )
+        )
         {
             throw new Exception("Mã giảm giá này đã tồn tại.");
         }
@@ -216,7 +234,8 @@ public class PromotionService : IPromotionService
     public async Task<DiscountCodeDTO?> ToggleDiscountCodeAsync(int id)
     {
         var discount = await _context.DiscountCodes.FindAsync(id);
-        if (discount == null) throw new Exception("Không tìm thấy mã giảm giá.");
+        if (discount == null)
+            throw new Exception("Không tìm thấy mã giảm giá.");
 
         discount.IsActive = !discount.IsActive;
         await _context.SaveChangesAsync();
@@ -227,15 +246,15 @@ public class PromotionService : IPromotionService
     // ── Loyalty Tiers ───────────────────────────────────────────────
     public async Task<List<LoyaltyTierDTO>> GetAllLoyaltyTiersAsync()
     {
-        return await _context.LoyaltyTiers
-            .OrderBy(t => t.MinPoints)
+        return await _context
+            .LoyaltyTiers.OrderBy(t => t.MinPoints)
             .Select(t => new LoyaltyTierDTO
             {
                 TierId = t.TierId,
                 TierName = t.TierName,
                 MinPoints = t.MinPoints,
                 DiscountRate = t.DiscountRate,
-                IsActive = t.IsActive
+                IsActive = t.IsActive,
             })
             .ToListAsync();
     }
@@ -243,7 +262,8 @@ public class PromotionService : IPromotionService
     public async Task<LoyaltyTierDTO> UpdateLoyaltyTierAsync(int id, UpdateLoyaltyTierDTO request)
     {
         var tier = await _context.LoyaltyTiers.FindAsync(id);
-        if (tier == null) throw new Exception("Không tìm thấy hạng thành viên.");
+        if (tier == null)
+            throw new Exception("Không tìm thấy hạng thành viên.");
 
         tier.TierName = request.TierName;
         tier.MinPoints = request.MinPoints;
@@ -258,15 +278,15 @@ public class PromotionService : IPromotionService
             TierName = tier.TierName,
             MinPoints = tier.MinPoints,
             DiscountRate = tier.DiscountRate,
-            IsActive = tier.IsActive
+            IsActive = tier.IsActive,
         };
     }
 
     // ── Loyalty Ledgers ─────────────────────────────────────────────
     public async Task<List<LoyaltyLedgerDTO>> GetLoyaltyLedgersAsync(long? customerId = null)
     {
-        var query = _context.CustomerPointsLedgers
-            .Include(l => l.Customer)
+        var query = _context
+            .CustomerPointsLedgers.Include(l => l.Customer)
             .Include(l => l.CreatedByStaff)
             .AsQueryable();
 
@@ -288,7 +308,7 @@ public class PromotionService : IPromotionService
                 PointsChange = l.PointsChange,
                 Note = l.Note,
                 CreatedAt = l.CreatedAt,
-                CreatedByStaffName = l.CreatedByStaff != null ? l.CreatedByStaff.FullName : null
+                CreatedByStaffName = l.CreatedByStaff != null ? l.CreatedByStaff.FullName : null,
             })
             .ToListAsync();
     }
@@ -296,36 +316,41 @@ public class PromotionService : IPromotionService
     // ── Checkout Helpers ─────────────────────────────────────────────
     public async Task<DiscountCodeDTO?> ValidateDiscountCodeAsync(string code, decimal orderValue)
     {
-        var d = await _context.DiscountCodes
-            .FirstOrDefaultAsync(x => x.Code == code && x.IsActive);
+        var d = await _context.DiscountCodes.FirstOrDefaultAsync(x => x.Code == code && x.IsActive);
 
-        if (d == null) return null;
+        if (d == null)
+            return null;
 
         var now = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow();
-        if (now < d.ValidFrom || now > d.ValidTo) return null;
-        if (d.MaxUses.HasValue && d.UsedCount >= d.MaxUses.Value) return null;
-        if (orderValue < d.MinOrderValue) return null;
+        if (now < d.ValidFrom || now > d.ValidTo)
+            return null;
+        if (d.MaxUses.HasValue && d.UsedCount >= d.MaxUses.Value)
+            return null;
+        if (orderValue < d.MinOrderValue)
+            return null;
 
         return await GetDiscountCodeAsync(d.DiscountId);
     }
 
     public async Task<int> CalculateLoyaltyPointsAsync(long customerId, decimal amount)
     {
-        // Giả sử 1% tổng tiền thành điểm. Thực tế nên lấy từ SystemConfig
-        var config = await GetConfigByKeyAsync("LOYALTY_POINT_RATE");
-        decimal rate = 0.01m; // Default 1%
+        var config = await GetConfigByKeyAsync("LOYALTY_EARN_RATE");
+        decimal earnRate = 100000m; // Default: 100,000 VND = 1 point
         if (config != null && decimal.TryParse(config.ConfigValue, out var parsedRate))
         {
-            rate = parsedRate / 100;
+            earnRate = parsedRate;
         }
 
-        return (int)Math.Floor(amount * rate);
+        if (earnRate <= 0)
+            return 0;
+        return (int)Math.Floor(amount / earnRate);
     }
 
     public async Task AwardPointsAsync(long customerId, int points, string refType, long refId)
     {
         var customer = await _context.Customers.FindAsync(customerId);
-        if (customer == null) return;
+        if (customer == null)
+            return;
 
         customer.TotalPoints += points;
 
@@ -336,7 +361,7 @@ public class PromotionService : IPromotionService
             RefType = refType,
             RefId = refId,
             Note = $"Tích điểm từ đơn hàng #{refId}",
-            CreatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow()
+            CreatedAt = SEP_Restaurant_management.Core.Middlewares.DateTimeHelper.VietnamNow(),
         };
 
         _context.CustomerPointsLedgers.Add(ledger);

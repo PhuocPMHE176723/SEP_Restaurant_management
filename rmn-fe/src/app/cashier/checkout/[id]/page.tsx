@@ -39,6 +39,52 @@ export default function CashierCheckoutPage() {
   const [qrTimer, setQrTimer] = useState(300); // 5 minutes
   const [selectedItemIndices, setSelectedItemIndices] = useState<number[]>([]);
 
+  const getTierBadge = (tier?: string) => {
+    const label = tier?.trim() || "Thành viên";
+    const normalized = label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+
+    if (normalized.includes("kim cuong")) {
+      return {
+        label: "Kim Cương",
+        bg: "linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%)",
+        color: "#0f172a",
+        border: "1px solid #bae6fd",
+        shadow: "0 6px 18px rgba(56, 189, 248, 0.35)",
+      };
+    }
+
+    if (normalized.includes("vang")) {
+      return {
+        label: "Vàng",
+        bg: "linear-gradient(135deg, #fef9c3 0%, #fff7ed 100%)",
+        color: "#854d0e",
+        border: "1px solid #fde68a",
+        shadow: "0 6px 18px rgba(234, 179, 8, 0.35)",
+      };
+    }
+
+    if (normalized.includes("bac")) {
+      return {
+        label: "Bạc",
+        bg: "linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)",
+        color: "#334155",
+        border: "1px solid #cbd5f5",
+        shadow: "0 6px 18px rgba(148, 163, 184, 0.35)",
+      };
+    }
+
+    return {
+      label,
+      bg: "linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%)",
+      color: "#0f172a",
+      border: "1px solid #bae6fd",
+      shadow: "0 6px 18px rgba(56, 189, 248, 0.25)",
+    };
+  };
+
   useEffect(() => {
     if (orderId) {
       fetchPreview();
@@ -163,10 +209,8 @@ export default function CashierCheckoutPage() {
   }, [preview?.orderId]);
 
   const handleToggleItem = (idx: number) => {
-    setSelectedItemIndices(prev =>
-      prev.includes(idx)
-        ? prev.filter(i => i !== idx)
-        : [...prev, idx]
+    setSelectedItemIndices((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
     );
   };
 
@@ -310,21 +354,28 @@ export default function CashierCheckoutPage() {
                     <td className={styles.itemName}>
                       {item.itemNameSnapshot}
                       {item.status === "SERVED" && (
-                        <span style={{ marginLeft: 6, color: 'green', fontSize: 12 }}>
+                        <span
+                          style={{
+                            marginLeft: 6,
+                            color: "green",
+                            fontSize: 12,
+                          }}
+                        >
                           ✓
                         </span>
                       )}
                     </td>
 
-                    <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                    <td style={{ textAlign: "center" }}>{item.quantity}</td>
 
-                    <td style={{ textAlign: 'right' }}>
+                    <td style={{ textAlign: "right" }}>
                       {item.unitPrice?.toLocaleString()}đ
                     </td>
 
-                    <td style={{ textAlign: 'right' }}>
+                    <td style={{ textAlign: "right" }}>
                       {checked
-                        ? (item.quantity * item.unitPrice).toLocaleString() + "đ"
+                        ? (item.quantity * item.unitPrice).toLocaleString() +
+                          "đ"
                         : "0đ"}
                     </td>
                   </tr>
@@ -387,7 +438,36 @@ export default function CashierCheckoutPage() {
                 </button>
               </div>
               <div className={styles.customerInfo}>
-                <span className={styles.customerName}>{customer.fullName}</span>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                  <span className={styles.customerName}>
+                    {customer.fullName}
+                  </span>
+                  {(() => {
+                    const tier = getTierBadge(customer.currentTier);
+                    const tierLabel = tier.label;
+                    return (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: tier.color,
+                          background: tier.bg,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          width: "fit-content",
+                          border: tier.border,
+                          boxShadow: tier.shadow,
+                        }}
+                      >
+                        {tierLabel}
+                      </span>
+                    );
+                  })()}
+                </div>
                 <span
                   className={styles.customerPoints}
                   style={{
@@ -588,9 +668,9 @@ export default function CashierCheckoutPage() {
                 <span>-{preview.discountAmount.toLocaleString()}đ</span>
               </div>
             )}
-            <div className={styles.summaryRow}>
+            <div className={styles.summaryRow} style={{ color: "#0ea5e9" }}>
               <span>Thuế VAT (8%)</span>
-              <span>{preview.vatAmount.toLocaleString()}đ</span>
+              <span>+{preview.vatAmount.toLocaleString()}đ</span>
             </div>
             <div
               className={styles.summaryRow}

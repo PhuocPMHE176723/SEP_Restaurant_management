@@ -52,6 +52,7 @@ public class OrderItemDTO
     public string? Status { get; set; }
     public string? Note { get; set; }
     public string? Thumbnail { get; set; }
+    public string? ItemType { get; set; }
 }
 
 public class CreateReservationRequest

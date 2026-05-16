@@ -8,7 +8,7 @@ namespace rmn_be.Core.Services.Interface
         Task<PagedResultDTO<CustomerDTO>> GetAllCustomersAsync(PagingRequestDTO pagingRequest);
         Task<CustomerDTO?> GetCustomerByIdAsync(long id);
         Task<CustomerDTO> CreateCustomerAsync(CreateCustomerDTO createDto);
-        Task<bool> UpdateCustomerAsync(long id, UpdateCustomerDTO updateDto);
+        Task<UpdateCustomerResultDTO> UpdateCustomerAsync(long id, UpdateCustomerDTO updateDto);
         Task<CustomerDTO?> GetMyProfileAsync(string userId);
         Task<CustomerContextDTO> GetMyOrderAsync(string userId);
     }

@@ -12,6 +12,7 @@ public class MenuItemDTO
     public decimal BasePrice { get; set; }
     public string? Thumbnail { get; set; }
     public bool IsActive { get; set; }
+    public string ItemType { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
 }
 
@@ -22,6 +23,7 @@ public class CreateMenuItemDTO
     public string? Unit { get; set; }
     public string? Description { get; set; }
     public decimal BasePrice { get; set; }
+    public string ItemType { get; set; } = "PROCESSED";
     public string? Thumbnail { get; set; }   // URL từ Cloudinary (upload trước)
 }
 
@@ -32,6 +34,7 @@ public class UpdateMenuItemDTO
     public string? Unit { get; set; }
     public string? Description { get; set; }
     public decimal? BasePrice { get; set; }
+    public string? ItemType { get; set; }
     public string? Thumbnail { get; set; }
     public bool? IsActive { get; set; }
 }

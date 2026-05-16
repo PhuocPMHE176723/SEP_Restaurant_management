@@ -7,10 +7,11 @@ import { customerApi, CustomerLookupResponse } from '@/lib/api/customer';
 interface CustomerLookupModalProps {
   onSelect: (customer: CustomerLookupResponse) => void;
   onClose: () => void;
+  initialPhone?: string;
 }
 
-export default function CustomerLookupModal({ onSelect, onClose }: CustomerLookupModalProps) {
-  const [phone, setPhone] = useState('');
+export default function CustomerLookupModal({ onSelect, onClose, initialPhone = '' }: CustomerLookupModalProps) {
+  const [phone, setPhone] = useState(initialPhone);
   const [fullName, setFullName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
@@ -29,6 +30,12 @@ export default function CustomerLookupModal({ onSelect, onClose }: CustomerLooku
       setIsSearching(false);
     }
   };
+
+  React.useEffect(() => {
+    if (initialPhone) {
+      handleLookup();
+    }
+  }, []);
 
   const handleCreate = async () => {
     if (!phone || !fullName) {
@@ -59,6 +66,7 @@ export default function CustomerLookupModal({ onSelect, onClose }: CustomerLooku
               className={styles.input} 
               type="text" 
               placeholder="09xx..." 
+              autoFocus
               value={phone}
               onChange={e => setPhone(e.target.value)}
             />

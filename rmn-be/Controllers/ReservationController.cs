@@ -93,6 +93,16 @@ public class ReservationController : BaseController
 
             var customerId = await GetCustomerIdAsync();
 
+            // Check if phone is verified
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.IsPhoneVerified)
+            {
+                return Failure(
+                    "Bạn cần xác minh số điện thoại để đặt bàn. Vui lòng cập nhật hồ sơ và xác minh OTP."
+                );
+            }
+
             // Validate reservation date is within 7 days
             // Frontend sends local time string (e.g., "2026-03-11T13:45:00")
             // ASP.NET parses it as Unspecified Kind, treat it as local time
@@ -129,7 +139,8 @@ public class ReservationController : BaseController
                 {
                     await _emailService.SendReservationReceivedEmailAsync(
                         customer.Email,
-                        customer.FullName ?? request.MenuItems.FirstOrDefault()?.Note ?? "Quý khách",
+                        customer.FullName
+                            ?? request.MenuItems.FirstOrDefault()?.Note ?? "Quý khách",
                         reservation.ReservationId,
                         reservation.ReservedAt,
                         reservation.PartySize,
@@ -141,7 +152,9 @@ public class ReservationController : BaseController
             catch (Exception emailEx)
             {
                 // Log email error but don't fail the reservation creation
-                Console.WriteLine($"[ReservationController] Failed to send booking email: {emailEx.Message}");
+                Console.WriteLine(
+                    $"[ReservationController] Failed to send booking email: {emailEx.Message}"
+                );
             }
 
             return Success(reservation, "Reservation created successfully");
@@ -220,12 +233,19 @@ public class ReservationController : BaseController
     }
 
     [HttpPut("{id}/items")]
-    public async Task<IActionResult> UpdateReservationItems(long id, [FromBody] List<OrderItemRequest> newItems)
+    public async Task<IActionResult> UpdateReservationItems(
+        long id,
+        [FromBody] List<OrderItemRequest> newItems
+    )
     {
         try
         {
             var customerId = await GetCustomerIdAsync();
-            var result = await _reservationService.UpdateReservationItemsAsync(id, customerId, newItems ?? new List<OrderItemRequest>());
+            var result = await _reservationService.UpdateReservationItemsAsync(
+                id,
+                customerId,
+                newItems ?? new List<OrderItemRequest>()
+            );
 
             if (!result)
             {

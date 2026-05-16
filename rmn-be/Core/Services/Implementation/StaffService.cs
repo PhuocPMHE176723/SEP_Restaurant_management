@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using rmn_be.Core.DTOs;
 using rmn_be.Core.Services.Interface;
@@ -150,7 +150,88 @@ namespace rmn_be.Core.Services.Implementation
 
             if (existingStaff == null) return false;
 
-            _mapper.Map(updateDto, existingStaff);
+            var normalizedFullName = updateDto.FullName?.Trim() ?? string.Empty;
+            var normalizedPhone = updateDto.Phone?.Trim() ?? string.Empty;
+            var normalizedEmail = updateDto.Email?.Trim() ?? string.Empty;
+            var normalizedUsername = updateDto.Username?.Trim() ?? string.Empty;
+
+            var staffs = await repo.GetAllAsync();
+
+            // Check duplicated phone with unverified logic
+            var duplicateStaffs = staffs.Where(x =>
+                x.StaffId != id &&
+                !string.IsNullOrWhiteSpace(x.Phone) &&
+                x.Phone.Trim() == normalizedPhone
+            ).ToList();
+
+            if (!string.IsNullOrWhiteSpace(normalizedPhone))
+            {
+                foreach (var dup in duplicateStaffs)
+                {
+                    bool isVerified = false;
+                    if (!string.IsNullOrWhiteSpace(dup.UserId))
+                    {
+                        var otherUser = await _userManager.FindByIdAsync(dup.UserId);
+                        if (otherUser is UserIdentity ui && ui.IsPhoneVerified)
+                        {
+                            isVerified = true;
+                        }
+                    }
+
+                    if (isVerified)
+                    {
+                        throw new Exception("Số điện thoại đã tồn tại và đã được xác thực bởi tài khoản khác.");
+                    }
+                    else
+                    {
+                        dup.Phone = null;
+                        if (!string.IsNullOrWhiteSpace(dup.UserId))
+                        {
+                            var otherUser = await _userManager.FindByIdAsync(dup.UserId);
+                            if (otherUser != null)
+                            {
+                                otherUser.PhoneNumber = null;
+                                await _userManager.UpdateAsync(otherUser);
+                            }
+                        }
+                        repo.Update(dup);
+                    }
+                }
+            }
+
+            // Check duplicated email
+            // Remove redundant email check on Staff table as UserManager handles it more accurately below.
+
+
+            // Update UserIdentity if exists
+            if (!string.IsNullOrWhiteSpace(existingStaff.UserId))
+            {
+                var user = await _userManager.FindByIdAsync(existingStaff.UserId);
+                if (user != null)
+                {
+                    var userByEmail = await _userManager.FindByEmailAsync(normalizedEmail);
+                    if (userByEmail != null && userByEmail.Id != user.Id)
+                        throw new Exception("Email đã tồn tại trong hệ thống.");
+
+                    var userByUsername = await _userManager.FindByNameAsync(normalizedUsername);
+                    if (userByUsername != null && userByUsername.Id != user.Id)
+                        throw new Exception("Tên đăng nhập (Username) đã tồn tại.");
+
+                    user.Email = normalizedEmail;
+                    user.UserName = normalizedUsername;
+                    user.PhoneNumber = normalizedPhone;
+
+                    var updateUserResult = await _userManager.UpdateAsync(user);
+                    if (!updateUserResult.Succeeded)
+                    {
+                        throw new Exception(string.Join(", ", updateUserResult.Errors.Select(x => x.Description)));
+                    }
+                }
+            }
+
+            existingStaff.FullName = normalizedFullName;
+            existingStaff.Phone = normalizedPhone;
+            existingStaff.Email = normalizedEmail;
             existingStaff.UpdatedAt = DateTime.UtcNow;
 
             repo.Update(existingStaff);
@@ -295,6 +376,16 @@ namespace rmn_be.Core.Services.Implementation
 
             var dto = _mapper.Map<StaffDTO>(entity);
             dto.Username = user?.UserName;
+
+            if (string.IsNullOrWhiteSpace(dto.Phone) && user != null && !string.IsNullOrWhiteSpace(user.PhoneNumber))
+            {
+                dto.Phone = user.PhoneNumber;
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Email) && user != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                dto.Email = user.Email;
+            }
 
             return dto;
         }

@@ -28,6 +28,10 @@ public class MenuItem
     public string? Thumbnail { get; set; }
 
     public bool IsActive { get; set; } = true;
+    
+    [MaxLength(50)]
+    public string ItemType { get; set; } = "PROCESSED"; // READY or PROCESSED
+
 
     public DateTime CreatedAt { get; set; }
 

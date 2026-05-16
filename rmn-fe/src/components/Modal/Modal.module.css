@@ -33,6 +33,10 @@
     border: 1px solid var(--border);
 }
 
+.sm { max-width: 400px; }
+.md { max-width: 550px; }
+.lg { max-width: 800px; }
+
 @keyframes slideDown {
     from {
         transform: translateY(-20px);

@@ -10,9 +10,36 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+const errorTranslations: Record<string, string> = {
+  "The Email field is not a valid e-mail address.": "Email không đúng định dạng.",
+  "The FullName field is required.": "Họ và tên không được để trống.",
+  "The Username field is required.": "Tên đăng nhập không được để trống.",
+  "The Email field is required.": "Email không được để trống.",
+  "Phone already exists.": "Số điện thoại đã tồn tại.",
+  "Email already exists.": "Email đã tồn tại.",
+  "Username already exists.": "Tên đăng nhập đã tồn tại.",
+  "One or more validation errors occurred.": "Có lỗi nhập liệu xảy ra.",
+  "Passwords must have at least one non alphanumeric character.": "Mật khẩu phải có ít nhất một ký tự đặc biệt.",
+  "Passwords must have at least one digit ('0'-'9').": "Mật khẩu phải có ít nhất một chữ số.",
+  "Passwords must have at least one uppercase ('A'-'Z').": "Mật khẩu phải có ít nhất một chữ hoa.",
+  "Passwords must have at least one lowercase ('a'-'z').": "Mật khẩu phải có ít nhất một chữ thường.",
+  "Passwords must be at least 6 characters.": "Mật khẩu phải có ít nhất 6 ký tự.",
+  "Incorrect password.": "Mật khẩu hiện tại không chính xác.",
+};
+
+function translateError(msg: string): string {
+  if (!msg) return msg;
+  
+  let translated = msg;
+  Object.entries(errorTranslations).forEach(([en, vi]) => {
+    translated = translated.replace(en, vi);
+  });
+  
+  return translated;
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const rawText = await response.text();
-
   let json: any = null;
 
   if (rawText) {
@@ -20,19 +47,28 @@ async function parseResponse<T>(response: Response): Promise<T> {
       json = JSON.parse(rawText);
     } catch {
       if (!response.ok) {
-        throw new Error(rawText || "Request failed");
+        throw new Error(rawText || "Yêu cầu thất bại");
       }
-
       return rawText as T;
     }
   }
 
   if (!response.ok) {
+    if (json?.errors) {
+      const errorMessages = Object.values(json.errors).flat().join(", ");
+      if (errorMessages) {
+        throw new Error(translateError(errorMessages));
+      }
+    }
+
     throw new Error(
-      json?.message ||
-      json?.Message ||
-      rawText ||
-      "Request failed"
+      translateError(
+        json?.message ||
+        json?.Message ||
+        json?.title ||
+        rawText ||
+        "Yêu cầu thất bại"
+      )
     );
   }
 
@@ -100,14 +136,36 @@ export const profileApi = {
       email: string;
       username?: string;
     }
-  ): Promise<string> {
+  ): Promise<{ message: string; phoneRequiresVerification: boolean }> {
     const response = await fetch(`${apiBaseUrl}/api/User/customers/${id}`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(payload),
     });
 
-    return parseResponse<string>(response);
+    const text = await response.text();
+    let json: any = null;
+
+    if (text) {
+      try {
+        json = JSON.parse(text);
+      } catch {
+        if (!response.ok) throw new Error(text || "Cập nhật hồ sơ thất bại");
+        return { message: text, phoneRequiresVerification: false };
+      }
+    }
+
+    if (!response.ok || (json && !json.success && !json.Success)) {
+      throw new Error(json?.message || json?.Message || "Cập nhật hồ sơ thất bại");
+    }
+
+    const data = json?.data ?? json?.Data ?? {};
+    return {
+      message: json?.message ?? json?.Message ?? "Cập nhật hồ sơ thành công",
+      phoneRequiresVerification: Boolean(
+        data?.phoneRequiresVerification ?? data?.PhoneRequiresVerification,
+      ),
+    };
   },
 
 //   async forgotPassword(email: string): Promise<string> {

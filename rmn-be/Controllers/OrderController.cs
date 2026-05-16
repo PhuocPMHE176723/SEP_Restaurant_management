@@ -117,6 +117,7 @@ public class OrderController : BaseController
             .Include(o => o.Reservation)
             .Include(o => o.Customer)
             .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
             .FirstOrDefaultAsync(o => o.OrderId == id);
 
         if (order == null)
@@ -161,6 +162,7 @@ public class OrderController : BaseController
                     UnitPrice = oi.UnitPrice,
                     Status = oi.Status,
                     Note = oi.Note,
+                    ItemType = oi.MenuItem?.ItemType
                 })
                 .ToList(),
         };
@@ -253,21 +255,35 @@ public class OrderController : BaseController
             return NotFoundResponse("Menu item not found");
         }
 
-        var orderItem = new OrderItem
-        {
-            OrderId = id,
-            ItemId = request.MenuItemId,
-            Quantity = request.Quantity,
-            UnitPrice = menuItem.BasePrice,
-            ItemNameSnapshot = menuItem.ItemName,
-            Note = request.Note,
-            // Only show in kitchen after explicit confirmation
-            Status = "PENDING",
-            CreatedAt = DateTimeHelper.VietnamNow(),
-        };
+        // Check if item already exists in order with PENDING status and same note
+        var existingItem = await _context.OrderItems
+            .FirstOrDefaultAsync(oi => oi.OrderId == id 
+                                    && oi.ItemId == request.MenuItemId 
+                                    && oi.Status == "PENDING"
+                                    && oi.Note == request.Note);
 
-        _context.OrderItems.Add(orderItem);
+        if (existingItem != null)
+        {
+            existingItem.Quantity += request.Quantity;
+        }
+        else
+        {
+            var orderItem = new OrderItem
+            {
+                OrderId = id,
+                ItemId = request.MenuItemId,
+                Quantity = request.Quantity,
+                UnitPrice = menuItem.BasePrice,
+                ItemNameSnapshot = menuItem.ItemName,
+                Note = request.Note,
+                Status = "PENDING",
+                CreatedAt = DateTimeHelper.VietnamNow(),
+            };
+            _context.OrderItems.Add(orderItem);
+        }
+
         await _context.SaveChangesAsync();
+
 
         return Success("Item added to order successfully");
     }
@@ -400,11 +416,29 @@ public class OrderController : BaseController
                 ? $"Transferred from {fromTable.TableCode}. Reason: {request.Reason}"
                 : $"{order.Note} | Transferred from {fromTable.TableCode}. Reason: {request.Reason}";
 
-            // 4. Update Tables Status
+            // 4. Update OrderTables (n-n relationship)
+            var orderTable = await _context.OrderTables.FirstOrDefaultAsync(ot => 
+                ot.OrderId == order.OrderId && ot.TableId == request.FromTableId);
+            
+            if (orderTable != null)
+            {
+                orderTable.TableId = request.ToTableId;
+            }
+            else
+            {
+                // Fallback: Create new if missing
+                _context.OrderTables.Add(new OrderTable {
+                    OrderId = order.OrderId,
+                    TableId = request.ToTableId,
+                    AssignedAt = DateTimeHelper.VietnamNow()
+                });
+            }
+
+            // 5. Update Tables Status
             fromTable.Status = "AVAILABLE";
             toTable.Status = "OCCUPIED";
 
-            // 5. Add status history entry
+            // 6. Add status history entry
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
 
@@ -465,39 +499,7 @@ public class OrderController : BaseController
         // 1. Tự động trừ kho và cập nhật định lượng ngày nếu món ăn được phục vụ (SERVED)
         if (request.Status == "SERVED")
         {
-            var ingredients = await _context
-                .MenuItemIngredients.Where(mi => mi.ItemId == orderItem.ItemId)
-                .ToListAsync();
-
-            var today = DateTimeHelper.VietnamNow().Date;
-
-            foreach (var ing in ingredients)
-            {
-                // A. Cập nhật Định lượng Ngày (Daily Allocation)
-                var dailyAllocation = await _context.DailyIngredientAllocations.FirstOrDefaultAsync(
-                    da => da.IngredientId == ing.IngredientId && da.Date == today
-                );
-
-                if (dailyAllocation != null)
-                {
-                    dailyAllocation.ActuallyUsedQuantity += ing.Quantity * orderItem.Quantity;
-                }
-
-                // B. Ghi nhận biến động kho tổng (Stock Movement)
-                var movement = new StockMovement
-                {
-                    IngredientId = ing.IngredientId,
-                    MovementType = "OUT",
-                    Quantity = ing.Quantity * orderItem.Quantity,
-                    RefType = "ORDER_ITEM",
-                    RefId = orderItem.OrderItemId,
-                    MovedAt = DateTimeHelper.VietnamNow(),
-                    CreatedByStaffId = staff?.StaffId,
-                    Note =
-                        $"Xuất kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})",
-                };
-                _context.StockMovements.Add(movement);
-            }
+            await DeductInventory(orderItem, orderItem.Quantity, staff?.StaffId);
         }
 
         // 2. Cập nhật lịch sử trạng thái
@@ -517,12 +519,87 @@ public class OrderController : BaseController
         return Success("Order item status updated successfully");
     }
 
+    private async Task DeductInventory(OrderItem orderItem, decimal quantity, long? staffId)
+    {
+        var ingredients = await _context
+            .MenuItemIngredients.Where(mi => mi.ItemId == orderItem.ItemId)
+            .ToListAsync();
+
+        var today = DateTimeHelper.VietnamNow().Date;
+
+        foreach (var ing in ingredients)
+        {
+            // A. Cập nhật Định lượng Ngày (Daily Allocation)
+            var dailyAllocation = await _context.DailyIngredientAllocations.FirstOrDefaultAsync(
+                da => da.IngredientId == ing.IngredientId && da.Date == today
+            );
+
+            if (dailyAllocation != null)
+            {
+                dailyAllocation.ActuallyUsedQuantity += ing.Quantity * quantity;
+            }
+
+            // B. Ghi nhận biến động kho tổng (Stock Movement)
+            var movement = new StockMovement
+            {
+                IngredientId = ing.IngredientId,
+                MovementType = "OUT",
+                Quantity = ing.Quantity * quantity,
+                RefType = "ORDER_ITEM",
+                RefId = orderItem.OrderItemId,
+                MovedAt = DateTimeHelper.VietnamNow(),
+                CreatedByStaffId = staffId,
+                Note =
+                    $"Xuất kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})",
+            };
+            _context.StockMovements.Add(movement);
+        }
+    }
+
+    private async Task RestoreInventory(OrderItem orderItem, decimal quantity, long? staffId)
+    {
+        var ingredients = await _context
+            .MenuItemIngredients.Where(mi => mi.ItemId == orderItem.ItemId)
+            .ToListAsync();
+
+        var today = DateTimeHelper.VietnamNow().Date;
+
+        foreach (var ing in ingredients)
+        {
+            // A. Cập nhật Định lượng Ngày (Daily Allocation)
+            var dailyAllocation = await _context.DailyIngredientAllocations.FirstOrDefaultAsync(
+                da => da.IngredientId == ing.IngredientId && da.Date == today
+            );
+
+            if (dailyAllocation != null)
+            {
+                dailyAllocation.ActuallyUsedQuantity -= ing.Quantity * quantity;
+            }
+
+            // B. Ghi nhận biến động kho tổng (Stock Movement)
+            var movement = new StockMovement
+            {
+                IngredientId = ing.IngredientId,
+                MovementType = "IN",
+                Quantity = ing.Quantity * quantity,
+                RefType = "ORDER_ITEM_RETURN",
+                RefId = orderItem.OrderItemId,
+                MovedAt = DateTimeHelper.VietnamNow(),
+                CreatedByStaffId = staffId,
+                Note =
+                    $"Hoàn trả kho tự động cho món {orderItem.ItemNameSnapshot} (Đơn hàng {orderItem.Order?.OrderCode})",
+            };
+            _context.StockMovements.Add(movement);
+        }
+    }
+
     [HttpDelete("items/{orderItemId}")]
     [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> CancelOrderItem(long orderItemId)
     {
         var orderItem = await _context
             .OrderItems.Include(oi => oi.Order)
+            .Include(oi => oi.MenuItem)
             .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
 
         if (orderItem == null)
@@ -539,12 +616,22 @@ public class OrderController : BaseController
             return Failure("Cannot modify items for a closed or cancelled order");
         }
 
-        if (orderItem.Status == "SERVED")
+        bool isReady = orderItem.MenuItem?.ItemType == "READY";
+
+        if (orderItem.Status == "SERVED" && !isReady)
         {
-            return Failure("Cannot remove a served item");
+            return Failure("Cannot remove a served processed item");
         }
 
+        string oldStatus = orderItem.Status;
         orderItem.Status = "CANCELLED";
+
+        if (oldStatus == "SERVED")
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+            await RestoreInventory(orderItem, orderItem.Quantity, staff?.StaffId);
+        }
 
         _context.OrderStatusHistories.Add(
             new OrderStatusHistory

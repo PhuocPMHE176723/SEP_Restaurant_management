@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEP_Restaurant_management.Core.Models;
 
@@ -11,9 +12,11 @@ using SEP_Restaurant_management.Core.Models;
 namespace rmn_be.Core.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    partial class SepDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260512172800_AddPendingPhoneNumber")]
+    partial class AddPendingPhoneNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -756,11 +759,6 @@ namespace rmn_be.Core.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("ItemType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Thumbnail")
                         .HasMaxLength(500)

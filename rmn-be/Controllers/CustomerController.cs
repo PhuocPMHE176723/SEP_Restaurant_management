@@ -1,10 +1,12 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.Data;
-using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.DTOs;
-using System.Security.Claims;
+using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -14,29 +16,51 @@ namespace SEP_Restaurant_management.Controllers;
 public class CustomerController : BaseController
 {
     private readonly SepDatabaseContext _context;
+    private readonly IAuthService _authService;
+    private readonly UserManager<UserIdentity> _userManager;
 
-    public CustomerController(SepDatabaseContext context)
+    public CustomerController(
+        SepDatabaseContext context,
+        IAuthService authService,
+        UserManager<UserIdentity> userManager
+    )
     {
         _context = context;
+        _authService = authService;
+        _userManager = userManager;
     }
 
     [HttpGet("lookup")]
     [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
     public async Task<IActionResult> LookupByPhone([FromQuery] string phone)
     {
-        var customer = await _context.Customers
-            .Include(c => c.Reservations)
+        var customer = await _context
+            .Customers.Include(c => c.Reservations)
             .FirstOrDefaultAsync(c => c.Phone == phone);
 
-        if (customer == null) return NotFoundResponse("Customer not found");
+        if (customer == null)
+            return NotFoundResponse("Customer not found");
 
-        return Success(new {
-            customer.CustomerId,
-            customer.FullName,
-            customer.Phone,
-            customer.TotalPoints,
-            customer.Email
-        });
+        var tiers = await _context
+            .LoyaltyTiers.Where(t => t.IsActive)
+            .OrderByDescending(t => t.MinPoints)
+            .ToListAsync();
+
+        var currentTier =
+            tiers.FirstOrDefault(t => customer.TotalPoints >= t.MinPoints)?.TierName
+            ?? "Thành viên";
+
+        return Success(
+            new
+            {
+                customer.CustomerId,
+                customer.FullName,
+                customer.Phone,
+                customer.TotalPoints,
+                customer.Email,
+                CurrentTier = currentTier,
+            }
+        );
     }
 
     [HttpPost]
@@ -52,13 +76,33 @@ public class CustomerController : BaseController
             Phone = request.Phone,
             Email = request.Email,
             CreatedAt = DateTime.UtcNow,
-            TotalPoints = 0
+            TotalPoints = 0,
         };
 
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
 
-        return Success(customer, "Tạo khách hàng thành công");
+        var tiers = await _context
+            .LoyaltyTiers.Where(t => t.IsActive)
+            .OrderByDescending(t => t.MinPoints)
+            .ToListAsync();
+
+        var currentTier =
+            tiers.FirstOrDefault(t => customer.TotalPoints >= t.MinPoints)?.TierName
+            ?? "Thành viên";
+
+        return Success(
+            new
+            {
+                customer.CustomerId,
+                customer.FullName,
+                customer.Phone,
+                customer.TotalPoints,
+                customer.Email,
+                CurrentTier = currentTier,
+            },
+            "Tạo khách hàng thành công"
+        );
     }
 
     [HttpGet("me")]
@@ -66,74 +110,85 @@ public class CustomerController : BaseController
     public async Task<IActionResult> GetMyProfile()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId)) return Failure("Không tìm thấy thông tin đăng nhập");
+        if (string.IsNullOrEmpty(userId))
+            return Failure("Không tìm thấy thông tin đăng nhập");
 
         var user = await _context.Users.FindAsync(userId);
-        var customer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
 
-        if (customer == null) return Failure("Tài khoản chưa được liên kết với hồ sơ khách hàng.");
+        if (customer == null)
+            return Failure("Tài khoản chưa được liên kết với hồ sơ khách hàng.");
         bool isPhoneVerified = user?.IsPhoneVerified ?? false;
 
         // Lấy lịch sử tích/trừ điểm
-        var ledgers = await _context.CustomerPointsLedgers
-            .Where(l => l.CustomerId == customer.CustomerId)
+        var ledgers = await _context
+            .CustomerPointsLedgers.Where(l => l.CustomerId == customer.CustomerId)
             .OrderByDescending(l => l.CreatedAt)
-            .Select(l => new {
+            .Select(l => new
+            {
                 l.LedgerId,
                 l.RefType,
                 l.RefId,
                 l.PointsChange,
                 l.Note,
-                l.CreatedAt
+                l.CreatedAt,
             })
             .ToListAsync();
 
         // Lấy lịch sử ưu đãi (các hoá đơn có giảm giá hoặc dùng điểm)
-        var discountHistory = await _context.Invoices
-            .Where(i => i.CustomerId == customer.CustomerId && (i.DiscountAmount > 0))
+        var discountHistory = await _context
+            .Invoices.Where(i => i.CustomerId == customer.CustomerId && (i.DiscountAmount > 0))
             .OrderByDescending(i => i.IssuedAt)
-            .Select(i => new {
+            .Select(i => new
+            {
                 i.InvoiceId,
                 i.InvoiceCode,
                 i.TotalAmount,
                 i.DiscountAmount,
                 i.PaidAmount,
-                i.IssuedAt
+                i.IssuedAt,
             })
             .ToListAsync();
 
         // Tính hạng thành viên (Nếu có bảng LoyaltyTiers, lấy hạng tương ứng)
-        var tiers = await _context.LoyaltyTiers
-            .Where(t => t.IsActive)
-            .OrderByDescending(t => t.MinPoints).ToListAsync();
-            
-        var currentTier = tiers.FirstOrDefault(t => customer.TotalPoints >= t.MinPoints)?.TierName ?? "Thành viên";
+        var tiers = await _context
+            .LoyaltyTiers.Where(t => t.IsActive)
+            .OrderByDescending(t => t.MinPoints)
+            .ToListAsync();
 
-        return Success(new {
-            customer.CustomerId,
-            customer.FullName,
-            customer.Phone,
-            customer.Email,
-            customer.TotalPoints,
-            IsPhoneVerified = isPhoneVerified,
-            CurrentTier = currentTier,
-            PointHistory = ledgers,
-            DiscountHistory = discountHistory
-        });
+        var currentTier =
+            tiers.FirstOrDefault(t => customer.TotalPoints >= t.MinPoints)?.TierName
+            ?? "Thành viên";
+
+        return Success(
+            new
+            {
+                customer.CustomerId,
+                customer.FullName,
+                customer.Phone,
+                customer.Email,
+                customer.TotalPoints,
+                IsPhoneVerified = isPhoneVerified,
+                CurrentTier = currentTier,
+                PointHistory = ledgers,
+                DiscountHistory = discountHistory,
+            }
+        );
     }
-    
+
     [HttpPut("me")]
     [Authorize]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId)) return Failure("Không tìm thấy thông tin đăng nhập");
+        if (string.IsNullOrEmpty(userId))
+            return Failure("Không tìm thấy thông tin đăng nhập");
 
         var user = await _context.Users.FindAsync(userId);
         var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
 
-        if (user == null || customer == null) return Failure("Không tìm thấy thông tin người dùng");
+        if (user == null || customer == null)
+            return Failure("Không tìm thấy thông tin người dùng");
 
         if (!string.IsNullOrEmpty(request.FullName))
         {
@@ -151,10 +206,26 @@ public class CustomerController : BaseController
         {
             if (user.PhoneNumber != request.Phone)
             {
-                user.PhoneNumber = request.Phone;
+                // Store new phone in pending field, do NOT update PhoneNumber yet
+                user.PendingPhoneNumber = request.Phone;
                 user.IsPhoneVerified = false;
-                user.PhoneNumberConfirmed = false;
-                customer.Phone = request.Phone;
+
+                // Save pending phone
+                await _context.SaveChangesAsync();
+
+                // Send OTP for verification
+                var resendRequest = new ResendOtpRequestDTO { PhoneNumber = request.Phone };
+                var (succeeded, errors) = await _authService.ResendOtpAsync(resendRequest);
+
+                if (!succeeded)
+                {
+                    return Failure("Không thể gửi OTP. Vui lòng thử lại.", errors);
+                }
+
+                return Success(
+                    new { phoneRequiresVerification = true },
+                    "Vui lòng xác minh số điện thoại mới qua OTP để hoàn tất cập nhật."
+                );
             }
         }
 

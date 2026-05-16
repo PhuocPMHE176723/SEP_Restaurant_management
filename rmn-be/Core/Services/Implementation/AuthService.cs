@@ -51,7 +51,7 @@ public class AuthService : IAuthService
         if (!isPasswordValid)
             return null;
         if (!user.EmailConfirmed)
-        throw new InvalidOperationException("Email chưa được xác thực. Vui lòng nhập OTP.");
+            throw new InvalidOperationException("Email chưa được xác thực. Vui lòng nhập OTP.");
         // 3. Lấy danh sách roles
         var roles = (await _userManager.GetRolesAsync(user)).ToList();
 
@@ -366,10 +366,10 @@ public class AuthService : IAuthService
             // Ghi log OTP ra console để dễ test nếu không có SMS service
             Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
         }
-        else 
+        else
         {
-             // Log for email only if no phone
-             Console.WriteLine($"[OTP for Email {request.Email}]: {otp}");
+            // Log for email only if no phone
+            Console.WriteLine($"[OTP for Email {request.Email}]: {otp}");
         }
 
         // 👉 gửi mail (vẫn giữ gửi mail để demo/debug)
@@ -382,16 +382,14 @@ public class AuthService : IAuthService
         VerifyPhoneOtpRequestDTO request
     )
     {
-        // Tìm user theo số điện thoại
-        var user = _context.Users.FirstOrDefault(u => u.PhoneNumber == request.PhoneNumber);
+        // Tìm user theo PendingPhoneNumber hoặc PhoneNumber
+        var user = _context.Users.FirstOrDefault(u =>
+            u.PhoneNumber == request.PhoneNumber || u.PendingPhoneNumber == request.PhoneNumber
+        );
+
         if (user == null)
         {
             return (false, new List<string> { "User with this phone number not found." });
-        }
-
-        if (user.PhoneNumberConfirmed)
-        {
-            return (false, new List<string> { "Phone number has already been verified." });
         }
 
         var otpKey = GetPhoneOtpKey(request.PhoneNumber);
@@ -401,7 +399,10 @@ public class AuthService : IAuthService
 
         if (!isFirebaseVerified)
         {
-            if (!_memoryCache.TryGetValue(otpKey, out string? savedOtp) || string.IsNullOrWhiteSpace(savedOtp))
+            if (
+                !_memoryCache.TryGetValue(otpKey, out string? savedOtp)
+                || string.IsNullOrWhiteSpace(savedOtp)
+            )
             {
                 return (false, new List<string> { "OTP expired or not found." });
             }
@@ -412,18 +413,35 @@ public class AuthService : IAuthService
             }
         }
 
+        // If PendingPhoneNumber exists, promote it to PhoneNumber
+        if (!string.IsNullOrEmpty(user.PendingPhoneNumber))
+        {
+            user.PhoneNumber = user.PendingPhoneNumber;
+            user.PendingPhoneNumber = null; // Clear pending
+
+            // Update corresponding Customer record
+            var customer = _context.Customers.FirstOrDefault(c => c.UserId == user.Id);
+            if (customer != null)
+            {
+                customer.Phone = user.PhoneNumber;
+                _context.Customers.Update(customer);
+            }
+        }
+
         user.PhoneNumberConfirmed = true;
         user.IsPhoneVerified = true;
         user.PhoneVerifiedAt = DateTime.UtcNow;
-        
+
         // Nếu xác thực phone thì cũng coi như xác thực email cho đơn giản trong project này (tùy logic)
-        user.EmailConfirmed = true; 
-        
+        user.EmailConfirmed = true;
+
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
             return (false, updateResult.Errors.Select(e => e.Description).ToList());
         }
+
+        await _context.SaveChangesAsync();
 
         _memoryCache.Remove(otpKey);
         _memoryCache.Remove(GetPhoneCooldownKey(request.PhoneNumber));
@@ -516,7 +534,11 @@ public class AuthService : IAuthService
         if (isEmail)
             SetOtpCache(identifier, otp);
         else
-            _memoryCache.Set(GetPhoneOtpKey(identifier), otp, TimeSpan.FromMinutes(OtpExpiredMinutes));
+            _memoryCache.Set(
+                GetPhoneOtpKey(identifier),
+                otp,
+                TimeSpan.FromMinutes(OtpExpiredMinutes)
+            );
 
         _memoryCache.Set(cooldownKey, true, TimeSpan.FromSeconds(ResendCooldownSeconds));
 
@@ -530,8 +552,8 @@ public class AuthService : IAuthService
         }
         else
         {
-             // Mock SMS sending
-             Console.WriteLine($"[RESEND OTP for {identifier}]: {otp}");
+            // Mock SMS sending
+            Console.WriteLine($"[RESEND OTP for {identifier}]: {otp}");
         }
 
         return (true, new List<string>());
@@ -543,11 +565,12 @@ public class AuthService : IAuthService
     }
 
     private static string GetOtpKey(string email) => $"register_otp:{email.Trim().ToLower()}";
+
     private static string GetPhoneOtpKey(string phone) => $"register_otp_phone:{phone.Trim()}";
 
     private static string GetCooldownKey(string email) =>
         $"register_otp_cooldown:{email.Trim().ToLower()}";
-    
+
     private static string GetPhoneCooldownKey(string phone) =>
         $"register_otp_phone_cooldown:{phone.Trim()}";
 

@@ -49,6 +49,7 @@ public class InvoiceService
             (oi.UnitPrice * oi.Quantity) - oi.DiscountAmount
         );
         decimal discountAmount = 0;
+        decimal tierDiscount = 0;
 
         // 1. Apply Discount Code
         if (!string.IsNullOrEmpty(discountCode))
@@ -75,21 +76,42 @@ public class InvoiceService
             }
         }
 
-        // 2. Apply Loyalty Points (1 point = 1000đ)
+        // 2. Apply Loyalty Tier Discount (if eligible)
+        if (order.CustomerId.HasValue)
+        {
+            var customer = await _context.Customers.FindAsync(order.CustomerId.Value);
+            if (customer != null)
+            {
+                var eligibleTier = await _context
+                    .LoyaltyTiers.Where(t => t.IsActive && customer.TotalPoints >= t.MinPoints)
+                    .OrderByDescending(t => t.MinPoints)
+                    .FirstOrDefaultAsync();
+
+                if (eligibleTier != null && eligibleTier.DiscountRate > 0)
+                {
+                    var baseForTierDiscount = Math.Max(0, subtotal - discountAmount);
+                    tierDiscount = baseForTierDiscount * (eligibleTier.DiscountRate / 100m);
+                }
+            }
+        }
+
+        // 3. Apply Loyalty Points (1 point = redeemRate)
         decimal pointsDiscount = 0;
         if (pointsToUse > 0 && order.CustomerId.HasValue)
         {
             var customer = await _context.Customers.FindAsync(order.CustomerId.Value);
             if (customer != null)
             {
+                var redeemRate = await GetDecimalConfigAsync("LOYALTY_REDEEM_RATE", 1000m);
                 int maxPossiblePoints = Math.Min(pointsToUse, customer.TotalPoints);
-                pointsDiscount = maxPossiblePoints * 1000m;
+                pointsDiscount = maxPossiblePoints * redeemRate;
                 // Ensure discount doesn't exceed subtotal
-                pointsDiscount = Math.Min(pointsDiscount, subtotal - discountAmount);
+                var maxDiscount = Math.Max(0, subtotal - discountAmount - tierDiscount);
+                pointsDiscount = Math.Min(pointsDiscount, maxDiscount);
             }
         }
 
-        decimal totalBeforeVat = subtotal - discountAmount - pointsDiscount;
+        decimal totalBeforeVat = subtotal - discountAmount - tierDiscount - pointsDiscount;
         decimal vatRate = 8.0m; // Default 8%
         decimal vatAmount = totalBeforeVat * (vatRate / 100m);
         decimal finalTotal = totalBeforeVat + vatAmount;
@@ -109,13 +131,14 @@ public class InvoiceService
             OrderId = orderId,
             OrderCode = order.OrderCode,
             Subtotal = subtotal,
-            DiscountAmount = discountAmount + pointsDiscount,
+            DiscountAmount = discountAmount + tierDiscount + pointsDiscount,
             VatAmount = vatAmount,
             TotalAmount = finalTotal,
             DepositDeducted = depositDeducted,
             AmountToPay = amountToPay,
             RefundAmount = refundAmount,
-            PointsEarned = (int)(amountToPay / 20000), // 1 point per 20k paid
+            PointsEarned = (int)
+                Math.Floor(amountToPay / await GetDecimalConfigAsync("LOYALTY_EARN_RATE", 100000m)),
             Items = activeItems
                 .Select(oi => new OrderItemDTO
                 {
@@ -173,6 +196,16 @@ public class InvoiceService
         // Update Order & Table
         order.Status = "CLOSED";
         order.ClosedAt = DateTime.Now;
+
+        // 1. Release Primary Table
+        if (order.TableId.HasValue)
+        {
+            var primaryTable = await _context.DiningTables.FindAsync(order.TableId.Value);
+            if (primaryTable != null)
+                primaryTable.Status = "AVAILABLE";
+        }
+
+        // 2. Release all linked tables in n-n relationship
         if (order.OrderTables != null)
         {
             foreach (var ot in order.OrderTables)
@@ -243,6 +276,17 @@ public class InvoiceService
 
         await _context.SaveChangesAsync();
         return invoice;
+    }
+
+    private async Task<decimal> GetDecimalConfigAsync(string key, decimal defaultValue)
+    {
+        var config = await _context.SystemConfigs.FirstOrDefaultAsync(c => c.ConfigKey == key);
+        if (config != null && decimal.TryParse(config.ConfigValue, out var parsed))
+        {
+            return parsed;
+        }
+
+        return defaultValue;
     }
 }
 

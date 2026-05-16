@@ -15,6 +15,12 @@ namespace rmn_be.Core.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
+    public class UpdateCustomerResultDTO
+    {
+        public string Message { get; set; } = string.Empty;
+        public bool PhoneRequiresVerification { get; set; }
+    }
+
     public class CreateCustomerDTO
     {
         [MaxLength(150)]
