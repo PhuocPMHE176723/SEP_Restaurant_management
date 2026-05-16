@@ -15,6 +15,12 @@ namespace rmn_be.Core.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
+    public class CustomerDetailDTO : CustomerDTO
+    {
+        public List<SEP_Restaurant_management.Core.DTOs.ReservationDTO> ReservationHistory { get; set; } = new();
+        public List<SEP_Restaurant_management.Core.DTOs.InvoiceDTO> PaymentHistory { get; set; } = new();
+    }
+
     public class UpdateCustomerResultDTO
     {
         public string Message { get; set; } = string.Empty;

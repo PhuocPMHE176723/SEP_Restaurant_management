@@ -50,6 +50,9 @@ public class MappingProfile : Profile
         // ── OrderItem ──────────────────────────────────────────
         CreateMap<OrderItem, OrderItemDTO>();
 
+        // ── Invoice ────────────────────────────────────────────
+        CreateMap<Invoice, InvoiceDTO>();
+
         // ── Blog & Sliders ─────────────────────────────────────
         CreateMap<BlogCategory, BlogCategoryDTO>().ReverseMap();
         CreateMap<BlogPost, BlogPostDTO>()
@@ -69,6 +72,7 @@ public class MappingProfile : Profile
 
         // Customer
         CreateMap<Customer, CustomerDTO>().ReverseMap();
+        CreateMap<Customer, CustomerDetailDTO>().IncludeBase<Customer, CustomerDTO>();
         CreateMap<CreateCustomerDTO, Customer>();
         CreateMap<UpdateCustomerDTO, Customer>();
     }

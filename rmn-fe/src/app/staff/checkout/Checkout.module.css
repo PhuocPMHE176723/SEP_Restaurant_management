@@ -15,47 +15,39 @@
   gap: 1rem;
 }
 
-.printOnlyHeader {
-  display: none;
-  text-align: center;
-  margin-bottom: 2rem;
+.invoicePrint {
+  display: none !important;
 }
 
 @media print {
-  .printOnlyHeader {
+  .invoicePrint {
     display: block !important;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 10px;
+    background: white !important;
+    color: black !important;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 12px;
   }
-  .backButton, .lookupBtn, .discountSection, .checkoutBtn, .header button, .noteArea, .methodGrid, .methodItem, .viewQrBtn {
+
+  .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .container > *:not(.invoicePrint) {
     display: none !important;
   }
-  .paymentSection {
-    box-shadow: none !important;
-    border: none !important;
+
+  body {
+    background: white !important;
     padding: 0 !important;
-    position: static !important;
-  }
-  .container {
-    padding: 0;
-    background: white;
-    width: 100%;
-  }
-  .content {
-    display: block;
-  }
-  .orderSection {
-    box-shadow: none;
-    border: none;
-    padding: 0;
-    margin-bottom: 2rem;
-  }
-  .title {
-    text-align: center;
-    margin-bottom: 2rem;
-    font-size: 20px;
-  }
-  .itemTable th {
-    background: #f1f5f9 !important;
-    color: #475569 !important;
+    margin: 0 !important;
   }
 }
 

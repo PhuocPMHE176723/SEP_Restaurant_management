@@ -6,18 +6,28 @@ import { adminReservationApi } from "../../../lib/api/admin-reservation";
 import type { ReservationResponse } from "../../../types/models";
 import Pagination from "../../../components/Pagination";
 import styles from "../../manager/manager.module.css";
+import { useRouter } from "next/navigation";
 import AssignTablesModal from "../../../components/AssignTablesModal/AssignTablesModal";
-import type { ReservationAssignTablesResponse } from "@/lib/api/table-reservation";
-import { tableReservationApi } from "@/lib/api/table-reservation";
-import { useRouter } from "next/dist/client/components/navigation";
-import ViewAssignTablesModal from "@/components/ViewAssignTablesModal/ViewAssignTablesModal";
-export default function CashierReservationsPage() {
+import ViewAssignTablesModal from "../../../components/ViewAssignTablesModal/ViewAssignTablesModal";
+import {
+  tableReservationApi,
+  type ReservationAssignTablesResponse,
+} from "../../../lib/api/table-reservation";
+
+export default function StaffReservationsPage() {
   const [reservations, setReservations] = useState<ReservationResponse[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<
     ReservationResponse[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const getCurrentShift = (): "MORNING" | "EVENING" => {
+    const hour = new Date().getHours();
+    return hour < 17 ? "MORNING" : "EVENING";
+  };
+
   const [filter, setFilter] = useState("CONFIRMED");
+  const [shiftFilter, setShiftFilter] =
+    useState<"MORNING" | "EVENING">(getCurrentShift());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [startDate, setStartDate] = useState(
@@ -31,21 +41,15 @@ export default function CashierReservationsPage() {
     key: keyof ReservationResponse;
     direction: "asc" | "desc";
   } | null>({ key: "reservationId", direction: "desc" });
+  const router = useRouter();
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [viewAssignedModalOpen, setViewAssignedModalOpen] = useState(false);
   const [assignData, setAssignData] =
     useState<ReservationAssignTablesResponse | null>(null);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
-  const [viewAssignedModalOpen, setViewAssignedModalOpen] = useState(false);
-  const getCurrentShift = (): "MORNING" | "EVENING" => {
-    const now = new Date();
-    const hour = now.getHours();
 
-    // Trước 17h mặc định là ca sáng, từ 17h trở đi là ca chiều
-    return hour < 17 ? "MORNING" : "EVENING";
-  };
-  const [shiftFilter, setShiftFilter] = useState<"MORNING" | "EVENING">(getCurrentShift());
   useEffect(() => {
     fetchReservations();
   }, [startDate, endDate]);
@@ -54,28 +58,6 @@ export default function CashierReservationsPage() {
     filterReservations();
   }, [reservations, filter, shiftFilter, search, sortConfig]);
 
-  const getReservationShift = (reservedAt: string) => {
-    const date = new Date(reservedAt);
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const totalMinutes = hour * 60 + minute;
-
-    const morningStart = 11 * 60;
-    const morningEnd = 14 * 60;
-
-    const eveningStart = 17 * 60;
-    const eveningEnd = 22 * 60;
-
-    if (totalMinutes >= morningStart && totalMinutes <= morningEnd) {
-      return "MORNING";
-    }
-
-    if (totalMinutes >= eveningStart && totalMinutes <= eveningEnd) {
-      return "EVENING";
-    }
-
-    return "OTHER";
-  };
   const fetchReservations = async () => {
     try {
       setLoading(true);
@@ -94,14 +76,19 @@ export default function CashierReservationsPage() {
   const filterReservations = () => {
     let filtered = reservations;
 
-    if (filter !== "ALL") {
+    if (filter === "PENDING") {
+      filtered = filtered.filter(
+        (reservation) =>
+          reservation.status === "PENDING" ||
+          reservation.status === "CONFIRMED",
+      );
+    } else if (filter !== "ALL") {
       filtered = filtered.filter(
         (reservation) => reservation.status === filter,
       );
     }
     filtered = filtered.filter(
-      (reservation) =>
-        getReservationShift(reservation.reservedAt) === shiftFilter,
+      (reservation) => getReservationShift(reservation.reservedAt) === shiftFilter,
     );
     if (search) {
       const term = search.toLowerCase();
@@ -128,6 +115,22 @@ export default function CashierReservationsPage() {
     setFilteredReservations(filtered);
     setCurrentPage(1); // Reset to first page when filtering
   };
+  const getReservationShift = (
+    reservedAt: string,
+  ): "MORNING" | "EVENING" | "OTHER" => {
+    const date = new Date(reservedAt);
+    const totalMinutes = date.getHours() * 60 + date.getMinutes();
+
+    if (totalMinutes >= 11 * 60 && totalMinutes <= 14 * 60) {
+      return "MORNING";
+    }
+
+    if (totalMinutes >= 17 * 60 && totalMinutes <= 22 * 60) {
+      return "EVENING";
+    }
+
+    return "OTHER";
+  };
 
   const handleOpenAssignModal = async (reservationId: number) => {
     try {
@@ -136,9 +139,7 @@ export default function CashierReservationsPage() {
 
       const data = await tableReservationApi.getAssignableTables(reservationId);
       setAssignData(data);
-    } catch (error) {
-      console.error("Failed to load assignable tables:", error);
-
+    } catch {
       Swal.fire({
         title: "Lỗi",
         text: "Không thể tải danh sách bàn!",
@@ -147,6 +148,27 @@ export default function CashierReservationsPage() {
       });
 
       setAssignModalOpen(false);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleOpenViewAssignedTables = async (reservationId: number) => {
+    try {
+      setViewAssignedModalOpen(true);
+      setAssignLoading(true);
+
+      const data = await tableReservationApi.getAssignableTables(reservationId);
+      setAssignData(data);
+    } catch {
+      Swal.fire({
+        title: "Lỗi",
+        text: "Không thể tải bàn đã gán!",
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+
+      setViewAssignedModalOpen(false);
     } finally {
       setAssignLoading(false);
     }
@@ -175,11 +197,9 @@ export default function CashierReservationsPage() {
       setAssignModalOpen(false);
       setAssignData(null);
     } catch (error) {
-      console.error("Failed to assign tables:", error);
-
       Swal.fire({
         title: "Lỗi",
-        text: "Gán bàn thất bại!",
+        text: error instanceof Error ? error.message : "Gán bàn thất bại!",
         icon: "error",
         confirmButtonColor: "var(--error)",
       });
@@ -188,56 +208,6 @@ export default function CashierReservationsPage() {
     }
   };
 
-  const handleOpenViewAssignedTables = async (reservationId: number) => {
-    try {
-      setViewAssignedModalOpen(true);
-      setAssignLoading(true);
-
-      const data = await tableReservationApi.getAssignableTables(reservationId);
-      setAssignData(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setAssignLoading(false);
-    }
-  };
-  // Pagination calculations
-  const totalItems = filteredReservations.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentReservations = filteredReservations.slice(startIndex, endIndex);
-
-  const handleStatusUpdate = async (
-    id: number,
-    status: string,
-    tableIds?: number[],
-  ) => {
-    try {
-      await adminReservationApi.updateReservationStatus(id, {
-        status,
-        tableIds,
-      });
-      await fetchReservations(); // Refresh data
-
-      Swal.fire({
-        title: "Thành công",
-        text: "Cập nhật trạng thái thành công!",
-        icon: "success",
-        confirmButtonColor: "var(--brand-primary)",
-      });
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      Swal.fire({
-        title: "Lỗi",
-        text: "Cập nhật thất bại!",
-        icon: "error",
-        confirmButtonColor: "var(--error)",
-      });
-    }
-  };
-
-  const router = useRouter();
   const handleCheckIn = async (reservationId: number) => {
     try {
       const confirm = await Swal.fire({
@@ -262,19 +232,53 @@ export default function CashierReservationsPage() {
         confirmButtonColor: "var(--brand-primary)",
       });
 
-      router.push(`/cashier/orders`);
+      router.push(`/cashier/orders?orderId=${result.orderId}`);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Check-in thất bại!";
+      await fetchReservations();
 
       Swal.fire({
         title: "Lỗi",
-        text: message,
+        text: error instanceof Error ? error.message : "Check-in thất bại!",
         icon: "error",
         confirmButtonColor: "var(--error)",
       });
     }
   };
+  // Pagination calculations
+  const totalItems = filteredReservations.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentReservations = filteredReservations.slice(startIndex, endIndex);
+
+  const handleStatusUpdate = async (
+    id: number,
+    status: string,
+    tableIds?: number[],
+  ) => {
+    try {
+      await adminReservationApi.updateReservationStatus(id, {
+        status,
+        tableIds,
+      });
+      await fetchReservations(); // Refresh data
+      Swal.fire({
+        title: "Thành công",
+        text: "Cập nhật trạng thái thành công!",
+        icon: "success",
+        confirmButtonColor: "var(--brand-primary)",
+      });
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      Swal.fire({
+        title: "Lỗi",
+        text: "Cập nhật thất bại!",
+        icon: "error",
+        confirmButtonColor: "var(--error)",
+      });
+    }
+  };
+
   const requestSort = (key: keyof ReservationResponse) => {
     let direction: "asc" | "desc" = "asc";
     if (
@@ -297,9 +301,9 @@ export default function CashierReservationsPage() {
     <div>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Quản lý Đặt bàn</h1>
+          <h1 className={styles.pageTitle}>Đặt bàn</h1>
           <p className={styles.pageSubtitle}>
-            Theo dõi và cập nhật trạng thái đặt bàn khách hàng
+            Quản lý đặt bàn và cập nhật trạng thái
           </p>
         </div>
       </div>
@@ -371,10 +375,9 @@ export default function CashierReservationsPage() {
             ))}
           </div>
         </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span
-            style={{ fontSize: "0.85rem", fontWeight: 700, color: "#475569" }}
-          >
+          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#475569" }}>
             Ca:
           </span>
 
@@ -385,9 +388,7 @@ export default function CashierReservationsPage() {
             ].map((s) => (
               <button
                 key={s.value}
-                onClick={() =>
-                  setShiftFilter(s.value as "MORNING" | "EVENING")
-                }
+                onClick={() => setShiftFilter(s.value as "MORNING" | "EVENING")}
                 className={`${styles.statusBtn} ${shiftFilter === s.value ? styles.statusBtnActive : ""
                   }`}
               >
@@ -499,7 +500,6 @@ export default function CashierReservationsPage() {
                     </td>
                   </tr>
                 ) : (
-
                   currentReservations.map((reservation) => {
                     const assignedTableCount =
                       reservation.assignedTableCount ??
@@ -589,7 +589,7 @@ export default function CashierReservationsPage() {
                             {(reservation.status === "PENDING" ||
                               reservation.status === "CONFIRMED") && (
                                 <button
-                                  className={styles.btnSave}
+                                  className={styles.btnEdit}
                                   onClick={() => {
                                     if (hasAssignedTable) {
                                       handleOpenViewAssignedTables(reservation.reservationId);
@@ -630,7 +630,6 @@ export default function CashierReservationsPage() {
                 )}
               </tbody>
             </table>
-
           </div>
           <AssignTablesModal
             open={assignModalOpen}
@@ -643,6 +642,7 @@ export default function CashierReservationsPage() {
             }}
             onSubmit={handleAssignTables}
           />
+
           <ViewAssignTablesModal
             open={viewAssignedModalOpen}
             data={assignData}
@@ -665,7 +665,5 @@ export default function CashierReservationsPage() {
         </>
       )}
     </div>
-
   );
-
 }

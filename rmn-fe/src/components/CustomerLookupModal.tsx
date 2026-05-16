@@ -12,15 +12,27 @@ interface CustomerLookupModalProps {
 
 export default function CustomerLookupModal({ onSelect, onClose, initialPhone = '' }: CustomerLookupModalProps) {
   const [phone, setPhone] = useState(initialPhone);
-  const [fullName, setFullName] = useState('');
+  const [fullName, setFullName] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setPhone(val);
+  };
+
   const handleLookup = async () => {
-    if (!phone) return;
+    if (!phone) {
+      setError("Vui lòng nhập số điện thoại.");
+      return;
+    }
+    if (phone.length < 10) {
+      setError("Số điện thoại phải đủ 10 chữ số.");
+      return;
+    }
     setIsSearching(true);
-    setError('');
+    setError("");
     try {
       const customer = await customerApi.lookupByPhone(phone);
       onSelect(customer);
@@ -32,7 +44,7 @@ export default function CustomerLookupModal({ onSelect, onClose, initialPhone = 
   };
 
   React.useEffect(() => {
-    if (initialPhone) {
+    if (initialPhone && initialPhone.length === 10) {
       handleLookup();
     }
   }, []);
@@ -42,8 +54,12 @@ export default function CustomerLookupModal({ onSelect, onClose, initialPhone = 
       setError("Vui lòng nhập đầy đủ tên và số điện thoại.");
       return;
     }
+    if (phone.length < 10) {
+      setError("Số điện thoại không hợp lệ.");
+      return;
+    }
     setIsCreating(true);
-    setError('');
+    setError("");
     try {
       const customer = await customerApi.createCustomer({ fullName, phone });
       onSelect(customer);
@@ -56,19 +72,27 @@ export default function CustomerLookupModal({ onSelect, onClose, initialPhone = 
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.modalTitle}>Tra cứu khách hàng</h2>
-        
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Số điện thoại</label>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              fontWeight: 500,
+            }}
+          >
+            Số điện thoại
+          </label>
           <div className={styles.discountInputWrapper}>
-            <input 
-              className={styles.input} 
-              type="text" 
-              placeholder="09xx..." 
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="09xx..."
               autoFocus
               value={phone}
-              onChange={e => setPhone(e.target.value)}
+              onChange={handlePhoneChange}
             />
             <button className={styles.applyBtn} onClick={handleLookup} disabled={isSearching}>
               {isSearching ? '...' : 'Tìm'}

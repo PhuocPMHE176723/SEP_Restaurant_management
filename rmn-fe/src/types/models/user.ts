@@ -29,6 +29,8 @@ export type CustomerApiItem = {
   workingStatus?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  reservationHistory?: import("./reservation").ReservationResponse[];
+  paymentHistory?: any[]; // Using any for now if invoice type is not defined
 };
 
 export type PagedResponse<T> = {

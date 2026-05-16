@@ -5,14 +5,13 @@ import Swal from "sweetalert2";
 import { useParams, useRouter } from "next/navigation";
 import styles from "../Checkout.module.css";
 import { invoiceApi, InvoicePreview } from "@/lib/api/invoice";
-import { orderApi } from "@/lib/api/order";
 import { CustomerLookupResponse } from "@/lib/api/customer";
 import CustomerLookupModal from "@/components/CustomerLookupModal";
 import { getSepayConfig, checkInvoicePayment } from "@/lib/api/payment";
 import { showSuccess, showError } from "@/lib/ui/alerts";
 import Modal from "@/components/Modal/Modal";
 
-export default function CashierCheckoutPage() {
+export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = Number(params.id);
@@ -26,14 +25,13 @@ export default function CashierCheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [note, setNote] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [sepayConfig, setSepayConfig] = useState<{
     account: string;
     bank: string;
   } | null>(null);
-  const [pointsToUse, setPointsToUse] = useState(0);
-  const [useVipPackage, setUseVipPackage] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [qrTimer, setQrTimer] = useState(300); // 5 minutes
@@ -178,14 +176,15 @@ export default function CashierCheckoutPage() {
 
   const isExpired = qrTimer <= 0;
 
-  const fetchPreview = async (code?: string, points?: number) => {
+  const fetchPreview = async (code?: string) => {
     try {
       setLoading(true);
       const data = await invoiceApi.getPreview(
         orderId,
         code || discountCode,
-        points ?? pointsToUse,
+        0,
         getSelectedItemIds(),
+        customer?.customerId,
       );
       setPreview(data);
     } catch (err: any) {
@@ -194,6 +193,10 @@ export default function CashierCheckoutPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPreview();
+  }, [customer?.customerId]);
 
   const getSelectedItemIds = () => {
     if (!preview) return [];
@@ -231,14 +234,47 @@ export default function CashierCheckoutPage() {
     }
   };
 
-  const handleApplyPoints = async () => {
-    if (pointsToUse < 0) return;
+  const handleDownloadInvoice = async () => {
     try {
-      await fetchPreview(undefined, pointsToUse);
-      showSuccess("Đã cập nhật điểm thưởng");
-    } catch (err: any) {
-      showError(err.message || "Không thể sử dụng điểm");
-      setPointsToUse(0);
+      const invoiceElement = document.querySelector(`.${styles.invoicePrint}`) as HTMLElement;
+      if (!invoiceElement) return;
+
+      // Temporarily show for capture
+      invoiceElement.style.display = "block";
+      invoiceElement.style.position = "absolute";
+      invoiceElement.style.left = "-9999px";
+
+      const html2canvas = (await import("html2canvas")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      const canvas = await html2canvas(invoiceElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      // Restore
+      invoiceElement.style.display = "";
+      invoiceElement.style.position = "";
+      invoiceElement.style.left = "";
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [80, 150], // Receipt size
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`HoaDon_${preview.orderCode}.pdf`);
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      Swal.fire("Lỗi", "Không thể tạo file PDF.", "error");
     }
   };
 
@@ -257,28 +293,36 @@ export default function CashierCheckoutPage() {
     try {
       await invoiceApi.checkout({
         orderId,
-        discountCode: useVipPackage ? "VIP_PROMO" : discountCode || undefined,
-        pointsToUse,
+        discountCode: discountCode || undefined,
+        pointsToUse: 0,
         paidAmount: preview?.amountToPay ?? 0,
         selectedItemIds: getSelectedItemIds(),
+        customerId: customer?.customerId,
       });
       setIsSuccess(true);
       localStorage.removeItem(`qr_start_${orderId}`);
 
-      Swal.fire({
+      const result = await Swal.fire({
         title: "Thanh toán thành công!",
-        text: "Hệ thống đã ghi nhận thanh toán. Bạn có muốn in hóa đơn ngay không?",
+        text: "Hóa đơn đang được tải xuống tự động...",
         icon: "success",
         showCancelButton: true,
-        confirmButtonText: "Có, in hóa đơn",
-        cancelButtonText: "Không, để sau",
+        confirmButtonText: "Tải lại hóa đơn",
+        cancelButtonText: "Đóng",
         confirmButtonColor: "var(--brand-primary)",
         cancelButtonColor: "#64748b",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.print();
-        }
+        timer: 3000,
+        timerProgressBar: true,
       });
+
+      // Auto download
+      await handleDownloadInvoice();
+
+      if (result.isConfirmed) {
+        await handleDownloadInvoice();
+      }
+
+      router.push("/cashier/orders");
     } catch (err: any) {
       Swal.fire({
         title: "Thanh toán thất bại",
@@ -297,14 +341,133 @@ export default function CashierCheckoutPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header chỉ hiện khi in */}
-      <div className={styles.printOnlyHeader}>
-        <h1>NHÀ HÀNG G26</h1>
-        <p>Địa chỉ: 123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh</p>
-        <p>Số điện thoại: 0123 456 789</p>
+      {/* Dedicated Print Invoice - Hidden on screen, visible on print */}
+      <div className={styles.invoicePrint}>
+        <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+          <h2 style={{ margin: "0 0 5px 0", fontSize: "20px" }}>
+            NHÀ HÀNG G26
+          </h2>
+          <p style={{ margin: "2px 0", fontSize: "12px" }}>
+            Địa chỉ: 123 Đường ABC, Quận XYZ, TP. HCM
+          </p>
+          <p style={{ margin: "2px 0", fontSize: "12px" }}>
+            Số điện thoại: 0123 456 789
+          </p>
+          <div
+            style={{
+              borderBottom: "1px dashed #000",
+              margin: "10px 0",
+            }}
+          ></div>
+          <h3 style={{ margin: "10px 0 5px 0", fontSize: "18px" }}>
+            HÓA ĐƠN THANH TOÁN
+          </h3>
+          <p style={{ margin: "2px 0", fontSize: "12px" }}>
+            Mã đơn: #{preview.orderCode}
+          </p>
+          <p style={{ margin: "2px 0", fontSize: "12px" }}>
+            Ngày: {new Date().toLocaleString("vi-VN")}
+          </p>
+          <p style={{ margin: "2px 0", fontSize: "12px" }}>
+            Nhân viên: {customer?.fullName || "Staff"}
+          </p>
+        </div>
+
+        <table
+          style={{
+            width: "100%",
+            fontSize: "12px",
+            borderCollapse: "collapse",
+          }}
+        >
+          <thead>
+            <tr style={{ borderBottom: "1px solid #000" }}>
+              <th style={{ textAlign: "left", padding: "5px 0" }}>Tên món</th>
+              <th style={{ textAlign: "center", padding: "5px 0" }}>SL</th>
+              <th style={{ textAlign: "right", padding: "5px 0" }}>T.Tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            {preview.items
+              ?.filter((_: any, idx: number) =>
+                selectedItemIndices.includes(idx),
+              )
+              .map((item: any, idx: number) => (
+                <tr key={idx} style={{ borderBottom: "1px dashed #eee" }}>
+                  <td style={{ padding: "8px 0" }}>{item.itemNameSnapshot}</td>
+                  <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {(item.unitPrice * item.quantity).toLocaleString()}đ
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+
         <div
-          style={{ borderBottom: "1px dashed #000", margin: "1rem 0" }}
+          style={{ borderBottom: "1px solid #000", margin: "10px 0" }}
         ></div>
+
+        <div style={{ fontSize: "13px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              margin: "4px 0",
+            }}
+          >
+            <span>Tạm tính:</span>
+            <span>{preview.subtotal.toLocaleString()}đ</span>
+          </div>
+          {preview.discountAmount > 0 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                margin: "4px 0",
+              }}
+            >
+              <span>Giảm giá:</span>
+              <span>-{preview.discountAmount.toLocaleString()}đ</span>
+            </div>
+          )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              margin: "4px 0",
+            }}
+          >
+            <span>Thuế VAT (8%):</span>
+            <span>{preview.vatAmount.toLocaleString()}đ</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              margin: "8px 0",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            <span>TỔNG CỘNG:</span>
+            <span>{preview.amountToPay.toLocaleString()}đ</span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderBottom: "1px dashed #000",
+            margin: "15px 0",
+          }}
+        ></div>
+
+        <div style={{ textAlign: "center", fontSize: "12px" }}>
+          <p style={{ margin: "5px 0" }}>Cảm ơn Quý khách. Hẹn gặp lại!</p>
+          <p style={{ margin: "5px 0", fontStyle: "italic" }}>
+            Mật khẩu Wifi: g26restaurant
+          </p>
+        </div>
       </div>
 
       <header className={styles.header}>
@@ -315,10 +478,10 @@ export default function CashierCheckoutPage() {
         {isSuccess && (
           <button
             className={styles.backButton}
-            onClick={() => window.print()}
+            onClick={handleDownloadInvoice}
             style={{ background: "#0f172a", color: "white" }}
           >
-            🖨️ In Bill (PDF)
+            🖨️ Tải Hóa Đơn (PDF)
           </button>
         )}
       </header>
@@ -422,9 +585,7 @@ export default function CashierCheckoutPage() {
                 <button
                   onClick={() => {
                     setCustomer(null);
-                    setPointsToUse(0);
-                    setUseVipPackage(false);
-                    fetchPreview(undefined, 0);
+                    fetchPreview(undefined);
                   }}
                   style={{
                     background: "none",
@@ -501,14 +662,18 @@ export default function CashierCheckoutPage() {
                   className={styles.input}
                   type="text"
                   placeholder="Nhập SĐT khách hàng..."
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    if (e.target.value.length > 0) {
+                      setIsModalOpen(true);
+                    }
+                  }}
+                  onClick={() => setIsModalOpen(true)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       setIsModalOpen(true);
                     }
                   }}
-                  readOnly
-                  onClick={() => setIsModalOpen(true)}
-                  style={{ cursor: "pointer" }}
                 />
                 <button
                   className={styles.applyBtn}
@@ -547,87 +712,6 @@ export default function CashierCheckoutPage() {
               </button>
             </div>
           </div>
-
-          {customer && (
-            <div
-              className={styles.discountSection}
-              style={{ marginTop: "1rem" }}
-            >
-              <div
-                style={{ display: "flex", gap: "10px", marginBottom: "10px" }}
-              >
-                <button
-                  className={`${styles.methodItem} ${!useVipPackage ? styles.active : ""}`}
-                  onClick={() => {
-                    setUseVipPackage(false);
-                    fetchPreview(discountCode, pointsToUse);
-                  }}
-                  style={{ flex: 1, padding: "8px", fontSize: "13px" }}
-                >
-                  Dùng điểm
-                </button>
-                <button
-                  className={`${styles.methodItem} ${useVipPackage ? styles.active : ""}`}
-                  onClick={() => {
-                    setUseVipPackage(true);
-                    setPointsToUse(0);
-                    // Giả lập dùng code VIP nếu check VIP
-                    fetchPreview("VIP_PROMO", 0);
-                  }}
-                  style={{ flex: 1, padding: "8px", fontSize: "13px" }}
-                >
-                  Gói ưu đãi VIP
-                </button>
-              </div>
-
-              {!useVipPackage ? (
-                <>
-                  <label
-                    style={{
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#475569",
-                    }}
-                  >
-                    Dùng điểm tích lũy (Có{" "}
-                    {(customer as any).TotalPoints ??
-                      (customer as any).totalPoints ??
-                      0}{" "}
-                    điểm)
-                  </label>
-                  <div className={styles.discountInputWrapper}>
-                    <input
-                      className={styles.input}
-                      type="number"
-                      placeholder="Số điểm muốn dùng..."
-                      value={pointsToUse}
-                      onChange={(e) => setPointsToUse(Number(e.target.value))}
-                    />
-                    <button
-                      className={styles.applyBtn}
-                      onClick={handleApplyPoints}
-                    >
-                      Dùng điểm
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    border: "1px solid #bbf7d0",
-                  }}
-                >
-                  <p style={{ fontSize: "13px", color: "#166534", margin: 0 }}>
-                    ✨ <b>Gói VIP:</b> Giảm giá trực tiếp hóa đơn (Trừ tiền,
-                    không tốn điểm tích lũy).
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           <div style={{ marginBottom: "1.5rem" }}>
             <label
@@ -767,6 +851,7 @@ export default function CashierCheckoutPage() {
         title="Quét mã QR thanh toán"
         type="info"
         showFooter={true}
+        size="md"
       >
         <div className={styles.qrContainer}>
           <p className={styles.qrTitle}>
@@ -838,6 +923,7 @@ export default function CashierCheckoutPage() {
 
       {isModalOpen && (
         <CustomerLookupModal
+          initialPhone={phoneNumber}
           onSelect={setCustomer}
           onClose={() => setIsModalOpen(false)}
         />

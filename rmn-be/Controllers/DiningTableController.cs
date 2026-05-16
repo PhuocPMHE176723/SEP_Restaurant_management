@@ -55,7 +55,7 @@ public class DiningTableController : BaseController
         return Success(tables);
     }
 
-    [Authorize(Roles = "Staff,Manager,Admin")]
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet("cleanup-recommendations")]
     public async Task<IActionResult> GetCleanupRecommendations([FromQuery] DateTime? date)
     {

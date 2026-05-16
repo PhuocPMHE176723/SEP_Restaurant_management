@@ -24,7 +24,8 @@ public class InvoiceService
         long orderId,
         string? discountCode,
         int pointsToUse,
-        List<long>? selectedItemIds = null
+        List<long>? selectedItemIds = null,
+        long? overrideCustomerId = null
     )
     {
         var order = await _context
@@ -77,9 +78,10 @@ public class InvoiceService
         }
 
         // 2. Apply Loyalty Tier Discount (if eligible)
-        if (order.CustomerId.HasValue)
+        long? effectiveCustomerId = overrideCustomerId ?? order.CustomerId;
+        if (effectiveCustomerId.HasValue)
         {
-            var customer = await _context.Customers.FindAsync(order.CustomerId.Value);
+            var customer = await _context.Customers.FindAsync(effectiveCustomerId.Value);
             if (customer != null)
             {
                 var eligibleTier = await _context
@@ -97,9 +99,9 @@ public class InvoiceService
 
         // 3. Apply Loyalty Points (1 point = redeemRate)
         decimal pointsDiscount = 0;
-        if (pointsToUse > 0 && order.CustomerId.HasValue)
+        if (pointsToUse > 0 && effectiveCustomerId.HasValue)
         {
-            var customer = await _context.Customers.FindAsync(order.CustomerId.Value);
+            var customer = await _context.Customers.FindAsync(effectiveCustomerId.Value);
             if (customer != null)
             {
                 var redeemRate = await GetDecimalConfigAsync("LOYALTY_REDEEM_RATE", 1000m);
@@ -159,14 +161,16 @@ public class InvoiceService
         string? discountCode,
         int pointsToUse,
         decimal paidAmount,
-        List<long>? selectedItemIds = null
+        List<long>? selectedItemIds = null,
+        long? overrideCustomerId = null
     )
     {
         var preview = await PreCalculateInvoiceAsync(
             orderId,
             discountCode,
             pointsToUse,
-            selectedItemIds
+            selectedItemIds,
+            overrideCustomerId
         );
         var order = await _context
             .Orders.Include(o => o.OrderTables)
@@ -180,7 +184,7 @@ public class InvoiceService
         {
             InvoiceCode = $"INV-{DateTime.Now.NowHours()}:{DateTime.Now.NowMinutes()}-{orderId}",
             OrderId = orderId,
-            CustomerId = order.CustomerId,
+            CustomerId = overrideCustomerId ?? order.CustomerId,
             Subtotal = preview.Subtotal,
             DiscountAmount = preview.DiscountAmount,
             VatAmount = preview.VatAmount,
@@ -234,9 +238,17 @@ public class InvoiceService
             }
         }
         // Points Ledger
-        if (order.CustomerId.HasValue)
+        long? finalCustomerId = overrideCustomerId ?? order.CustomerId;
+        if (finalCustomerId.HasValue)
         {
-            var customer = order.Customer!;
+            var customer = await _context.Customers.FindAsync(finalCustomerId.Value);
+            if (customer != null)
+            {
+                // Update order's customer if it was overridden
+                if (order.CustomerId != finalCustomerId)
+                {
+                    order.CustomerId = finalCustomerId;
+                }
 
             // Spend points
             if (pointsToUse > 0)
@@ -273,8 +285,9 @@ public class InvoiceService
                 );
             }
         }
+    }
 
-        await _context.SaveChangesAsync();
+    await _context.SaveChangesAsync();
         return invoice;
     }
 

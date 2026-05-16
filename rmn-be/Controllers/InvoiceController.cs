@@ -29,11 +29,11 @@ public class InvoiceController : BaseController
 
     [HttpGet("preview/{orderId}")]
     [Authorize(Roles = "Staff,Manager,Admin,Cashier")]
-    public async Task<IActionResult> PreviewInvoice(long orderId, [FromQuery] string? discountCode, [FromQuery] int pointsToUse = 0, [FromQuery] List<long> selectedItemIds = null)
+    public async Task<IActionResult> PreviewInvoice(long orderId, [FromQuery] string? discountCode, [FromQuery] int pointsToUse = 0, [FromQuery] List<long> selectedItemIds = null, [FromQuery] long? customerId = null)
     {
         try
         {
-            var preview = await _invoiceService.PreCalculateInvoiceAsync(orderId, discountCode, pointsToUse, selectedItemIds);
+            var preview = await _invoiceService.PreCalculateInvoiceAsync(orderId, discountCode, pointsToUse, selectedItemIds, customerId);
             return Success(preview);
         }
         catch (Exception ex)
@@ -59,7 +59,8 @@ public class InvoiceController : BaseController
                 request.DiscountCode, 
                 request.PointsToUse, 
                 request.PaidAmount,
-                request.selectedItemIds
+                request.selectedItemIds,
+                request.CustomerId
             );
 
             await transaction.CommitAsync();
@@ -81,5 +82,6 @@ public class CheckoutRequest
     public decimal PaidAmount { get; set; }
     public string PaymentMethod { get; set; } = "CASH";
     public string? Note { get; set; }
+    public long? CustomerId { get; set; }
     public List<long> selectedItemIds { get; set; }
 }

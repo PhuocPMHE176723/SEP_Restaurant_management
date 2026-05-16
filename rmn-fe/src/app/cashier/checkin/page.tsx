@@ -27,7 +27,7 @@ interface Table {
   status: string;
 }
 
-export default function CashierCheckinPage() {
+export default function CheckinPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,6 @@ export default function CashierCheckinPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
       const [reservationsData, tablesData] = await Promise.all([
         adminReservationApi.getAllReservations(selectedDate, selectedDate),
         diningTableApi.getAllTables(),
@@ -73,6 +72,42 @@ export default function CashierCheckinPage() {
     }
   };
 
+  const pickTablesForReservation = (
+    reservation: Reservation,
+    primaryTableId?: number,
+  ) => {
+    const targetCount = Math.max(1, reservation.totalTables ?? 1);
+    const available = tables
+      .filter((t) => t.status === "AVAILABLE")
+      .sort(
+        (a, b) =>
+          a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode),
+      );
+
+    if (available.length === 0) return [] as number[];
+
+    const picked: Table[] = [];
+    let totalSeats = 0;
+
+    if (primaryTableId) {
+      const primary = available.find((t) => t.tableId === primaryTableId);
+      if (primary) {
+        picked.push(primary);
+        totalSeats += primary.capacity;
+      }
+    }
+
+    for (const t of available) {
+      if (picked.some((p) => p.tableId === t.tableId)) continue;
+      if (picked.length >= targetCount && totalSeats >= reservation.partySize)
+        break;
+      picked.push(t);
+      totalSeats += t.capacity;
+    }
+
+    return picked.map((t) => t.tableId);
+  };
+
   const handleCheckin = async (reservationId: number, tableId: number) => {
     // Validate time
     const res = reservations.find((r) => r.reservationId === reservationId);
@@ -85,13 +120,21 @@ export default function CashierCheckinPage() {
     }
 
     try {
+      const reservation = reservations.find(
+        (r) => r.reservationId === reservationId,
+      );
       const tableIds =
-        selectedTableIds.length > 0 ? selectedTableIds : [tableId];
+        selectedTableIds.length > 0
+          ? selectedTableIds
+          : reservation
+            ? pickTablesForReservation(reservation, tableId)
+            : [tableId];
+
       const result = await adminReservationApi.updateReservationStatus(
         reservationId,
         {
           status: "CHECKED_IN",
-          tableIds,
+          tableIds: tableIds.length > 0 ? tableIds : [tableId],
         },
       );
 
@@ -119,44 +162,14 @@ export default function CashierCheckinPage() {
       return;
     }
 
-    const suitable = tables
-      .filter(
-        (t) => t.status === "AVAILABLE" && t.capacity >= reservation.partySize,
-      )
-      .sort(
-        (a, b) =>
-          a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode),
-      );
-
-    const targetCount = Math.max(1, reservation.totalTables ?? 1);
-    const available = tables
-      .filter((t) => t.status === "AVAILABLE")
-      .sort(
-        (a, b) =>
-          a.capacity - b.capacity || a.tableCode.localeCompare(b.tableCode),
-      );
-
-    if (available.length === 0) {
-      showError("Lỗi", "Hiện tại không có bàn trống nào.");
+    const pickedIds = pickTablesForReservation(reservation);
+    if (pickedIds.length === 0) {
+      showError("Lỗi", "Hiện tại không có bàn trống nào phù hợp.");
       return;
     }
 
-    const picked: Table[] = [];
-    let totalSeats = 0;
-    for (const t of available) {
-      if (picked.length >= targetCount && totalSeats >= reservation.partySize)
-        break;
-      picked.push(t);
-      totalSeats += t.capacity;
-    }
-
-    if (picked.length === 0) {
-      showError("Lỗi", "Không tìm được bàn phù hợp để check-in.");
-      return;
-    }
-
-    setSelectedTableIds(picked.map((t) => t.tableId));
-    await handleCheckin(reservation.reservationId, picked[0].tableId);
+    setSelectedTableIds(pickedIds);
+    await handleCheckin(reservation.reservationId, pickedIds[0]);
   };
 
   const filteredReservations = reservations.filter((r) => {
@@ -182,13 +195,9 @@ export default function CashierCheckinPage() {
   );
   const availableTables = tables.filter((t) => t.status === "AVAILABLE");
 
-  const suitableTables = selectedReservation ? availableTables : [];
-
-  const selectedTables = suitableTables.filter((t) =>
-    selectedTableIds.includes(t.tableId),
-  );
-  const selectedSeats = selectedTables.reduce((sum, t) => sum + t.capacity, 0);
-  const requiredTables = Math.max(1, selectedReservation?.totalTables ?? 1);
+  const suitableTables = selectedReservation
+    ? availableTables.filter((t) => t.capacity >= selectedReservation.partySize)
+    : [];
 
   return (
     <div className={styles.pageContainer}>
@@ -308,16 +317,16 @@ export default function CashierCheckinPage() {
                       <th>Giờ</th>
                       <th>Khách hàng</th>
                       <th>Số người / Bàn</th>
+                      <th className={styles.colCompact}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {currentReservations.map((r) => (
                       <tr
                         key={r.reservationId}
-                        onClick={() => {
-                          setSelectedReservationId(r.reservationId);
-                          setSelectedTableIds([]);
-                        }}
+                        onClick={() =>
+                          setSelectedReservationId(r.reservationId)
+                        }
                         style={{
                           cursor: "pointer",
                           backgroundColor:
@@ -347,6 +356,36 @@ export default function CashierCheckinPage() {
                             r.totalTables ?? r.tableIds?.length ?? 1,
                           )}{" "}
                           bàn
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.4rem" }}>
+                            <button
+                              className={styles.btnPrimary}
+                              style={{
+                                padding: "0.4rem 0.8rem",
+                                fontSize: "0.75rem",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedReservationId(r.reservationId);
+                              }}
+                            >
+                              Chọn bàn
+                            </button>
+                            <button
+                              className={styles.btnSuccess}
+                              style={{
+                                padding: "0.4rem 0.8rem",
+                                fontSize: "0.75rem",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAutoCheckin(r);
+                              }}
+                            >
+                              Check-in nhanh
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -409,9 +448,6 @@ export default function CashierCheckinPage() {
                     <div style={{ fontSize: "1.1rem", fontWeight: 800 }}>
                       {selectedReservation.customerName}
                     </div>
-                    <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                      {selectedReservation.customerPhone}
-                    </div>
                     <div
                       style={{
                         fontSize: "0.9rem",
@@ -419,8 +455,7 @@ export default function CashierCheckinPage() {
                         color: "#f97316",
                       }}
                     >
-                      {selectedReservation.partySize} khách · cần{" "}
-                      {requiredTables} bàn
+                      {selectedReservation.partySize} khách
                     </div>
                     {selectedReservation.note && (
                       <div
@@ -445,12 +480,8 @@ export default function CashierCheckinPage() {
                       }}
                     >
                       <label style={{ fontWeight: 700, fontSize: "0.85rem" }}>
-                        Bàn trống ({suitableTables.length})
+                        Bàn phù hợp ({suitableTables.length})
                       </label>
-                      <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                        Đã chọn {selectedTableIds.length}/{requiredTables} bàn ·{" "}
-                        {selectedSeats}/{selectedReservation.partySize} chỗ
-                      </div>
                     </div>
 
                     <div
@@ -482,26 +513,21 @@ export default function CashierCheckinPage() {
                         suitableTables.map((t) => (
                           <button
                             key={t.tableId}
-                            onClick={() => {
-                              setSelectedTableIds((prev) =>
-                                prev.includes(t.tableId)
-                                  ? prev.filter((id) => id !== t.tableId)
-                                  : [...prev, t.tableId],
-                              );
-                            }}
+                            onClick={() =>
+                              handleCheckin(
+                                selectedReservation.reservationId,
+                                t.tableId,
+                              )
+                            }
                             style={{
                               display: "flex",
                               flexDirection: "column",
                               alignItems: "center",
                               justifyContent: "center",
                               padding: "0.75rem",
-                              border: selectedTableIds.includes(t.tableId)
-                                ? "2px solid #10b981"
-                                : "1px solid #e2e8f0",
+                              border: "1px solid #e2e8f0",
                               borderRadius: "8px",
-                              background: selectedTableIds.includes(t.tableId)
-                                ? "#f0fdf4"
-                                : "white",
+                              background: "white",
                               cursor: "pointer",
                               transition: "all 0.15s",
                             }}
@@ -538,43 +564,6 @@ export default function CashierCheckinPage() {
                     }}
                   >
                     <button
-                      className={styles.btnPrimary}
-                      style={{
-                        padding: "0.75rem",
-                        width: "100%",
-                        height: "auto",
-                      }}
-                      onClick={() => {
-                        if (selectedTableIds.length === 0) {
-                          showError(
-                            "Lỗi",
-                            "Vui lòng chọn bàn trước khi check-in.",
-                          );
-                          return;
-                        }
-                        if (selectedTableIds.length < requiredTables) {
-                          showError(
-                            "Lỗi",
-                            `Cần tối thiểu ${requiredTables} bàn theo đặt trước.`,
-                          );
-                          return;
-                        }
-                        if (selectedSeats < selectedReservation.partySize) {
-                          showError(
-                            "Lỗi",
-                            "Tổng sức chứa chưa đủ cho số khách.",
-                          );
-                          return;
-                        }
-                        handleCheckin(
-                          selectedReservation.reservationId,
-                          selectedTableIds[0],
-                        );
-                      }}
-                    >
-                      Check-in với bàn đã chọn
-                    </button>
-                    <button
                       className={styles.btnSuccess}
                       style={{
                         padding: "0.75rem",
@@ -583,7 +572,7 @@ export default function CashierCheckinPage() {
                       }}
                       onClick={() => handleAutoCheckin(selectedReservation)}
                     >
-                      Tự động gán bàn & Check-in
+                      💡 Tự động gán bàn & Check-in
                     </button>
                     <button
                       className={styles.btnSecondary}
@@ -601,7 +590,9 @@ export default function CashierCheckinPage() {
                     color: "#94a3b8",
                   }}
                 >
-                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}></div>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+                    📋
+                  </div>
                   Chọn một lịch đặt bàn bên trái để gán bàn
                 </div>
               )}

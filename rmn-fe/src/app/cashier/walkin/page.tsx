@@ -7,7 +7,7 @@ import { showSuccess, showError } from "../../../lib/ui/alerts";
 import { isValidVNPhone } from "../../../lib/validation";
 import Pagination from "../../../components/Pagination";
 import styles from "../../manager/manager.module.css";
-import { User, Phone, Users, MessageSquare } from "lucide-react";
+import { User, Phone, Users, MessageSquare, PlusCircle } from "lucide-react";
 
 interface Table {
   tableId: number;
@@ -24,7 +24,7 @@ interface Customer {
   note?: string;
 }
 
-export default function CashierWalkinPage() {
+export default function WalkinPage() {
   const [tables, setTables] = useState<Table[]>([]);
   const [customer, setCustomer] = useState<Customer>({
     name: "",
@@ -69,19 +69,29 @@ export default function CashierWalkinPage() {
 
   const findBestFitTables = (target: number, available: Table[]): number[] => {
     if (available.length === 0) return [];
+    
+    // Sort tables by capacity descending to try larger groups first
     const sortedAvailable = [...available].sort((a, b) => b.capacity - a.capacity);
+    
+    // 1. First, check if any single table fits perfectly or is the smallest that fits
     const singleFits = sortedAvailable
       .filter(t => t.capacity >= target)
       .sort((a, b) => a.capacity - b.capacity);
+      
     if (singleFits.length > 0) return [singleFits[0].tableId];
 
+    // 2. If no single table fits, try to find a combination
+    // For simplicity and speed in a browser, we'll use a greedy approach for combinations
     let remaining = target;
     const result: number[] = [];
-    for (const table of sortedAvailable) {
+    const sortedForCombo = [...available].sort((a, b) => b.capacity - a.capacity);
+    
+    for (const table of sortedForCombo) {
       if (remaining <= 0) break;
       result.push(table.tableId);
       remaining -= table.capacity;
     }
+    
     return result;
   };
 
@@ -95,17 +105,26 @@ export default function CashierWalkinPage() {
     }
 
     const bestIds = findBestFitTables(customer.partySize, availableTables);
+    
     if (bestIds.length === 0) {
       showError("Lỗi", "Không có đủ bàn trống.");
       return;
     }
+    
     setSelectedTableIds(bestIds);
   };
 
   const handleCreateOrder = async () => {
-    if (!customer.name.trim()) return showError("Lỗi", "Vui lòng nhập tên khách hàng");
-    if (!isValidVNPhone(customer.phone)) return showError("Lỗi", "Số điện thoại không hợp lệ.");
+    if (!customer.name.trim()) {
+      showError("Lỗi", "Vui lòng nhập tên khách hàng");
+      return;
+    }
 
+    if (!isValidVNPhone(customer.phone)) {
+      showError("Lỗi", "Số điện thoại không hợp lệ.");
+      return;
+    }
+    
     const availableTables = tables.filter(t => t.status === "AVAILABLE");
     const totalAvailableCapacity = availableTables.reduce((sum, t) => sum + t.capacity, 0);
 
@@ -114,7 +133,10 @@ export default function CashierWalkinPage() {
       return;
     }
 
-    if (selectedTableIds.length === 0) return showError("Lỗi", "Vui lòng chọn ít nhất một bàn.");
+    if (selectedTableIds.length === 0) {
+      showError("Lỗi", "Vui lòng chọn ít nhất một bàn.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -125,12 +147,18 @@ export default function CashierWalkinPage() {
         partySize: customer.partySize,
         note: customer.note
       });
-      setCustomer({ name: "", phone: "", partySize: 2, note: "" });
+
+      setCustomer({
+        name: "",
+        phone: "",
+        partySize: 2,
+        note: "",
+      });
       setSelectedTableIds([]);
       await fetchTables();
       showSuccess("Thành công", "Đã gán bàn và mở order thành công!");
     } catch (error) {
-      console.error("Failed to create order:", error);
+      console.error("Failed to assign table:", error);
       showError("Lỗi", "Gán bàn thất bại!");
     } finally {
       setLoading(false);
@@ -139,7 +167,9 @@ export default function CashierWalkinPage() {
 
   const toggleTableSelection = (tableId: number) => {
     setSelectedTableIds(prev => 
-      prev.includes(tableId) ? prev.filter(id => id !== tableId) : [...prev, tableId]
+      prev.includes(tableId) 
+        ? prev.filter(id => id !== tableId) 
+        : [...prev, tableId]
     );
   };
 
@@ -181,6 +211,15 @@ export default function CashierWalkinPage() {
             alignItems: 'center',
             gap: '0.75rem'
           }}>
+            <div style={{ 
+              background: 'white', 
+              padding: '0.5rem', 
+              borderRadius: '0.5rem', 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              color: '#3b82f6'
+            }}>
+              <PlusCircle size={20} />
+            </div>
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>Thông tin khách hàng</h3>
           </div>
 
@@ -246,30 +285,30 @@ export default function CashierWalkinPage() {
               <button
                 className={styles.btnAdd}
                 style={{ 
-                    width: '100%', 
-                    padding: '1.125rem', 
-                    height: 'auto',
-                    borderRadius: '0.875rem',
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    background: selectedTableIds.length > 0 
-                      ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
-                      : 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
-                    boxShadow: selectedTableIds.length > 0 
-                      ? '0 10px 15px -3px rgba(249, 115, 22, 0.3)'
-                      : 'none',
-                    border: 'none',
-                    color: 'white',
-                    cursor: selectedTableIds.length > 0 ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.2s ease'
+                  width: '100%', 
+                  padding: '1.125rem', 
+                  height: 'auto',
+                  borderRadius: '0.875rem',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  background: selectedTableIds.length > 0 
+                    ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                    : 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
+                  boxShadow: selectedTableIds.length > 0 
+                    ? '0 10px 15px -3px rgba(249, 115, 22, 0.3)'
+                    : 'none',
+                  border: 'none',
+                  color: 'white',
+                  cursor: selectedTableIds.length > 0 ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s ease'
                 }}
                 disabled={selectedTableIds.length === 0}
                 onClick={handleCreateOrder}
               >
                 Gán {selectedTableIds.length > 0 ? selectedTableIds.length : ""} bàn và Check-in
               </button>
-
+              
               <button
                 onClick={handleAutoCheckin}
                 style={{
@@ -366,6 +405,7 @@ export default function CashierWalkinPage() {
                   {currentTables.map((table) => {
                     const isAvailable = table.status === "AVAILABLE";
                     const isSelected = selectedTableIds.includes(table.tableId);
+                    // Single table assignment is now part of multi-selection
                     const isSelectable = isAvailable;
 
                     return (

@@ -172,9 +172,11 @@ export default function RegisterPage() {
                 className={styles.input}
                 placeholder="0912345678"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setPhone(val);
+                }}
                 required
-                pattern="\d{10}"
                 maxLength={10}
               />
               <small

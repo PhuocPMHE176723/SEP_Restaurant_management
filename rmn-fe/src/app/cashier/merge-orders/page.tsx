@@ -166,7 +166,7 @@ export default function CashierMergeOrdersPage() {
     <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Gộp hóa đơn / Gộp bàn</h1>
+          <h1 className={styles.pageTitle}>Gộp hóa đơn</h1>
           <p className={styles.pageSubtitle}>
             Gộp nhiều bàn đang dùng chung thành một hóa đơn duy nhất
           </p>
@@ -251,26 +251,42 @@ export default function CashierMergeOrdersPage() {
                     }}
                     onClick={() => handleSelectTable(table)}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span style={{ fontWeight: 700, fontSize: "1rem" }}>
-                        {table.tableName || table.tableCode}
-                      </span>
-                      <span
-                        className={`${styles.badge} ${getStatusClass(table.status)}`}
+                      <div
                         style={{
-                          fontSize: "0.65rem",
-                          padding: "0.2rem 0.5rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "100%",
+                          overflow: "hidden",
+                          gap: "0.5rem",
                         }}
                       >
-                        {getStatusText(table.status)}
-                      </span>
-                    </div>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "1rem",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            flex: 1,
+                          }}
+                        >
+                          {table.tableName || table.tableCode}
+                        </span>
+                        <span
+                          className={`${styles.badge} ${getStatusClass(table.status)}`}
+                          style={{
+                            fontSize: "0.65rem",
+                            padding: "0.2rem 0.5rem",
+                            minWidth: "auto",
+                            width: "fit-content",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {getStatusText(table.status)}
+                        </span>
+                      </div>
 
                     <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
                       {table.capacity} chỗ •{" "}

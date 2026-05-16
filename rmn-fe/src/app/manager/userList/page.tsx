@@ -285,6 +285,7 @@ function ViewCustomerModal({
   detail: CustomerApiItem;
   onClose: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"info" | "reservations" | "payments">("info");
   const fullName = detail.fullName || detail.name || "";
   const phone = detail.phone || detail.phoneNumber || "";
   const status = detail.status || detail.workingStatus || "ACTIVE";
@@ -296,9 +297,9 @@ function ViewCustomerModal({
       className={managerStyles.modalOverlay}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={managerStyles.modal}>
+      <div className={managerStyles.modal} style={{ maxWidth: "800px", width: "95%" }}>
         <div className={managerStyles.modalHead}>
-          <h3 className={managerStyles.modalTitle}>Thông tin khách hàng</h3>
+          <h3 className={managerStyles.modalTitle}>Chi tiết khách hàng</h3>
           <button
             type="button"
             onClick={onClose}
@@ -308,63 +309,155 @@ function ViewCustomerModal({
           </button>
         </div>
 
-        <div className={managerStyles.modalBody}>
-          <div className={managerStyles.field}>
-            <label className={managerStyles.label}>Họ và tên</label>
-            <input className={managerStyles.input} value={fullName} readOnly />
-          </div>
+        <div className={userStyles.tabBar} style={{ padding: "0 1.5rem" }}>
+          <button
+            className={activeTab === "info" ? managerStyles.btnPrimary : managerStyles.btnSecondary}
+            onClick={() => setActiveTab("info")}
+            style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }}
+          >
+            Thông tin chung
+          </button>
+          <button
+            className={activeTab === "reservations" ? managerStyles.btnPrimary : managerStyles.btnSecondary}
+            onClick={() => setActiveTab("reservations")}
+            style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }}
+          >
+            Lịch sử đặt bàn
+          </button>
+          <button
+            className={activeTab === "payments" ? managerStyles.btnPrimary : managerStyles.btnSecondary}
+            onClick={() => setActiveTab("payments")}
+            style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }}
+          >
+            Lịch sử thanh toán
+          </button>
+        </div>
 
-          <div className={userStyles.infoGrid}>
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Số điện thoại</label>
-              <input className={managerStyles.input} value={phone} readOnly />
-            </div>
+        <div className={managerStyles.modalBody} style={{ maxHeight: "60vh", overflowY: "auto" }}>
+          {activeTab === "info" && (
+            <>
+              <div className={managerStyles.field}>
+                <label className={managerStyles.label}>Họ và tên</label>
+                <input className={managerStyles.input} value={fullName} readOnly />
+              </div>
 
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Email</label>
-              <input
-                className={managerStyles.input}
-                value={detail.email || ""}
-                readOnly
-              />
-            </div>
-          </div>
+              <div className={userStyles.infoGrid}>
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Số điện thoại</label>
+                  <input className={managerStyles.input} value={phone} readOnly />
+                </div>
 
-          <div className={userStyles.infoGrid}>
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Hạng thành viên</label>
-              <input className={managerStyles.input} value={tierName} readOnly />
-            </div>
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Email</label>
+                  <input
+                    className={managerStyles.input}
+                    value={detail.email || ""}
+                    readOnly
+                  />
+                </div>
+              </div>
 
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Điểm tích lũy</label>
-              <input
-                className={managerStyles.input}
-                value={String(points)}
-                readOnly
-              />
-            </div>
-          </div>
+              <div className={userStyles.infoGrid}>
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Hạng thành viên</label>
+                  <input className={managerStyles.input} value={tierName} readOnly />
+                </div>
 
-          <div className={userStyles.infoGrid}>
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Ngày tạo</label>
-              <input
-                className={managerStyles.input}
-                value={formatDate(detail.createdAt)}
-                readOnly
-              />
-            </div>
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Điểm tích lũy</label>
+                  <input
+                    className={managerStyles.input}
+                    value={String(points)}
+                    readOnly
+                  />
+                </div>
+              </div>
 
-            <div className={managerStyles.field}>
-              <label className={managerStyles.label}>Trạng thái</label>
-              <input
-                className={managerStyles.input}
-                value={status === "INACTIVE" ? "Đã khóa" : "Đang hoạt động"}
-                readOnly
-              />
+              <div className={userStyles.infoGrid}>
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Ngày tạo</label>
+                  <input
+                    className={managerStyles.input}
+                    value={formatDate(detail.createdAt)}
+                    readOnly
+                  />
+                </div>
+
+                <div className={managerStyles.field}>
+                  <label className={managerStyles.label}>Trạng thái</label>
+                  <input
+                    className={managerStyles.input}
+                    value={status === "INACTIVE" ? "Đã khóa" : "Đang hoạt động"}
+                    readOnly
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === "reservations" && (
+            <div className={managerStyles.tableWrap}>
+              <table className={managerStyles.table}>
+                <thead>
+                  <tr>
+                    <th>Thời gian</th>
+                    <th>Số người</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!detail.reservationHistory || detail.reservationHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
+                        Chưa có lịch sử đặt bàn
+                      </td>
+                    </tr>
+                  ) : (
+                    detail.reservationHistory.map((res: any) => (
+                      <tr key={res.reservationId}>
+                        <td>{formatDate(res.reservedAt)}</td>
+                        <td>{res.partySize}</td>
+                        <td>{res.status}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
+
+          {activeTab === "payments" && (
+            <div className={managerStyles.tableWrap}>
+              <table className={managerStyles.table}>
+                <thead>
+                  <tr>
+                    <th>Mã HĐ</th>
+                    <th>Ngày</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!detail.paymentHistory || detail.paymentHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
+                        Chưa có lịch sử thanh toán
+                      </td>
+                    </tr>
+                  ) : (
+                    detail.paymentHistory.map((inv: any) => (
+                      <tr key={inv.invoiceId}>
+                        <td>{inv.invoiceCode}</td>
+                        <td>{formatDate(inv.issuedAt)}</td>
+                        <td>{inv.totalAmount?.toLocaleString()}đ</td>
+                        <td>{inv.paymentStatus}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className={managerStyles.modalFoot}>

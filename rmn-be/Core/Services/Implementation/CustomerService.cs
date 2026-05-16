@@ -147,13 +147,39 @@ namespace rmn_be.Core.Services.Implementation
             };
         }
 
-        public async Task<CustomerDTO?> GetCustomerByIdAsync(long id)
+        public async Task<CustomerDetailDTO?> GetCustomerByIdAsync(long id)
         {
-            var customer = await _unitOfWork.GetRepository<Customer>().GetByIdAsync(id);
+            var customer = await _context.Customers
+                .Include(c => c.Reservations)
+                    .ThenInclude(r => r.ReservationTables)
+                        .ThenInclude(rt => rt.DiningTable)
+                .Include(c => c.Reservations)
+                    .ThenInclude(r => r.Order)
+                        .ThenInclude(o => o!.OrderItems)
+                            .ThenInclude(oi => oi.MenuItem)
+                .Include(c => c.Invoices)
+                .FirstOrDefaultAsync(c => c.CustomerId == id);
+
             if (customer == null)
                 return null;
 
-            return _mapper.Map<CustomerDTO>(customer);
+            var user = await _userManager.FindByIdAsync(customer.UserId ?? "");
+
+            var dto = _mapper.Map<CustomerDetailDTO>(customer);
+            dto.Username = user?.UserName;
+
+            // Manual mapping for ReservationHistory and PaymentHistory if needed, or use AutoMapper
+            dto.ReservationHistory = customer.Reservations
+                .OrderByDescending(r => r.ReservedAt)
+                .Select(MapReservationDTO)
+                .ToList();
+
+            dto.PaymentHistory = customer.Invoices
+                .OrderByDescending(i => i.IssuedAt)
+                .Select(i => _mapper.Map<SEP_Restaurant_management.Core.DTOs.InvoiceDTO>(i))
+                .ToList();
+
+            return dto;
         }
 
         public async Task<UpdateCustomerResultDTO> UpdateCustomerAsync(
