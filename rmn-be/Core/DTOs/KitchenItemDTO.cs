@@ -8,6 +8,7 @@
         public string? Unit { get; set; }
 
         // preorder + pending + chưa check-in
+        public int CheckedInPreOrderQuantity { get; set; }
         public int TotalPreOrderQuantity { get; set; }
 
         // preorder + pending + đã check-in

@@ -52,7 +52,7 @@ export default function StaffOrdersPage() {
     if (statusFilter === "OPEN") {
       // Mới mở: Chưa có món nào được gọi
       filtered = filtered.filter(
-        (o) => o.status === "OPEN" && o.orderItems.length === 0,
+        (o) => o.status === "OPEN" ,
       );
     } else if (statusFilter === "SENT_TO_KITCHEN") {
       // Chờ bếp: Có ít nhất một món đang chờ, đang nấu hoặc chờ duyệt
@@ -238,9 +238,7 @@ export default function StaffOrdersPage() {
           <div className={styles.statusButtonGroup}>
             {[
               { value: "ALL", label: "Tất cả" },
-              { value: "OPEN", label: "Mới mở" },
-              { value: "SENT_TO_KITCHEN", label: "Chờ bếp" },
-              { value: "SERVED", label: "Đã phục vụ" },
+              { value: "OPEN", label: "Đang phục vụ" },
               { value: "CLOSED", label: "Hoàn thành" },
             ].map((s) => (
               <button

@@ -14,7 +14,7 @@ export default function KitchenPage() {
     const now = new Date();
     const hour = now.getHours();
 
-    return hour < 17 ? "morning" : "afternoon";
+    return hour < 14 ? "morning" : "afternoon";
   };
   // THÊM MỚI: 3 State này
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Mặc định ngày hôm nay
@@ -169,13 +169,7 @@ export default function KitchenPage() {
               <div>
                 <label className={styles.label}>Ca</label>
                 <div style={{ display: "flex", gap: "0.25rem" }}>
-                  <button
-                    className={styles.btnPrimary}
-                    onClick={() => setSelectedShift("all")}
-                    style={{ background: selectedShift === "all" ? "#3b82f6" : "#f1f5f9", color: selectedShift === "all" ? "#fff" : "#475569" }}
-                  >
-                    Tất cả
-                  </button>
+                  
                   <button
                     className={styles.btnPrimary}
                     onClick={() => setSelectedShift("morning")}
@@ -335,7 +329,7 @@ export default function KitchenPage() {
                             color: "#0f172a",
                           }}
                         >
-                          {item.totalPreOrderQuantity}
+                          {item.checkedInPreOrderQuantity}/{item.totalPreOrderQuantity}
                         </div>
 
                         {item.preOrderDetails?.length > 0 && (

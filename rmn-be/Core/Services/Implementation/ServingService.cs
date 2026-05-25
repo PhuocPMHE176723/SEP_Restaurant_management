@@ -17,6 +17,64 @@ namespace rmn_be.Core.Services.Implementation
             _unitOfWork = unitOfWork;
         }
 
+        //public async Task<List<ServingItemDTO>> GetServingListAsync()
+        //{
+        //    var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
+        //    var menuItemRepo = _unitOfWork.GetRepository<MenuItem>();
+        //    var orderRepo = _unitOfWork.GetRepository<Order>();
+
+        //    var today = DateTime.Today;
+        //    var tomorrow = today.AddDays(1);
+
+        //    var readyItems = (
+        //        await orderItemRepo.FindAsync(x =>
+        //            x.Status == "READY_SERVE" && x.CreatedAt >= today && x.CreatedAt < tomorrow
+        //        )
+        //    ).ToList();
+
+        //    if (!readyItems.Any())
+        //        return new List<ServingItemDTO>();
+
+        //    var itemIds = readyItems.Select(x => x.ItemId).Distinct().ToList();
+        //    var orderIds = readyItems.Select(x => x.OrderId).Distinct().ToList();
+
+        //    var menuItems = (await menuItemRepo.GetAllAsync())
+        //        .Where(x => itemIds.Contains(x.ItemId))
+        //        .ToDictionary(x => x.ItemId, x => x);
+
+        //    var orders = (await orderRepo.GetAllAsync())
+        //        .Where(x => orderIds.Contains(x.OrderId))
+        //        .ToDictionary(x => x.OrderId, x => x);
+
+        //    var result = readyItems
+        //        .Where(x => menuItems.ContainsKey(x.ItemId))
+        //        .GroupBy(x => x.ItemId)
+        //        .Select(g =>
+        //        {
+        //            var menuItem = menuItems[g.Key];
+        //            var waitingTableCount = g.Where(x => orders.ContainsKey(x.OrderId))
+        //                .Select(x => x.OrderId)
+        //                .Distinct()
+        //                .Count();
+
+        //            return new ServingItemDTO
+        //            {
+        //                ItemId = menuItem.ItemId,
+        //                ItemName = menuItem.ItemName,
+        //                Thumbnail = menuItem.Thumbnail,
+        //                Unit = menuItem.Unit,
+        //                ItemType = menuItem.ItemType,
+        //                ReadyQuantity = g.Sum(x => x.Quantity),
+        //                WaitingTableCount = waitingTableCount,
+        //            };
+        //        })
+        //        .OrderByDescending(x => x.ReadyQuantity)
+        //        .ThenBy(x => x.ItemName)
+        //        .ToList();
+
+        //    return result;
+        //}
+
         public async Task<List<ServingItemDTO>> GetServingListAsync()
         {
             var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
@@ -26,17 +84,19 @@ namespace rmn_be.Core.Services.Implementation
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
 
-            var readyItems = (
+            // Lấy toàn bộ item hôm nay
+            var orderItems = (
                 await orderItemRepo.FindAsync(x =>
-                    x.Status == "READY_SERVE" && x.CreatedAt >= today && x.CreatedAt < tomorrow
+                    x.CreatedAt >= today &&
+                    x.CreatedAt < tomorrow
                 )
             ).ToList();
 
-            if (!readyItems.Any())
+            if (!orderItems.Any())
                 return new List<ServingItemDTO>();
 
-            var itemIds = readyItems.Select(x => x.ItemId).Distinct().ToList();
-            var orderIds = readyItems.Select(x => x.OrderId).Distinct().ToList();
+            var itemIds = orderItems.Select(x => x.ItemId).Distinct().ToList();
+            var orderIds = orderItems.Select(x => x.OrderId).Distinct().ToList();
 
             var menuItems = (await menuItemRepo.GetAllAsync())
                 .Where(x => itemIds.Contains(x.ItemId))
@@ -46,13 +106,35 @@ namespace rmn_be.Core.Services.Implementation
                 .Where(x => orderIds.Contains(x.OrderId))
                 .ToDictionary(x => x.OrderId, x => x);
 
-            var result = readyItems
-                .Where(x => menuItems.ContainsKey(x.ItemId))
+            // FILTER LOGIC MỚI
+            var servingItems = orderItems
+                .Where(x =>
+                {
+                    if (!menuItems.ContainsKey(x.ItemId))
+                        return false;
+
+                    var menuItem = menuItems[x.ItemId];
+
+                    // Item READY -> luôn hiển thị
+                    if (menuItem.ItemType == "READY")
+                        return true;
+
+                    // Item thường -> phải READY_SERVE
+                    return x.Status == "READY_SERVE";
+                })
+                .ToList();
+
+            if (!servingItems.Any())
+                return new List<ServingItemDTO>();
+
+            var result = servingItems
                 .GroupBy(x => x.ItemId)
                 .Select(g =>
                 {
                     var menuItem = menuItems[g.Key];
-                    var waitingTableCount = g.Where(x => orders.ContainsKey(x.OrderId))
+
+                    var waitingTableCount = g
+                        .Where(x => orders.ContainsKey(x.OrderId))
                         .Select(x => x.OrderId)
                         .Distinct()
                         .Count();
@@ -63,7 +145,10 @@ namespace rmn_be.Core.Services.Implementation
                         ItemName = menuItem.ItemName,
                         Thumbnail = menuItem.Thumbnail,
                         Unit = menuItem.Unit,
+                        ItemType = menuItem.ItemType,
+                        Stock = menuItem.Stock,
                         ReadyQuantity = g.Sum(x => x.Quantity),
+
                         WaitingTableCount = waitingTableCount,
                     };
                 })

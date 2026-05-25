@@ -7,6 +7,8 @@
         public string? Thumbnail { get; set; }
         public string? Unit { get; set; }
         public int ReadyQuantity { get; set; }
+        public string ItemType { get; set; }
+        public int Stock { get; set; }
         public int WaitingTableCount { get; set; }
     }
 

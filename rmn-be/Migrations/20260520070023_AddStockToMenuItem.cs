@@ -2,27 +2,28 @@
 
 #nullable disable
 
-namespace rmn_be.Core.Migrations
+namespace rmn_be.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserFullName : Migration
+    public partial class AddStockToMenuItem : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "FullName",
-                table: "AspNetUsers",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.AddColumn<int>(
+                name: "Stock",
+                table: "MenuItems",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "FullName",
-                table: "AspNetUsers");
+                name: "Stock",
+                table: "MenuItems");
         }
     }
 }

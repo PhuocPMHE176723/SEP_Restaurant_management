@@ -79,10 +79,10 @@ namespace rmn_be.Core.Services.Implementation
 
                 // Filter theo ca
                 if (shift == "morning")
-                    return referenceTime.Hour >= 6 && referenceTime.Hour < 15;
+                    return referenceTime.Hour >= 1 && referenceTime.Hour < 14;
 
                 if (shift == "afternoon")
-                    return referenceTime.Hour >= 17 && referenceTime.Hour < 22;
+                    return referenceTime.Hour >= 14 && referenceTime.Hour < 24;
 
                 return true; // shift = all
             }).ToList();
@@ -115,12 +115,32 @@ namespace rmn_be.Core.Services.Implementation
 
                     foreach (var orderItem in relatedItems)
                     {
+                        if (orderItem.MenuItem.ItemType != "PROCESSED") continue;
                         var order = orders[orderItem.OrderId];
 
                         bool isPreOrder = order.ReservationId.HasValue;
                         bool isCheckedIn = false;
                         DateTime? reservationTime = null;
 
+                        //if (isPreOrder &&
+                        //    reservations.TryGetValue(order.ReservationId!.Value, out var res))
+                        //{
+                        //    isCheckedIn = res.Status == "CHECKED_IN";
+                        //    reservationTime = res.ReservedAt;
+                        //}
+
+                        //// A. PreOrder chưa check-in
+                        //if (isPreOrder && !isCheckedIn && orderItem.Status == "PENDING")
+                        //{
+                        //    dto.TotalPreOrderQuantity += orderItem.Quantity;
+
+                        //    var timeKey = reservationTime?.ToString("HH:mm") ?? "N/A";
+
+                        //    if (hourlySlots.ContainsKey(timeKey))
+                        //        hourlySlots[timeKey] += orderItem.Quantity;
+                        //    else
+                        //        hourlySlots[timeKey] = orderItem.Quantity;
+                        //}
                         if (isPreOrder &&
                             reservations.TryGetValue(order.ReservationId!.Value, out var res))
                         {
@@ -128,17 +148,17 @@ namespace rmn_be.Core.Services.Implementation
                             reservationTime = res.ReservedAt;
                         }
 
-                        // A. PreOrder chưa check-in
-                        if (isPreOrder && !isCheckedIn && orderItem.Status == "PENDING")
+                        // --- A. XỬ LÝ SỐ LIỆU ĐẶT TRƯỚC (PRE-ORDER) ---
+                        if (isPreOrder)
                         {
+                            // Cộng dồn vào Mẫu số đặt trước (24) - Tổng số lượng trong tất cả reservation
                             dto.TotalPreOrderQuantity += orderItem.Quantity;
 
-                            var timeKey = reservationTime?.ToString("HH:mm") ?? "N/A";
-
-                            if (hourlySlots.ContainsKey(timeKey))
-                                hourlySlots[timeKey] += orderItem.Quantity;
-                            else
-                                hourlySlots[timeKey] = orderItem.Quantity;
+                            // Cộng dồn vào Tử số đặt trước (7) - Số lượng trong reservation ĐÃ CHECK-IN
+                            if (isCheckedIn)
+                            {
+                                dto.CheckedInPreOrderQuantity += orderItem.Quantity;
+                            }
                         }
 
                         // B. Cần nấu

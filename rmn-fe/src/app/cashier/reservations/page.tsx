@@ -22,7 +22,7 @@ export default function StaffReservationsPage() {
   const [loading, setLoading] = useState(true);
   const getCurrentShift = (): "MORNING" | "EVENING" => {
     const hour = new Date().getHours();
-    return hour < 17 ? "MORNING" : "EVENING";
+    return hour < 14 ? "MORNING" : "EVENING";
   };
 
   const [filter, setFilter] = useState("CONFIRMED");
@@ -361,7 +361,7 @@ export default function StaffReservationsPage() {
           <div className={styles.statusButtonGroup}>
             {[
               { value: "PENDING", label: "Đang chờ" },
-              { value: "CONFIRMED", label: "Đã xác nhận" },
+              { value: "CONFIRMED", label: "Đã cọc" },
               { value: "CHECKED_IN", label: "Đã check-in" },
               { value: "CANCELLED", label: "Đã hủy" },
             ].map((s) => (
@@ -548,7 +548,7 @@ export default function StaffReservationsPage() {
                             {reservation.status === "PENDING"
                               ? "Đang chờ"
                               : reservation.status === "CONFIRMED"
-                                ? "Đã xác nhận"
+                                ? "Đã cọc"
                                 : reservation.status === "CHECKED_IN"
                                   ? "Check-in"
                                   : reservation.status === "CANCELLED"

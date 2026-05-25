@@ -9,11 +9,11 @@ using SEP_Restaurant_management.Core.Models;
 
 #nullable disable
 
-namespace rmn_be.Core.Migrations
+namespace rmn_be.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    [Migration("20260512172800_AddPendingPhoneNumber")]
-    partial class AddPendingPhoneNumber
+    [Migration("20260520070023_AddStockToMenuItem")]
+    partial class AddStockToMenuItem
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -759,6 +759,14 @@ namespace rmn_be.Core.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
 
                     b.Property<string>("Thumbnail")
                         .HasMaxLength(500)

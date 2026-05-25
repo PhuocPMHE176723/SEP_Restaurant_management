@@ -254,12 +254,14 @@ public class OrderController : BaseController
         {
             return NotFoundResponse("Menu item not found");
         }
-
+        var itemStatus = menuItem.ItemType == "READY"
+    ? "READY_SERVE"
+    : "PENDING";
         // Check if item already exists in order with PENDING status and same note
         var existingItem = await _context.OrderItems
             .FirstOrDefaultAsync(oi => oi.OrderId == id 
                                     && oi.ItemId == request.MenuItemId 
-                                    && oi.Status == "PENDING"
+                                    && oi.Status == itemStatus
                                     && oi.Note == request.Note);
 
         if (existingItem != null)

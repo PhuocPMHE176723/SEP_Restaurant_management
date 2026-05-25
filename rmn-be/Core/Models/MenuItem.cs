@@ -32,7 +32,7 @@ public class MenuItem
     [MaxLength(50)]
     public string ItemType { get; set; } = "PROCESSED"; // READY or PROCESSED
 
-
+    public int Stock { get; set; } = 0;
     public DateTime CreatedAt { get; set; }
 
     [ForeignKey(nameof(CategoryId))]

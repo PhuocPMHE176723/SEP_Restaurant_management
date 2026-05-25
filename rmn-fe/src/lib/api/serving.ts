@@ -32,6 +32,8 @@ export type ServingItem = {
   itemName: string;
   thumbnail?: string | null;
   unit?: string | null;
+  itemType?: string | null;
+  stock?: number | null;
   readyQuantity: number;
   waitingTableCount: number;
   lastUpdatedAt?: string | null;

@@ -57,6 +57,7 @@ export type CookingListItem = {
   itemName: string;
   thumbnail?: string | null;
   unit?: string | null;
+  checkedInPreOrderQuantity: number;
   totalPreOrderQuantity: number;
   mustCookQuantity: number;
   cookingQuantity: number;

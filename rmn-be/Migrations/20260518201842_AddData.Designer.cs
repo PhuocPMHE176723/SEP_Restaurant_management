@@ -9,11 +9,11 @@ using SEP_Restaurant_management.Core.Models;
 
 #nullable disable
 
-namespace rmn_be.Core.Migrations
+namespace rmn_be.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    [Migration("20260303150004_NewSchema")]
-    partial class NewSchema
+    [Migration("20260518201842_AddData")]
+    partial class AddData
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,6 +158,74 @@ namespace rmn_be.Core.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.BlogCategory", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryId"));
+
+                    b.Property<string>("CategoryName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("CategoryId");
+
+                    b.ToTable("BlogCategories", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.BlogPost", b =>
+                {
+                    b.Property<int>("PostId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PostId"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("FeaturedImage")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("DRAFT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("PostId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("BlogPosts", (string)null);
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Customer", b =>
                 {
                     b.Property<long>("CustomerId")
@@ -248,6 +316,40 @@ namespace rmn_be.Core.Migrations
                     b.ToTable("CustomerPointsLedger", (string)null);
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.DailyIngredientAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("ActuallyUsedQuantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<decimal>("AdjustedQuantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<decimal>("AllocatedQuantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("IngredientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.ToTable("DailyIngredientAllocations", (string)null);
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.DiningTable", b =>
                 {
                     b.Property<int>("TableId")
@@ -276,12 +378,66 @@ namespace rmn_be.Core.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("TableName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("TableId");
 
                     b.HasIndex("TableCode")
                         .IsUnique();
 
                     b.ToTable("DiningTables", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.DiscountCode", b =>
+                {
+                    b.Property<int>("DiscountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DiscountId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("MaxDiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MaxUses")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MinOrderValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ValidFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ValidTo")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("DiscountId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("DiscountCodes", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Ingredient", b =>
@@ -310,6 +466,73 @@ namespace rmn_be.Core.Migrations
                     b.HasKey("IngredientId");
 
                     b.ToTable("Ingredients", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.InventoryAudit", b =>
+                {
+                    b.Property<long>("AuditId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AuditId"));
+
+                    b.Property<string>("AuditCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("AuditDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("StaffId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AuditId");
+
+                    b.HasIndex("AuditCode")
+                        .IsUnique();
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("InventoryAudits", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.InventoryAuditItem", b =>
+                {
+                    b.Property<long>("AuditItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AuditItemId"));
+
+                    b.Property<decimal>("ActualQuantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<long>("AuditId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Difference")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<long>("IngredientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("SystemQuantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.HasKey("AuditItemId");
+
+                    b.HasIndex("AuditId");
+
+                    b.HasIndex("IngredientId");
+
+                    b.ToTable("InventoryAuditItems", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Invoice", b =>
@@ -537,11 +760,50 @@ namespace rmn_be.Core.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Thumbnail")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("ItemId");
 
                     b.HasIndex("CategoryId");
 
                     b.ToTable("MenuItems", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.MenuItemIngredient", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("IngredientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("MenuItemIngredients", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.MenuItemPrice", b =>
@@ -582,7 +844,7 @@ namespace rmn_be.Core.Migrations
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<long>("CreatedByStaffId")
+                    b.Property<long?>("CreatedByStaffId")
                         .HasColumnType("bigint");
 
                     b.Property<long?>("CustomerId")
@@ -741,6 +1003,32 @@ namespace rmn_be.Core.Migrations
                     b.ToTable("OrderStatusHistory", (string)null);
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderTable", b =>
+                {
+                    b.Property<long>("OrderTableId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("OrderTableId"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderTableId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("TableId");
+
+                    b.ToTable("OrderTables");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Payment", b =>
                 {
                     b.Property<long>("PaymentId")
@@ -793,7 +1081,7 @@ namespace rmn_be.Core.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReceiptId"));
 
-                    b.Property<long>("CreatedByStaffId")
+                    b.Property<long?>("CreatedByStaffId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Note")
@@ -879,6 +1167,10 @@ namespace rmn_be.Core.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReservationId"));
 
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -900,10 +1192,23 @@ namespace rmn_be.Core.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<decimal>("DepositAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime?>("DepositPaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("DurationMinutes")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(90);
+
+                    b.Property<bool>("IsDepositPaid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Note")
                         .HasMaxLength(255)
@@ -922,8 +1227,19 @@ namespace rmn_be.Core.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("PENDING");
 
-                    b.Property<int?>("TableId")
+                    b.Property<int>("Table4Count")
                         .HasColumnType("int");
+
+                    b.Property<int>("Table6Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Table8Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalTables")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
 
                     b.HasKey("ReservationId");
 
@@ -931,9 +1247,72 @@ namespace rmn_be.Core.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.ToTable("Reservations", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.ReservationTable", b =>
+                {
+                    b.Property<long>("ReservationTableId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReservationTableId"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<long>("ReservationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReservationTableId");
+
+                    b.HasIndex("ReservationId");
+
                     b.HasIndex("TableId");
 
-                    b.ToTable("Reservations", (string)null);
+                    b.ToTable("ReservationTables", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Slider", b =>
+                {
+                    b.Property<int>("SliderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SliderId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("SliderId");
+
+                    b.ToTable("Sliders", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Staff", b =>
@@ -1082,6 +1461,29 @@ namespace rmn_be.Core.Migrations
                     b.ToTable("Suppliers", (string)null);
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.SystemConfig", b =>
+                {
+                    b.Property<string>("ConfigKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ConfigValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ConfigKey");
+
+                    b.ToTable("SystemConfigs", (string)null);
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.UserIdentity", b =>
                 {
                     b.Property<string>("Id")
@@ -1104,6 +1506,9 @@ namespace rmn_be.Core.Migrations
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsPhoneVerified")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -1121,11 +1526,17 @@ namespace rmn_be.Core.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PendingPhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("PhoneVerifiedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -1201,6 +1612,17 @@ namespace rmn_be.Core.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.BlogPost", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.BlogCategory", "Category")
+                        .WithMany("BlogPosts")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Customer", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.UserIdentity", "User")
@@ -1230,6 +1652,47 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("CreatedByStaff");
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.DailyIngredientAllocation", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Ingredient", "Ingredient")
+                        .WithMany()
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ingredient");
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.InventoryAudit", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Staff", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.InventoryAuditItem", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.InventoryAudit", "Audit")
+                        .WithMany("AuditItems")
+                        .HasForeignKey("AuditId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Ingredient", "Ingredient")
+                        .WithMany()
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Audit");
+
+                    b.Navigation("Ingredient");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Invoice", b =>
@@ -1293,6 +1756,25 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.MenuItemIngredient", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Ingredient", "Ingredient")
+                        .WithMany()
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.MenuItem", "MenuItem")
+                        .WithMany("MenuItemIngredients")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ingredient");
+
+                    b.Navigation("MenuItem");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.MenuItemPrice", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.MenuItem", "MenuItem")
@@ -1311,7 +1793,6 @@ namespace rmn_be.Core.Migrations
                         .WithMany("Orders")
                         .HasForeignKey("CreatedByStaffId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("FK_Orders_Staff");
 
                     b.HasOne("SEP_Restaurant_management.Core.Models.Customer", "Customer")
@@ -1382,6 +1863,25 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.OrderTable", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Order", "Order")
+                        .WithMany("OrderTables")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.DiningTable", "DiningTable")
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DiningTable");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Payment", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.Invoice", "Invoice")
@@ -1408,7 +1908,6 @@ namespace rmn_be.Core.Migrations
                         .WithMany("PurchaseReceipts")
                         .HasForeignKey("CreatedByStaffId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("FK_PR_Staff");
 
                     b.HasOne("SEP_Restaurant_management.Core.Models.Supplier", "Supplier")
@@ -1457,27 +1956,39 @@ namespace rmn_be.Core.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("FK_Reservations_Customers");
 
-                    b.HasOne("SEP_Restaurant_management.Core.Models.DiningTable", "Table")
-                        .WithMany("Reservations")
-                        .HasForeignKey("TableId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_Reservations_Tables");
-
                     b.Navigation("CreatedByStaff");
 
                     b.Navigation("Customer");
+                });
 
-                    b.Navigation("Table");
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.ReservationTable", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Reservation", "Reservation")
+                        .WithMany("ReservationTables")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_RT_Reservations");
+
+                    b.HasOne("SEP_Restaurant_management.Core.Models.DiningTable", "DiningTable")
+                        .WithMany("ReservationTables")
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_RT_Tables");
+
+                    b.Navigation("DiningTable");
+
+                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Staff", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.UserIdentity", "User")
-                        .WithOne()
-                        .HasForeignKey("SEP_Restaurant_management.Core.Models.Staff", "UserId")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_Staff_AspNetUsers");
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -1502,6 +2013,11 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Ingredient");
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.BlogCategory", b =>
+                {
+                    b.Navigation("BlogPosts");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Customer", b =>
                 {
                     b.Navigation("Invoices");
@@ -1517,7 +2033,7 @@ namespace rmn_be.Core.Migrations
                 {
                     b.Navigation("Orders");
 
-                    b.Navigation("Reservations");
+                    b.Navigation("ReservationTables");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Ingredient", b =>
@@ -1525,6 +2041,11 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("PurchaseReceiptItems");
 
                     b.Navigation("StockMovements");
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.InventoryAudit", b =>
+                {
+                    b.Navigation("AuditItems");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Invoice", b =>
@@ -1543,6 +2064,8 @@ namespace rmn_be.Core.Migrations
                 {
                     b.Navigation("InvoiceLines");
 
+                    b.Navigation("MenuItemIngredients");
+
                     b.Navigation("MenuItemPrices");
 
                     b.Navigation("OrderItems");
@@ -1553,6 +2076,8 @@ namespace rmn_be.Core.Migrations
                     b.Navigation("Invoice");
 
                     b.Navigation("OrderItems");
+
+                    b.Navigation("OrderTables");
 
                     b.Navigation("StatusHistories");
                 });
@@ -1565,6 +2090,8 @@ namespace rmn_be.Core.Migrations
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Reservation", b =>
                 {
                     b.Navigation("Order");
+
+                    b.Navigation("ReservationTables");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Staff", b =>
