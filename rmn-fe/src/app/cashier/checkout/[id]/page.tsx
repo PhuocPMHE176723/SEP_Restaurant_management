@@ -235,6 +235,7 @@ export default function CheckoutPage() {
   };
 
   const handleDownloadInvoice = async () => {
+    if (!preview) return;
     try {
       const invoiceElement = document.querySelector(`.${styles.invoicePrint}`) as HTMLElement;
       if (!invoiceElement) return;
