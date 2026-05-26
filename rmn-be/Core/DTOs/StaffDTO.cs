@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace rmn_be.Core.DTOs
 {
@@ -53,6 +53,9 @@ namespace rmn_be.Core.DTOs
         [MaxLength(50)]
         public string? Position { get; set; }
 
+
+        [MaxLength(100)]
+        public string? Username { get; set; }
 
         [MaxLength(20)]
         public string WorkingStatus { get; set; } = "ACTIVE";

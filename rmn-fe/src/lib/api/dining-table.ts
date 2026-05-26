@@ -11,11 +11,21 @@ function authHeaders(): Record<string, string> {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-    const json = (await res.json()) as { data?: T; message?: string; success?: boolean; Success?: boolean; Data?: T };
+    const contentType = res.headers.get("content-type");
+    let json: any = {};
+
+    if (contentType && contentType.includes("application/json")) {
+        try {
+            json = await res.json();
+        } catch (e) {
+            console.error("JSON parse error:", e);
+        }
+    }
+
     const success = json.success ?? json.Success ?? res.ok;
 
     if (!success) {
-        throw new Error(json.message ?? `Request failed (${res.status})`);
+        throw new Error(json.message ?? json.Message ?? `Yêu cầu thất bại (${res.status})`);
     }
 
     return (json.data ?? json.Data) as T;
@@ -69,8 +79,47 @@ export const diningTableApi = {
         });
 
         if (!res.ok) {
-            const json = await res.json();
-            throw new Error(json.message ?? `Delete failed (${res.status})`);
+            let errorMsg = `Xóa thất bại (${res.status})`;
+            try {
+                const json = await res.json();
+                errorMsg = json.message ?? json.Message ?? errorMsg;
+            } catch (e) {
+                // Silently fallback to status code error
+            }
+            throw new Error(errorMsg);
         }
     },
+    async getCleanupRecommendations(date?: string): Promise<CleanupRecommendationResponse> {
+        const query = date ? `?date=${encodeURIComponent(date)}` : "";
+        const res = await fetch(`${apiBaseUrl}/api/diningtable/cleanup-recommendations${query}`, {
+            method: "GET",
+            headers: authHeaders(),
+        });
+        return handleResponse<CleanupRecommendationResponse>(res);
+    },
 };
+
+export interface CleanupWindowResponse {
+    label: string;
+    start: string;
+    end: string;
+}
+
+export interface TableReminderResponse {
+    tableId: number;
+    tableCode: string;
+    tableName?: string | null;
+    status: string;
+    orderId?: number | null;
+    orderOpenedAt?: string | null;
+    minutesOccupied: number;
+    reason: string;
+    priority: number;
+}
+
+export interface CleanupRecommendationResponse {
+    date: string;
+    generatedAt: string;
+    windows: CleanupWindowResponse[];
+    reminders: TableReminderResponse[];
+}

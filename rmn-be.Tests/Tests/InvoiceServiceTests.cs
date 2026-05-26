@@ -95,10 +95,15 @@ public class InvoiceServicePostTests
                 DurationMinutes = 90,
                 Status = "CHECKED_IN",
                 CreatedAt = DateTime.UtcNow.AddHours(-2),
-                TableId = tableId,
                 IsDepositPaid = depositPaid,
                 DepositAmount = depositAmount,
             };
+            if (tableId.HasValue)
+            {
+                reservation.ReservationTables.Add(
+                    new ReservationTable { TableId = tableId.Value, AssignedAt = DateTime.UtcNow }
+                );
+            }
             context.Reservations.Add(reservation);
         }
 
@@ -117,7 +122,7 @@ public class InvoiceServicePostTests
         {
             OrderId = orderId,
             OrderCode = $"OD-{orderId}",
-            TableId = tableId,
+            TableId = tableId, OrderTables = tableId.HasValue ? new List<OrderTable> { new OrderTable { TableId = tableId.Value } } : new List<OrderTable>(),
             ReservationId = reservationId,
             CustomerId = customerId,
             OrderType = "DINE_IN",

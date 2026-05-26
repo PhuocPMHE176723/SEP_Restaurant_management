@@ -1,8 +1,8 @@
+using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Repositories.Implementation;
 using SEP_Restaurant_management.Core.Repositories.Interface;
 using SEP_Restaurant_management.Core.Services.Implementation;
 using SEP_Restaurant_management.Core.Services.Interface;
-using SEP_Restaurant_management.Core.Models;
 
 namespace SEP_Restaurant_management.Core.ProgramConfig;
 
@@ -23,6 +23,7 @@ public static class Huy
         services.AddScoped<IMenuCategoryService, MenuCategoryService>();
         services.AddScoped<IMenuItemService, MenuItemService>();
         services.AddScoped<IReservationService, ReservationService>();
+        services.AddScoped<ICleanupRecommendationService, CleanupRecommendationService>();
         services.AddScoped<KitchenService>();
         services.AddScoped<InvoiceService>();
 

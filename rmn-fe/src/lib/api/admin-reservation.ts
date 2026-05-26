@@ -63,13 +63,13 @@ export const adminReservationApi = {
         return handleResponse<ReservationResponse[]>(res);
     },
 
-    async updateReservationStatus(id: number, data: UpdateReservationStatusRequest): Promise<string> {
+    async updateReservationStatus(id: number, data: UpdateReservationStatusRequest): Promise<{ orderId?: number | null }> {
         const res = await fetch(`${apiBaseUrl}/api/AdminReservation/${id}/status`, {
             method: "PATCH",
             headers: authHeaders(),
             body: JSON.stringify(data),
         });
 
-        return handleResponse<string>(res);
+        return handleResponse<{ orderId?: number | null }>(res);
     },
 };

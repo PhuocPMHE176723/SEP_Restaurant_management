@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace rmn_be.Core.DTOs
 {
@@ -11,7 +11,20 @@ namespace rmn_be.Core.DTOs
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public int TotalPoints { get; set; }
+        public bool IsPhoneVerified { get; set; }
         public DateTime CreatedAt { get; set; }
+    }
+
+    public class CustomerDetailDTO : CustomerDTO
+    {
+        public List<SEP_Restaurant_management.Core.DTOs.ReservationDTO> ReservationHistory { get; set; } = new();
+        public List<SEP_Restaurant_management.Core.DTOs.InvoiceDTO> PaymentHistory { get; set; } = new();
+    }
+
+    public class UpdateCustomerResultDTO
+    {
+        public string Message { get; set; } = string.Empty;
+        public bool PhoneRequiresVerification { get; set; }
     }
 
     public class CreateCustomerDTO

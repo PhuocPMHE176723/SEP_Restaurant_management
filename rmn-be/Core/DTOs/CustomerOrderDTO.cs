@@ -29,6 +29,7 @@ namespace rmn_be.Core.DTOs
             public int Quantity { get; set; }
             public decimal UnitPrice { get; set; }
             public string? Note { get; set; }
+            public string? Thumbnail { get; set; }
 
             public string? Status { get; set; }
         }

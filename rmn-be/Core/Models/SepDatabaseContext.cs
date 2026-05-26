@@ -6,14 +6,10 @@ namespace SEP_Restaurant_management.Core.Models;
 
 public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
 {
-    public SepDatabaseContext()
-    {
-    }
+    public SepDatabaseContext() { }
 
     public SepDatabaseContext(DbContextOptions<SepDatabaseContext> options)
-        : base(options)
-    {
-    }
+        : base(options) { }
 
     // ── Staff ──────────────────────────────────────────────
     public virtual DbSet<Staff> Staffs { get; set; }
@@ -30,6 +26,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
 
     // ── Reservation ────────────────────────────────────────
     public virtual DbSet<Reservation> Reservations { get; set; }
+    public virtual DbSet<ReservationTable> ReservationTables { get; set; }
 
     // ── Menu ───────────────────────────────────────────────
     public virtual DbSet<MenuCategory> MenuCategories { get; set; }
@@ -41,6 +38,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<Order> Orders { get; set; }
     public virtual DbSet<OrderItem> OrderItems { get; set; }
     public virtual DbSet<OrderStatusHistory> OrderStatusHistories { get; set; }
+    public virtual DbSet<OrderTable> OrderTables { get; set; }
 
     // ── Invoice + Payment ──────────────────────────────────
     public virtual DbSet<Invoice> Invoices { get; set; }
@@ -82,7 +80,10 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Email).HasMaxLength(150);
             entity.Property(e => e.Position).HasMaxLength(50);
             entity.Property(e => e.WorkingStatus).HasMaxLength(20).HasDefaultValue("ACTIVE");
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime2");
         });
 
@@ -113,13 +114,17 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Phone).HasMaxLength(20);
             entity.Property(e => e.Email).HasMaxLength(150);
             entity.Property(e => e.TotalPoints).HasDefaultValue(0);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(c => c.User)
-                  .WithOne()
-                  .HasForeignKey<Customer>(c => c.UserId)
-                  .HasConstraintName("FK_Customers_AspNetUsers")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(c => c.User)
+                .WithOne()
+                .HasForeignKey<Customer>(c => c.UserId)
+                .HasConstraintName("FK_Customers_AspNetUsers")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── LoyaltyTiers ───────────────────────────────────
@@ -143,19 +148,24 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.LedgerId).UseIdentityColumn();
             entity.Property(e => e.RefType).HasMaxLength(30).IsRequired();
             entity.Property(e => e.Note).HasMaxLength(255);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(e => e.Customer)
-                  .WithMany(c => c.PointsLedgers)
-                  .HasForeignKey(e => e.CustomerId)
-                  .HasConstraintName("FK_CPL_Customers")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Customer)
+                .WithMany(c => c.PointsLedgers)
+                .HasForeignKey(e => e.CustomerId)
+                .HasConstraintName("FK_CPL_Customers")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.CreatedByStaff)
-                  .WithMany(s => s.CustomerPointsLedgers)
-                  .HasForeignKey(e => e.CreatedByStaffId)
-                  .HasConstraintName("FK_CPL_Staff")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.CreatedByStaff)
+                .WithMany(s => s.CustomerPointsLedgers)
+                .HasForeignKey(e => e.CreatedByStaffId)
+                .HasConstraintName("FK_CPL_Staff")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── DiscountCodes ──────────────────────────────────
@@ -187,29 +197,56 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("PENDING");
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.ReservedAt).HasColumnType("datetime2");
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
-            
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.Property(e => e.TotalTables).HasDefaultValue(1);
+
             entity.Property(e => e.DepositAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(e => e.IsDepositPaid).HasDefaultValue(false);
             entity.Property(e => e.DepositPaidAt).HasColumnType("datetime2");
 
-            entity.HasOne(e => e.Customer)
-                  .WithMany(c => c.Reservations)
-                  .HasForeignKey(e => e.CustomerId)
-                  .HasConstraintName("FK_Reservations_Customers")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Customer)
+                .WithMany(c => c.Reservations)
+                .HasForeignKey(e => e.CustomerId)
+                .HasConstraintName("FK_Reservations_Customers")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.Table)
-                  .WithMany(t => t.Reservations)
-                  .HasForeignKey(e => e.TableId)
-                  .HasConstraintName("FK_Reservations_Tables")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.CreatedByStaff)
+                .WithMany(s => s.Reservations)
+                .HasForeignKey(e => e.CreatedByStaffId)
+                .HasConstraintName("FK_Reservations_Staff")
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
-            entity.HasOne(e => e.CreatedByStaff)
-                  .WithMany(s => s.Reservations)
-                  .HasForeignKey(e => e.CreatedByStaffId)
-                  .HasConstraintName("FK_Reservations_Staff")
-                  .OnDelete(DeleteBehavior.SetNull);
+        // ── ReservationTables ───────────────────────────────
+        modelBuilder.Entity<ReservationTable>(entity =>
+        {
+            entity.ToTable("ReservationTables");
+            entity.HasKey(e => e.ReservationTableId);
+
+            entity
+                .Property(e => e.AssignedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity
+                .HasOne(e => e.Reservation)
+                .WithMany(r => r.ReservationTables)
+                .HasForeignKey(e => e.ReservationId)
+                .HasConstraintName("FK_RT_Reservations")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(e => e.DiningTable)
+                .WithMany(t => t.ReservationTables)
+                .HasForeignKey(e => e.TableId)
+                .HasConstraintName("FK_RT_Tables")
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── MenuCategories ─────────────────────────────────
@@ -235,13 +272,17 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.BasePrice).HasColumnType("decimal(18,2)");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(e => e.Category)
-                  .WithMany(c => c.MenuItems)
-                  .HasForeignKey(e => e.CategoryId)
-                  .HasConstraintName("FK_MenuItems_Categories")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Category)
+                .WithMany(c => c.MenuItems)
+                .HasForeignKey(e => e.CategoryId)
+                .HasConstraintName("FK_MenuItems_Categories")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── MenuItemPrices ─────────────────────────────────
@@ -255,11 +296,12 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.EffectiveFrom).HasColumnType("datetime2");
             entity.Property(e => e.EffectiveTo).HasColumnType("datetime2");
 
-            entity.HasOne(e => e.MenuItem)
-                  .WithMany(m => m.MenuItemPrices)
-                  .HasForeignKey(e => e.ItemId)
-                  .HasConstraintName("FK_MenuItemPrices_Items")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.MenuItem)
+                .WithMany(m => m.MenuItemPrices)
+                .HasForeignKey(e => e.ItemId)
+                .HasConstraintName("FK_MenuItemPrices_Items")
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── Orders ─────────────────────────────────────────
@@ -274,33 +316,40 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.OrderCode).HasMaxLength(30).IsRequired();
             entity.Property(e => e.OrderType).HasMaxLength(20).HasDefaultValue("DINE_IN");
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("OPEN");
-            entity.Property(e => e.OpenedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.OpenedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.ClosedAt).HasColumnType("datetime2");
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Table)
-                  .WithMany(t => t.Orders)
-                  .HasForeignKey(e => e.TableId)
-                  .HasConstraintName("FK_Orders_Tables")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Table)
+                .WithMany(t => t.Orders)
+                .HasForeignKey(e => e.TableId)
+                .HasConstraintName("FK_Orders_Tables")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.Reservation)
-                  .WithOne(r => r.Order)
-                  .HasForeignKey<Order>(e => e.ReservationId)
-                  .HasConstraintName("FK_Orders_Reservations")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Reservation)
+                .WithOne(r => r.Order)
+                .HasForeignKey<Order>(e => e.ReservationId)
+                .HasConstraintName("FK_Orders_Reservations")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.Customer)
-                  .WithMany(c => c.Orders)
-                  .HasForeignKey(e => e.CustomerId)
-                  .HasConstraintName("FK_Orders_Customers")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Customer)
+                .WithMany(c => c.Orders)
+                .HasForeignKey(e => e.CustomerId)
+                .HasConstraintName("FK_Orders_Customers")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.CreatedByStaff)
-                  .WithMany(s => s.Orders)
-                  .HasForeignKey(e => e.CreatedByStaffId)
-                  .HasConstraintName("FK_Orders_Staff")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.CreatedByStaff)
+                .WithMany(s => s.Orders)
+                .HasForeignKey(e => e.CreatedByStaffId)
+                .HasConstraintName("FK_Orders_Staff")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── OrderItems ─────────────────────────────────────
@@ -312,26 +361,37 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.OrderItemId).UseIdentityColumn();
             entity.Property(e => e.ItemNameSnapshot).HasMaxLength(150).IsRequired();
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-            entity.Property(e => e.LineTotal)
-                  .HasColumnType("decimal(18,2)")
-                  .HasComputedColumnSql("(([UnitPrice] * [Quantity]) - [DiscountAmount])", stored: true);
+            entity
+                .Property(e => e.DiscountAmount)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0);
+            entity
+                .Property(e => e.LineTotal)
+                .HasColumnType("decimal(18,2)")
+                .HasComputedColumnSql(
+                    "(([UnitPrice] * [Quantity]) - [DiscountAmount])",
+                    stored: true
+                );
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("PENDING");
             entity.Property(e => e.Note).HasMaxLength(255);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(e => e.Order)
-                  .WithMany(o => o.OrderItems)
-                  .HasForeignKey(e => e.OrderId)
-                  .HasConstraintName("FK_OrderItems_Orders")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(e => e.OrderId)
+                .HasConstraintName("FK_OrderItems_Orders")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.MenuItem)
-                  .WithMany(m => m.OrderItems)
-                  .HasForeignKey(e => e.ItemId)
-                  .HasConstraintName("FK_OrderItems_MenuItems")
-                  .OnDelete(DeleteBehavior.Restrict);
-
+            entity
+                .HasOne(e => e.MenuItem)
+                .WithMany(m => m.OrderItems)
+                .HasForeignKey(e => e.ItemId)
+                .HasConstraintName("FK_OrderItems_MenuItems")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── OrderStatusHistory ─────────────────────────────
@@ -343,20 +403,25 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.HistoryId).UseIdentityColumn();
             entity.Property(e => e.OldStatus).HasMaxLength(20);
             entity.Property(e => e.NewStatus).HasMaxLength(20).IsRequired();
-            entity.Property(e => e.ChangedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.ChangedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Order)
-                  .WithMany(o => o.StatusHistories)
-                  .HasForeignKey(e => e.OrderId)
-                  .HasConstraintName("FK_OSH_Orders")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Order)
+                .WithMany(o => o.StatusHistories)
+                .HasForeignKey(e => e.OrderId)
+                .HasConstraintName("FK_OSH_Orders")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.ChangedByStaff)
-                  .WithMany(s => s.OrderStatusHistories)
-                  .HasForeignKey(e => e.ChangedByStaffId)
-                  .HasConstraintName("FK_OSH_Staff")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.ChangedByStaff)
+                .WithMany(s => s.OrderStatusHistories)
+                .HasForeignKey(e => e.ChangedByStaffId)
+                .HasConstraintName("FK_OSH_Staff")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Invoices ───────────────────────────────────────
@@ -371,32 +436,41 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
 
             entity.Property(e => e.InvoiceCode).HasMaxLength(30).IsRequired();
             entity.Property(e => e.Subtotal).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
+            entity
+                .Property(e => e.DiscountAmount)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0);
             entity.Property(e => e.VatRate).HasColumnType("decimal(5,2)").HasDefaultValue(8.00m);
             entity.Property(e => e.VatAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(e => e.PaidAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(e => e.PaymentStatus).HasMaxLength(20).HasDefaultValue("UNPAID");
-            entity.Property(e => e.IssuedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.IssuedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Order)
-                  .WithOne(o => o.Invoice)
-                  .HasForeignKey<Invoice>(e => e.OrderId)
-                  .HasConstraintName("FK_Invoices_Orders")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Order)
+                .WithOne(o => o.Invoice)
+                .HasForeignKey<Invoice>(e => e.OrderId)
+                .HasConstraintName("FK_Invoices_Orders")
+                .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.Customer)
-                  .WithMany(c => c.Invoices)
-                  .HasForeignKey(e => e.CustomerId)
-                  .HasConstraintName("FK_Invoices_Customers")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Customer)
+                .WithMany(c => c.Invoices)
+                .HasForeignKey(e => e.CustomerId)
+                .HasConstraintName("FK_Invoices_Customers")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.IssuedByStaff)
-                  .WithMany(s => s.Invoices)
-                  .HasForeignKey(e => e.IssuedByStaffId)
-                  .HasConstraintName("FK_Invoices_Staff")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.IssuedByStaff)
+                .WithMany(s => s.Invoices)
+                .HasForeignKey(e => e.IssuedByStaffId)
+                .HasConstraintName("FK_Invoices_Staff")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── InvoiceLines ───────────────────────────────────
@@ -408,22 +482,31 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.InvoiceLineId).UseIdentityColumn();
             entity.Property(e => e.Description).HasMaxLength(200).IsRequired();
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
-            entity.Property(e => e.LineTotal)
-                  .HasColumnType("decimal(18,2)")
-                  .HasComputedColumnSql("(([UnitPrice] * [Quantity]) - [DiscountAmount])", stored: true);
+            entity
+                .Property(e => e.DiscountAmount)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0);
+            entity
+                .Property(e => e.LineTotal)
+                .HasColumnType("decimal(18,2)")
+                .HasComputedColumnSql(
+                    "(([UnitPrice] * [Quantity]) - [DiscountAmount])",
+                    stored: true
+                );
 
-            entity.HasOne(e => e.Invoice)
-                  .WithMany(i => i.InvoiceLines)
-                  .HasForeignKey(e => e.InvoiceId)
-                  .HasConstraintName("FK_InvoiceLines_Invoices")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Invoice)
+                .WithMany(i => i.InvoiceLines)
+                .HasForeignKey(e => e.InvoiceId)
+                .HasConstraintName("FK_InvoiceLines_Invoices")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.MenuItem)
-                  .WithMany(m => m.InvoiceLines)
-                  .HasForeignKey(e => e.ItemId)
-                  .HasConstraintName("FK_InvoiceLines_Items")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.MenuItem)
+                .WithMany(m => m.InvoiceLines)
+                .HasForeignKey(e => e.ItemId)
+                .HasConstraintName("FK_InvoiceLines_Items")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Payments ───────────────────────────────────────
@@ -435,21 +518,26 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.PaymentId).UseIdentityColumn();
             entity.Property(e => e.Method).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.PaidAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.PaidAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.ReferenceNo).HasMaxLength(100);
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Invoice)
-                  .WithMany(i => i.Payments)
-                  .HasForeignKey(e => e.InvoiceId)
-                  .HasConstraintName("FK_Payments_Invoices")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Invoice)
+                .WithMany(i => i.Payments)
+                .HasForeignKey(e => e.InvoiceId)
+                .HasConstraintName("FK_Payments_Invoices")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.ReceivedByStaff)
-                  .WithMany(s => s.Payments)
-                  .HasForeignKey(e => e.ReceivedByStaffId)
-                  .HasConstraintName("FK_Payments_Staff")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.ReceivedByStaff)
+                .WithMany(s => s.Payments)
+                .HasForeignKey(e => e.ReceivedByStaffId)
+                .HasConstraintName("FK_Payments_Staff")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Suppliers ──────────────────────────────────────
@@ -487,22 +575,27 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.HasIndex(e => e.ReceiptCode).IsUnique();
 
             entity.Property(e => e.ReceiptCode).HasMaxLength(30).IsRequired();
-            entity.Property(e => e.ReceiptDate).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.ReceiptDate)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("RECEIVED");
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Supplier)
-                  .WithMany(s => s.PurchaseReceipts)
-                  .HasForeignKey(e => e.SupplierId)
-                  .HasConstraintName("FK_PR_Suppliers")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.Supplier)
+                .WithMany(s => s.PurchaseReceipts)
+                .HasForeignKey(e => e.SupplierId)
+                .HasConstraintName("FK_PR_Suppliers")
+                .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.CreatedByStaff)
-                  .WithMany(s => s.PurchaseReceipts)
-                  .HasForeignKey(e => e.CreatedByStaffId)
-                  .HasConstraintName("FK_PR_Staff")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.CreatedByStaff)
+                .WithMany(s => s.PurchaseReceipts)
+                .HasForeignKey(e => e.CreatedByStaffId)
+                .HasConstraintName("FK_PR_Staff")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── PurchaseReceiptItems ────────────────────────────
@@ -514,21 +607,24 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.ReceiptItemId).UseIdentityColumn();
             entity.Property(e => e.Quantity).HasColumnType("decimal(18,3)");
             entity.Property(e => e.UnitCost).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.LineTotal)
-                  .HasColumnType("decimal(18,2)")
-                  .HasComputedColumnSql("([UnitCost] * [Quantity])", stored: true);
+            entity
+                .Property(e => e.LineTotal)
+                .HasColumnType("decimal(18,2)")
+                .HasComputedColumnSql("([UnitCost] * [Quantity])", stored: true);
 
-            entity.HasOne(e => e.Receipt)
-                  .WithMany(r => r.Items)
-                  .HasForeignKey(e => e.ReceiptId)
-                  .HasConstraintName("FK_PRI_Receipts")
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Receipt)
+                .WithMany(r => r.Items)
+                .HasForeignKey(e => e.ReceiptId)
+                .HasConstraintName("FK_PRI_Receipts")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.Ingredient)
-                  .WithMany(i => i.PurchaseReceiptItems)
-                  .HasForeignKey(e => e.IngredientId)
-                  .HasConstraintName("FK_PRI_Ingredients")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Ingredient)
+                .WithMany(i => i.PurchaseReceiptItems)
+                .HasForeignKey(e => e.IngredientId)
+                .HasConstraintName("FK_PRI_Ingredients")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── StockMovements ─────────────────────────────────
@@ -541,20 +637,25 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.MovementType).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Quantity).HasColumnType("decimal(18,3)");
             entity.Property(e => e.RefType).HasMaxLength(30);
-            entity.Property(e => e.MovedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.MovedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(e => e.Note).HasMaxLength(255);
 
-            entity.HasOne(e => e.Ingredient)
-                  .WithMany(i => i.StockMovements)
-                  .HasForeignKey(e => e.IngredientId)
-                  .HasConstraintName("FK_SM_Ingredients")
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Ingredient)
+                .WithMany(i => i.StockMovements)
+                .HasForeignKey(e => e.IngredientId)
+                .HasConstraintName("FK_SM_Ingredients")
+                .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.CreatedByStaff)
-                  .WithMany(s => s.StockMovements)
-                  .HasForeignKey(e => e.CreatedByStaffId)
-                  .HasConstraintName("FK_SM_Staff")
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity
+                .HasOne(e => e.CreatedByStaff)
+                .WithMany(s => s.StockMovements)
+                .HasForeignKey(e => e.CreatedByStaffId)
+                .HasConstraintName("FK_SM_Staff")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── BlogCategories ─────────────────────────────────
@@ -572,12 +673,16 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.HasKey(e => e.PostId);
             entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("DRAFT");
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(e => e.Category)
-                  .WithMany(c => c.BlogPosts)
-                  .HasForeignKey(e => e.CategoryId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Category)
+                .WithMany(c => c.BlogPosts)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── Sliders ────────────────────────────────────────
@@ -587,7 +692,10 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.HasKey(e => e.SliderId);
             entity.Property(e => e.ImageUrl).HasMaxLength(255).IsRequired();
             entity.Property(e => e.Title).HasMaxLength(150);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
         });
 
         // ── MenuItemIngredients ───────────────────────────
@@ -597,15 +705,17 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).UseIdentityColumn();
 
-            entity.HasOne(e => e.MenuItem)
-                  .WithMany(m => m.MenuItemIngredients)
-                  .HasForeignKey(e => e.ItemId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.MenuItem)
+                .WithMany(m => m.MenuItemIngredients)
+                .HasForeignKey(e => e.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.Ingredient)
-                  .WithMany()
-                  .HasForeignKey(e => e.IngredientId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Ingredient)
+                .WithMany()
+                .HasForeignKey(e => e.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── InventoryAudits ───────────────────────────────
@@ -616,12 +726,16 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.HasIndex(e => e.AuditCode).IsUnique();
 
             entity.Property(e => e.AuditCode).HasMaxLength(30).IsRequired();
-            entity.Property(e => e.AuditDate).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity
+                .Property(e => e.AuditDate)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(e => e.Staff)
-                  .WithMany()
-                  .HasForeignKey(e => e.StaffId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Staff)
+                .WithMany()
+                .HasForeignKey(e => e.StaffId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── InventoryAuditItems ───────────────────────────
@@ -630,15 +744,17 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.ToTable("InventoryAuditItems");
             entity.HasKey(e => e.AuditItemId);
 
-            entity.HasOne(e => e.Audit)
-                  .WithMany(a => a.AuditItems)
-                  .HasForeignKey(e => e.AuditId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity
+                .HasOne(e => e.Audit)
+                .WithMany(a => a.AuditItems)
+                .HasForeignKey(e => e.AuditId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.Ingredient)
-                  .WithMany()
-                  .HasForeignKey(e => e.IngredientId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Ingredient)
+                .WithMany()
+                .HasForeignKey(e => e.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ── DailyIngredientAllocation ──────────────────────
@@ -649,10 +765,11 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
             entity.Property(e => e.Id).UseIdentityColumn();
             entity.Property(e => e.Date).HasColumnType("datetime2").IsRequired();
 
-            entity.HasOne(e => e.Ingredient)
-                  .WithMany()
-                  .HasForeignKey(e => e.IngredientId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity
+                .HasOne(e => e.Ingredient)
+                .WithMany()
+                .HasForeignKey(e => e.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         OnModelCreatingPartial(modelBuilder);

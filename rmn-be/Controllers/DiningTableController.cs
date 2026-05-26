@@ -11,26 +11,42 @@ public class DiningTableController : BaseController
 {
     private readonly IDiningTableService _tableService;
     private readonly ICleanupService _cleanupService;
+    private readonly ICleanupRecommendationService _cleanupRecommendationService;
 
-    public DiningTableController(IDiningTableService tableService, ICleanupService cleanupService)
+    public DiningTableController(
+        IDiningTableService tableService,
+        ICleanupService cleanupService,
+        ICleanupRecommendationService cleanupRecommendationService
+    )
     {
         _tableService = tableService;
         _cleanupService = cleanupService;
+        _cleanupRecommendationService = cleanupRecommendationService;
     }
 
     [HttpPost("cleanup")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> ManualCleanup()
     {
-        var (orders, res, tables) = await _cleanupService.DoDailyCleanupAsync();
-        return Success(new { 
-            ordersCancelled = orders, 
-            reservationsCleared = res, 
-            tablesReleased = tables 
-        }, "Manual cleanup performed successfully");
+        try
+        {
+            var (orders, res, tables) = await _cleanupService.DoDailyCleanupAsync();
+            return Success(
+                new
+                {
+                    ordersCancelled = orders,
+                    reservationsCleared = res,
+                    tablesReleased = tables,
+                },
+                "Manual cleanup performed successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            return Failure(ex.Message);
+        }
     }
 
-    
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -39,10 +55,20 @@ public class DiningTableController : BaseController
         return Success(tables);
     }
 
-    
+    [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
+    [HttpGet("cleanup-recommendations")]
+    public async Task<IActionResult> GetCleanupRecommendations([FromQuery] DateTime? date)
+    {
+        var result = await _cleanupRecommendationService.GetRecommendationsAsync(date);
+        return Success(result);
+    }
+
     [HttpGet("public-availability")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetPublicAvailability([FromQuery] DateTime date, [FromQuery] string timeSlot)
+    public async Task<IActionResult> GetPublicAvailability(
+        [FromQuery] DateTime date,
+        [FromQuery] string timeSlot
+    )
     {
         try
         {
@@ -63,7 +89,6 @@ public class DiningTableController : BaseController
         return Success(tables);
     }
 
- 
     [Authorize(Roles = "Staff,Manager,Admin,Kitchen,Cashier")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
@@ -106,7 +131,6 @@ public class DiningTableController : BaseController
         }
     }
 
- 
     [Authorize(Roles = "Admin,Manager")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)

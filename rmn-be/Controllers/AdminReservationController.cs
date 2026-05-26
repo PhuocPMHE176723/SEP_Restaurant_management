@@ -19,11 +19,17 @@ public class AdminReservationController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllReservations([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+    public async Task<IActionResult> GetAllReservations(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null
+    )
     {
         try
         {
-            var reservations = await _reservationService.GetAllReservationsAsync(startDate, endDate);
+            var reservations = await _reservationService.GetAllReservationsAsync(
+                startDate,
+                endDate
+            );
             return Success(reservations);
         }
         catch (Exception ex)
@@ -40,17 +46,20 @@ public class AdminReservationController : BaseController
     {
         try
         {
-            var updated = await _reservationService.UpdateReservationStatusAsync(
+            var orderId = await _reservationService.UpdateReservationStatusAsync(
                 id,
                 request.Status,
-                request.TableId
+                request.TableIds
             );
-            if (!updated)
+            if (orderId == null)
             {
                 return Failure("Reservation or table not found or invalid status");
             }
 
-            return Success("Reservation updated successfully");
+            return Success(
+                new { orderId = orderId > 0 ? orderId : null },
+                "Reservation updated successfully"
+            );
         }
         catch (Exception ex)
         {

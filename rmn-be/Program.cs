@@ -24,9 +24,10 @@ builder.Services.AddDbContext<SepDatabaseContext>(options =>
 builder
     .Services.AddIdentity<UserIdentity, IdentityRole>(options =>
     {
-        options.Password.RequireDigit = true;
+        options.Password.RequireDigit = false;
         options.Password.RequiredLength = 6;
         options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
         options.Password.RequireNonAlphanumeric = false;
 
         options.User.RequireUniqueEmail = true;
@@ -171,6 +172,7 @@ app.UseAuthentication(); // Phải đứng TRƯỚC UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();
+
 // ─────────────────────────────────────────────────────────────
 //  SEED DATA
 // ─────────────────────────────────────────────────────────────

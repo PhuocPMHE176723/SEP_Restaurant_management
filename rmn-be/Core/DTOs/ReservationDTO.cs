@@ -8,7 +8,8 @@ public class ReservationDTO
 {
     public long ReservationId { get; set; }
     public long? CustomerId { get; set; }
-    public int? TableId { get; set; }
+    public int TotalTables { get; set; }
+    public List<int>? TableIds { get; set; }
     public string CustomerName { get; set; } = default!;
     public string CustomerPhone { get; set; } = default!;
     public string? ContactEmail { get; set; }
@@ -22,6 +23,7 @@ public class ReservationDTO
     public decimal DepositAmount { get; set; }
     public bool IsDepositPaid { get; set; }
     public DateTime? DepositPaidAt { get; set; }
+    public int AssignedTableCount { get; set; }
     public OrderDTO? Order { get; set; }
 }
 
@@ -33,6 +35,7 @@ public class OrderDTO
     public string? TableName { get; set; }
     public string OrderType { get; set; } = "DINE_IN";
     public int? TableId { get; set; }
+    public List<int>? TableIds { get; set; }
     public string? CustomerName { get; set; }
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
@@ -48,17 +51,23 @@ public class OrderItemDTO
     public decimal UnitPrice { get; set; }
     public string? Status { get; set; }
     public string? Note { get; set; }
+    public string? Thumbnail { get; set; }
+    public string? ItemType { get; set; }
 }
 
 public class CreateReservationRequest
 {
-    public int? TableId { get; set; }
+    public int table4Count { get; set; }
+    public int table6Count { get; set; }
+    public int table8Count { get; set; }
+    public int TotalTables { get; set; } = 1;
+    public List<int>? TableIds { get; set; }
 
     [Required]
     public DateTime ReservedAt { get; set; }
 
     [Required]
-    [Range(1, 50)]
+    [Range(0, 50)]
     public int PartySize { get; set; }
 
     [Range(30, 240)]
@@ -94,7 +103,7 @@ public class UpdateReservationStatusRequest
     public string Status { get; set; } = default!;
 
     /// <summary>Tuỳ chọn gán/chuyển bàn khi cập nhật trạng thái</summary>
-    public int? TableId { get; set; }
+    public List<int>? TableIds { get; set; }
 }
 
 public class CreateWalkinOrderRequest
@@ -129,7 +138,7 @@ public class MergeOrdersRequest
 {
     [Required]
     public long PrimaryOrderId { get; set; }
-    
+
     [Required]
     [MinLength(1, ErrorMessage = "Must select at least one secondary order to merge.")]
     public List<long> SecondaryOrderIds { get; set; } = new();

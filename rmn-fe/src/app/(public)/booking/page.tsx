@@ -49,8 +49,8 @@ export default function BookingPage() {
                     <li className={styles.infoItem}>
                       <div>
                         <p className={styles.infoLabel}>Giờ mở cửa</p>
-                        <p className={styles.infoValue}>Trưa: 11:00 – 14:00</p>
-                        <p className={styles.infoValue}>Tối: 17:00 – 21:30</p>
+                        <p className={styles.infoValue}>Trưa: 11:00 – 12:00</p>
+                        <p className={styles.infoValue}>Tối: 17:00 – 20:30</p>
                       </div>
                     </li>
                     <li className={styles.infoItem}>

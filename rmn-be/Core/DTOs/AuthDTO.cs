@@ -21,17 +21,14 @@ public class RegisterRequestDTO
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required")]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
-    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$",
-        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Full name is required")]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
     [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
-    public string Phone { get; set; } = string.Empty;
+    public string? Phone { get; set; } = string.Empty;
 
     /// <summary>
     /// Cho phép: Admin, Staff, Customer, Warehouse, Kitchen, Cashier
@@ -45,11 +42,13 @@ public class LoginResponseDTO
 {
     public string AccessToken { get; set; } = string.Empty;
     public string TokenType { get; set; } = "Bearer";
+
     /// <summary>Thời điểm token hết hạn (giờ Việt Nam, UTC+7)</summary>
     public DateTime ExpiresAt { get; set; }
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
+    public bool IsPhoneVerified { get; set; }
     public List<string> Roles { get; set; } = new();
 }
 
@@ -60,6 +59,7 @@ public class ForgotPasswordRequestDTO
     [EmailAddress]
     public string Email { get; set; }
 }
+
 public class ResetPasswordRequestDTO
 {
     [Required]
@@ -102,9 +102,22 @@ public class VerifyEmailOtpRequestDTO
     public string Otp { get; set; } = string.Empty;
 }
 
+public class VerifyPhoneOtpRequestDTO
+{
+    [Required(ErrorMessage = "Phone number is required")]
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "OTP is required")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP must be exactly 6 digits")]
+    public string Otp { get; set; } = string.Empty;
+}
+
 public class ResendOtpRequestDTO
 {
-    [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email format")]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
+
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
+    public string? PhoneNumber { get; set; }
 }

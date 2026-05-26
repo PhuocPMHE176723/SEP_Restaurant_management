@@ -104,7 +104,7 @@ public class AuthServicePostTests
         {
             Id = "U1",
             Email = "a@b.com",
-            UserName = "a@b.com",
+            UserName = "a@b.com", EmailConfirmed = true,
             FullName = "Alice",
             PhoneNumber = "123",
         };
@@ -193,7 +193,7 @@ public class AuthServicePostTests
         {
             Id = "U1",
             Email = "a@b.com",
-            UserName = "a@b.com",
+            UserName = "a@b.com", EmailConfirmed = true,
         };
 
         var um = CreateUserManagerMock();
@@ -233,7 +233,7 @@ public class AuthServicePostTests
         {
             Id = "U1",
             Email = "a@b.com",
-            UserName = "a@b.com",
+            UserName = "a@b.com", EmailConfirmed = true,
         };
 
         var um = CreateUserManagerMock();
@@ -276,7 +276,7 @@ public class AuthServicePostTests
         {
             Id = "U_STAFF",
             Email = "s@b.com",
-            UserName = "s@b.com",
+            UserName = "s@b.com", EmailConfirmed = true,
         };
         context.Staffs.Add(
             new Staff

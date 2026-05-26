@@ -6,6 +6,7 @@ export interface OrderResponse {
   orderCode: string;
   status: string;
   tableId?: number;
+  tableIds?: number[];
   tableName?: string;
   orderType: string;
   customerName?: string;
@@ -23,6 +24,7 @@ export interface OrderItemResponse {
   unitPrice: number;
   status?: string;
   note?: string;
+  itemType?: string;
 }
 
 export interface UpdateOrderStatusRequest {
@@ -119,6 +121,14 @@ export const orderApi = {
       method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify({ status }),
+    });
+
+    await handleResponse<void>(response);
+  },
+  async removeOrderItem(orderItemId: number): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Order/items/${orderItemId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
     });
 
     await handleResponse<void>(response);

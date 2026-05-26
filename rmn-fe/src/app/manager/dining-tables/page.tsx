@@ -50,7 +50,7 @@ function CreateModal({
   const [form, setForm] = useState<CreateDiningTableRequest>({
     tableCode: "",
     tableName: "",
-    capacity: 4,
+    capacity: 6,
     status: "AVAILABLE",
   });
   const [saving, setSaving] = useState(false);
@@ -118,7 +118,7 @@ function CreateModal({
                 setForm({ ...form, capacity: Number(e.target.value) })
               }
             >
-              {[4, 6, 8].map((n) => (
+              {[6, 8, 10].map((n) => (
                 <option key={n} value={n}>
                   {n} chỗ
                 </option>
@@ -232,7 +232,7 @@ function EditModal({
                 setForm({ ...form, capacity: Number(e.target.value) })
               }
             >
-              {[4, 6, 8].map((n) => (
+              {[6, 8, 10].map((n) => (
                 <option key={n} value={n}>
                   {n} chỗ
                 </option>
@@ -480,7 +480,17 @@ export default function DiningTablesPage() {
         <div className={styles.cardBody}>
           <div className={styles.filterBar}>
             <div className={styles.searchGroup}>
-              <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className={styles.searchIcon}
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
@@ -512,9 +522,9 @@ export default function DiningTablesPage() {
               </select>
 
               {(searchTerm || filterStatus !== "ALL") && (
-                <button 
+                <button
                   className={styles.btnSecondary}
-                  style={{ padding: '0.625rem 1rem', fontSize: '0.85rem' }}
+                  style={{ padding: "0.625rem 1rem", fontSize: "0.85rem" }}
                   onClick={() => {
                     setSearchTerm("");
                     setFilterStatus("ALL");
@@ -596,17 +606,25 @@ export default function DiningTablesPage() {
           {totalPages > 1 && (
             <div className={styles.pagination}>
               <div className={styles.paginationInfo}>
-                Hiển thị <b>{Math.min(filteredItems.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(filteredItems.length, currentPage * itemsPerPage)}</b> trên tổng số <b>{filteredItems.length}</b> bàn
+                Hiển thị{" "}
+                <b>
+                  {Math.min(
+                    filteredItems.length,
+                    (currentPage - 1) * itemsPerPage + 1,
+                  )}
+                  -{Math.min(filteredItems.length, currentPage * itemsPerPage)}
+                </b>{" "}
+                trên tổng số <b>{filteredItems.length}</b> bàn
               </div>
-              
+
               <button
                 className={styles.pageBtn}
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
               >
                 &laquo;
               </button>
-              
+
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i + 1}
@@ -620,7 +638,7 @@ export default function DiningTablesPage() {
               <button
                 className={styles.pageBtn}
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => prev + 1)}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
               >
                 &raquo;
               </button>

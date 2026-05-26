@@ -11,7 +11,10 @@ public class Reservation
 
     public long? CustomerId { get; set; }
 
-    public int? TableId { get; set; }
+    public int TotalTables { get; set; } = 1;
+    public int Table4Count { get; set; } = 0;
+    public int Table6Count { get; set; } = 0;
+    public int Table8Count { get; set; } = 0;
 
     [Required]
     [MaxLength(150)]
@@ -32,7 +35,7 @@ public class Reservation
 
     [Required]
     [MaxLength(20)]
-    public string Status { get; set; } = "PENDING"; // PENDING/CONFIRMED/CANCELLED/NO_SHOW/COMPLETED
+    public string Status { get; set; } = "PENDING"; // PENDING/CONFIRMED/CANCELLED/NO_SHOW/COMPLETED/CHECKED_IN
 
     [MaxLength(255)]
     public string? Note { get; set; }
@@ -44,8 +47,7 @@ public class Reservation
     [ForeignKey(nameof(CustomerId))]
     public virtual Customer? Customer { get; set; }
 
-    [ForeignKey(nameof(TableId))]
-    public virtual DiningTable? Table { get; set; }
+    public virtual ICollection<ReservationTable> ReservationTables { get; set; } = new List<ReservationTable>();
 
     [ForeignKey(nameof(CreatedByStaffId))]
     public virtual Staff? CreatedByStaff { get; set; }

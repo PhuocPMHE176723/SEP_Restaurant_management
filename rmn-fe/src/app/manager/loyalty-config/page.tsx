@@ -191,12 +191,34 @@ export default function LoyaltyConfigPage() {
                                                 style={{ padding: '0.4rem', width: '60px' }}
                                             />
                                         </td>
-                                        <td>
+                                        <td style={{ textAlign: 'right' }}>
                                             <button 
                                                 className={styles.btnAction} 
                                                 onClick={() => handleUpdateTier(tier.tierId, index)}
                                                 disabled={savingTier === tier.tierId}
-                                                style={{ color: '#eab308', padding: '0.4rem' }}
+                                                style={{ 
+                                                    backgroundColor: '#eab308', 
+                                                    color: '#fff', 
+                                                    padding: '0.5rem 1.25rem', 
+                                                    borderRadius: '8px', 
+                                                    border: 'none', 
+                                                    cursor: 'pointer', 
+                                                    fontWeight: 600,
+                                                    fontSize: '0.85rem',
+                                                    boxShadow: '0 2px 4px rgba(234, 179, 8, 0.2)',
+                                                    transition: 'all 0.2s',
+                                                    minWidth: '70px'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#ca8a04';
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(234, 179, 8, 0.3)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#eab308';
+                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(234, 179, 8, 0.2)';
+                                                }}
                                             >
                                                 {savingTier === tier.tierId ? "..." : "Lưu"}
                                             </button>

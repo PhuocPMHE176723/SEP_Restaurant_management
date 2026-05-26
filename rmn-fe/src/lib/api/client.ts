@@ -82,6 +82,7 @@ function normalizeMenuItem(m: any): MenuItem {
     prepTimeMinutes: m?.prepTimeMinutes,
     rating: m?.rating,
     reviewCount: m?.reviewCount,
+    itemType: m?.itemType,
     createdAt: m?.createdAt,
   };
 }

@@ -136,6 +136,54 @@
   color: #f86d1a;
 }
 
+.fieldLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.verificationBadge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verifiedBadge {
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.unverifiedBadge {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.verifyButton {
+  border: 1px solid #f86d1a;
+  background: #fff7ed;
+  color: #f86d1a;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.verifyButton:hover {
+  background: #f97316;
+  color: #ffffff;
+}
+
 .underlineInput {
   width: 100%;
   border: none;

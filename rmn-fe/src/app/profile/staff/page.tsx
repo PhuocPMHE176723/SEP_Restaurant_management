@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
 import { profileApi } from "../../../lib/api/profile";
 import { forgotPasswordApi } from "../../../lib/api/auth";
+import Swal from "sweetalert2";
 import type { StaffProfileDTO } from "../../../types/models/profile";
 import PasswordSecuritySection from "../PasswordSecuritySection";
 import Header from "@/components/Header/Header";
@@ -43,7 +44,6 @@ export default function StaffProfilePage() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -52,8 +52,6 @@ export default function StaffProfilePage() {
     phone: "",
     position: "",
   });
-
-  const [forgotEmail, setForgotEmail] = useState("");
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -78,7 +76,6 @@ export default function StaffProfilePage() {
           phone: data.phone || "",
           position: data.position || "",
         });
-        setForgotEmail(data.email || user?.email || "");
       } catch (err: any) {
         setProfileStatus({
           type: "error",
@@ -125,7 +122,6 @@ export default function StaffProfilePage() {
 
     try {
       setSavingProfile(true);
-      setProfileStatus({ type: "", message: "" });
 
       const message = await profileApi.updateStaffProfile(profile.staffId, {
         fullName: formData.fullName,
@@ -148,14 +144,21 @@ export default function StaffProfilePage() {
       );
 
       setIsEditing(false);
-      setProfileStatus({
-        type: "success",
-        message: typeof message === "string" ? message : "Cập nhật hồ sơ thành công",
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: typeof message === "string" ? message : "Cập nhật hồ sơ nhân viên thành công!",
+        timer: 2000,
+        showConfirmButton: false
       });
+
     } catch (err: any) {
-      setProfileStatus({
-        type: "error",
-        message: err?.message || "Cập nhật hồ sơ thất bại",
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: err?.message || 'Cập nhật hồ sơ thất bại. Vui lòng thử lại!',
+        confirmButtonText: 'Đóng'
       });
     } finally {
       setSavingProfile(false);
@@ -170,24 +173,27 @@ export default function StaffProfilePage() {
       !passwordForm.newPassword ||
       !passwordForm.confirmPassword
     ) {
-      setSecurityStatus({
-        type: "error",
-        message: "Vui lòng nhập đầy đủ thông tin đổi mật khẩu",
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chú ý',
+        text: 'Vui lòng nhập đầy đủ thông tin đổi mật khẩu',
+        confirmButtonText: 'Đóng'
       });
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setSecurityStatus({
-        type: "error",
-        message: "Mật khẩu mới và xác nhận mật khẩu không khớp",
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lỗi khớp mật khẩu',
+        text: 'Mật khẩu mới và xác nhận mật khẩu không khớp',
+        confirmButtonText: 'Đóng'
       });
       return;
     }
 
     try {
       setSavingPassword(true);
-      setSecurityStatus({ type: "", message: "" });
 
       const message = await profileApi.changePassword({
         currentPassword: passwordForm.currentPassword,
@@ -201,50 +207,23 @@ export default function StaffProfilePage() {
         confirmPassword: "",
       });
 
-      setSecurityStatus({
-        type: "success",
-        message: typeof message === "string" ? message : "Đổi mật khẩu thành công",
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã đổi mật khẩu',
+        text: typeof message === "string" ? message : "Đổi mật khẩu nhân viên thành công!",
+        timer: 2000,
+        showConfirmButton: false
       });
+
     } catch (err: any) {
-      setSecurityStatus({
-        type: "error",
-        message: err?.message || "Đổi mật khẩu thất bại",
+      Swal.fire({
+        icon: 'error',
+        title: 'Thất bại',
+        text: err?.message || 'Đổi mật khẩu không thành công. Vui lòng kiểm tra lại!',
+        confirmButtonText: 'Đóng'
       });
     } finally {
       setSavingPassword(false);
-    }
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!forgotEmail) {
-      setSecurityStatus({
-        type: "error",
-        message: "Vui lòng nhập email để khôi phục mật khẩu",
-      });
-      return;
-    }
-
-    try {
-      setSecurityStatus({ type: "", message: "" });
-
-      const message = await forgotPasswordApi({ email: forgotEmail });
-
-      setSecurityStatus({
-        type: "success",
-        message:
-          typeof message === "string"
-            ? message
-            : `Đã gửi liên kết khôi phục tới ${forgotEmail}`,
-      });
-
-      setIsForgotPassword(false);
-    } catch (err: any) {
-      setSecurityStatus({
-        type: "error",
-        message: err?.message || "Gửi email quên mật khẩu thất bại",
-      });
     }
   };
 
@@ -276,7 +255,6 @@ export default function StaffProfilePage() {
             }`}
             onClick={() => {
               setActiveTab("profile");
-              setIsForgotPassword(false);
               setProfileStatus({ type: "", message: "" });
             }}
           >
@@ -290,7 +268,6 @@ export default function StaffProfilePage() {
             }`}
             onClick={() => {
               setActiveTab("security");
-              setIsForgotPassword(false);
               setSecurityStatus({ type: "", message: "" });
             }}
           >
@@ -389,6 +366,7 @@ export default function StaffProfilePage() {
                     className={`${styles.underlineInput} ${styles.readOnlyInput}`}
                     value={formData.position}
                     readOnly
+                    disabled
                 />
                 </div>
 
@@ -398,6 +376,7 @@ export default function StaffProfilePage() {
                     className={`${styles.underlineInput} ${styles.readOnlyInput}`}
                     value={profile.staffCode || ""}
                     readOnly
+                    disabled
                   />
                 </div>
 
@@ -438,11 +417,6 @@ export default function StaffProfilePage() {
             setPasswordForm={setPasswordForm}
             savingPassword={savingPassword}
             onSubmit={handleChangePassword}
-            isForgotPassword={isForgotPassword}
-            setIsForgotPassword={setIsForgotPassword}
-            forgotEmail={forgotEmail}
-            setForgotEmail={setForgotEmail}
-            onForgotPasswordSubmit={handleForgotPassword}
             status={securityStatus}
           />
         )}

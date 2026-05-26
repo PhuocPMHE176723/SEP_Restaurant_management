@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using rmn_be.Core.DTOs;
 using rmn_be.Core.Services.Interface;
 using SEP_Restaurant_management.Controllers;
-using System.Security.Claims;
 
 namespace rmn_be.Controllers
 {
@@ -12,6 +12,7 @@ namespace rmn_be.Controllers
     {
         private readonly ICustomerService _customerService;
         private readonly IStaffService _staffService;
+
         public UserController(ICustomerService customerService, IStaffService staffService)
         {
             _customerService = customerService;
@@ -44,9 +45,7 @@ namespace rmn_be.Controllers
             {
                 return Failure(
                     "Invalid request data",
-                    ModelState.Values
-                        .SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
-                        .ToList()
+                    ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
                 );
             }
 
@@ -68,9 +67,7 @@ namespace rmn_be.Controllers
             {
                 return Failure(
                     "Invalid request data",
-                    ModelState.Values
-                        .SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
-                        .ToList()
+                    ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
                 );
             }
 
@@ -108,8 +105,6 @@ namespace rmn_be.Controllers
             return Success("Staff account unlocked successfully");
         }
 
-        
-
         // ========================= CUSTOMER =========================
 
         [HttpGet("customers")]
@@ -128,6 +123,7 @@ namespace rmn_be.Controllers
 
             return Success(customer);
         }
+
         [HttpPost("customers/register")]
         public async Task<IActionResult> Register([FromBody] CreateCustomerDTO registerDto)
         {
@@ -151,7 +147,10 @@ namespace rmn_be.Controllers
         }
 
         [HttpPut("customers/{id}")]
-        public async Task<IActionResult> UpdateCustomer(long id, [FromBody] UpdateCustomerDTO updateDto)
+        public async Task<IActionResult> UpdateCustomer(
+            long id,
+            [FromBody] UpdateCustomerDTO updateDto
+        )
         {
             if (!ModelState.IsValid)
             {
@@ -164,10 +163,10 @@ namespace rmn_be.Controllers
             try
             {
                 var updated = await _customerService.UpdateCustomerAsync(id, updateDto);
-                if (!updated)
+                if (updated == null)
                     return NotFoundResponse($"Customer with ID {id} not found");
 
-                return Success("Customer updated successfully");
+                return Success(updated, updated.Message);
             }
             catch (Exception ex)
             {
@@ -175,7 +174,6 @@ namespace rmn_be.Controllers
             }
         }
 
-        
         //[HttpGet("me/context")]
         //public async Task<IActionResult> GetMyContext()
         //{

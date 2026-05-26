@@ -7,7 +7,7 @@ export interface RegisterRequestDTO {
     email: string;
     password: string;
     fullName: string;
-    phone: string;
+    phone?: string;
     role?: string;
 }
 
@@ -18,6 +18,7 @@ export interface LoginResponseDTO {
     email: string;
     fullName: string;
     phoneNumber: string | null;
+    isPhoneVerified: boolean;
     roles: string[];
 }
 

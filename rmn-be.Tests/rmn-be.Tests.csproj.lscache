@@ -2,12 +2,10 @@ version=1
 
 # This file caches language service data to improve the performance of C# Dev Kit.
 # It is not intended for manual editing. It can safely be deleted and will be
-# regenerated automatically.
+# regenerated automatically. For more information, see https://aka.ms/lscache
 #
-# To exclude from version control, add *.lscache to your .gitignore file.
-#
-# To disable caching, add the following to your VS Code settings:
-#   "dotnet.projectsystem.enableLanguageServiceCache": false
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
 
 [project]
 language=C#
@@ -23,7 +21,7 @@ ProjectAssetsFile=<PATH>obj/project.assets.json
 RootNamespace=rmn_be.Tests
 RunAnalyzers=
 RunAnalyzersDuringLiveAnalysis=
-SolutionPath=<PATH>../rmn-be/rmn-be.sln
+SolutionPath=*Undefined*
 TargetFrameworkIdentifier=.NETCoreApp
 TargetPath=<PATH>bin/Debug/net8.0/rmn-be.Tests.dll
 TargetRefPath=<PATH>obj/Debug/net8.0/ref/rmn-be.Tests.dll
@@ -56,7 +54,7 @@ TemporaryDependencyNodeTargetIdentifier=net8.0
 
 [sourceFiles]
 <NUGET>/microsoft.net.test.sdk/17.8.0/build/netcoreapp3.1/Microsoft.NET.Test.Sdk.Program.cs
- @folderNames=..,..,..,.nuget,packages,microsoft.net.test.sdk,17.8.0,build,netcoreapp3.1
+ @folderNames=..,..,..,..,..,.nuget,packages,microsoft.net.test.sdk,17.8.0,build,netcoreapp3.1
 obj/Debug/net8.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
  rmn-be.Tests.AssemblyInfo.cs
@@ -439,7 +437,7 @@ Tests/
  xunit.extensibility.execution/2.5.3/lib/netstandard1.1/xunit.execution.dotnet.dll
 
 [analyzerReferences]
-../../../../../usr/local/share/dotnet/sdk/10.0.103/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.103/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/microsoft.aspnetcore.app.ref/8.0.24/analyzers/dotnet/cs/
@@ -463,5 +461,5 @@ Tests/
   xunit.analyzers.fixes.dll
 
 [analyzerConfigFiles]
-../../../../../usr/local/share/dotnet/sdk/10.0.103/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_8_default.globalconfig
+<DOTNET>/sdk/10.0.103/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_8_default.globalconfig
 obj/Debug/net8.0/rmn-be.Tests.GeneratedMSBuildEditorConfig.editorconfig

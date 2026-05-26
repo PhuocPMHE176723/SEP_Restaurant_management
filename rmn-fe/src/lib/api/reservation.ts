@@ -45,8 +45,12 @@ export interface CreateReservationRequest {
     durationMinutes?: number;
     note?: string;
     contactEmail?: string;
-    tableId?: number;
+    totalTables?: number;
+    tableIds?: number[];
     menuItems: OrderItemRequest[];
+    table4Count?: number;
+    table6Count?: number;
+    table8Count?: number;
 }
 
 export interface TableAvailability {
@@ -62,6 +66,8 @@ export interface TableAvailability {
 export interface ReservationDTO {
     reservationId: number;
     customerId?: number | null;
+    totalTables?: number;
+    tableIds?: number[];
     tableId?: number | null;
     customerName: string;
     customerPhone: string;

@@ -58,6 +58,7 @@ export interface MenuItem {
     basePrice: number;
     thumbnail?: string | null;
     isActive: boolean;
+    itemType: string;
     createdAt: string;
 }
 
@@ -67,6 +68,7 @@ export interface CreateMenuItemRequest {
     unit?: string;
     description?: string;
     basePrice: number;
+    itemType: string;
     thumbnail?: string;
 }
 
@@ -76,6 +78,7 @@ export interface UpdateMenuItemRequest {
     unit?: string;
     description?: string;
     basePrice?: number;
+    itemType?: string;
     thumbnail?: string;
     isActive?: boolean;
 }
@@ -90,9 +93,20 @@ function authHeaders(): Record<string, string> {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-    const json = (await res.json()) as { data?: T; message?: string; errors?: string[] };
-    if (!res.ok) throw new Error(json.message ?? `Request failed (${res.status})`);
-    return json.data as T;
+    const text = await res.text();
+    let json: { data?: T; message?: string; errors?: string[] } | null = null;
+
+    if (text) {
+        try {
+            json = JSON.parse(text);
+        } catch {
+            if (!res.ok) throw new Error(text || `Request failed (${res.status})`);
+            return undefined as T;
+        }
+    }
+
+    if (!res.ok) throw new Error(json?.message ?? `Request failed (${res.status})`);
+    return (json?.data ?? json) as T;
 }
 
 // ── DiningTable API ───────────────────────────────────────────────

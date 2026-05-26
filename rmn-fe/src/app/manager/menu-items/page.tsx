@@ -114,8 +114,8 @@ function CreateModal({
     categoryId: 0,
     itemName: "",
     unit: "",
-    description: "",
     basePrice: 0,
+    itemType: "PROCESSED",
     thumbnail: undefined,
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -257,6 +257,32 @@ function CreateModal({
           </div>
 
           <div className={styles.field}>
+            <label className={styles.label}>Loại món *</label>
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="itemTypeCreate"
+                  value="PROCESSED"
+                  checked={form.itemType === "PROCESSED"}
+                  onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
+                />
+                Món chế biến
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="itemTypeCreate"
+                  value="READY"
+                  checked={form.itemType === "READY"}
+                  onChange={() => setForm({ ...form, itemType: "READY" })}
+                />
+                Món có sẵn
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.field}>
             <label className={styles.label}>Ảnh món ăn</label>
             <ImageUpload
               value={imageUrl}
@@ -305,6 +331,7 @@ function EditModal({
     description: item.description ?? "",
     basePrice: item.basePrice,
     thumbnail: item.thumbnail ? item.thumbnail : undefined,
+    itemType: item.itemType,
     isActive: item.isActive,
   });
   const [imageUrl, setImageUrl] = useState<string | null>(
@@ -433,6 +460,32 @@ function EditModal({
           </div>
 
           <div className={styles.field}>
+            <label className={styles.label}>Loại món</label>
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="itemTypeEdit"
+                  value="PROCESSED"
+                  checked={form.itemType === "PROCESSED"}
+                  onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
+                />
+                Món chế biến
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="itemTypeEdit"
+                  value="READY"
+                  checked={form.itemType === "READY"}
+                  onChange={() => setForm({ ...form, itemType: "READY" })}
+                />
+                Món có sẵn
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.field}>
             <label className={styles.label}>Ảnh món ăn</label>
             <ImageUpload
               value={imageUrl}
@@ -467,139 +520,7 @@ function EditModal({
   );
 }
 
-// ── Recipe (MenuItemIngredient) Modal ───────────────────────────
-function RecipeModal({
-  item,
-  onClose,
-}: {
-  item: MenuItem;
-  onClose: () => void;
-}) {
-  const [recipe, setRecipe] = useState<{ ingredientId: number; quantity: number; ingredientName: string; unit: string }[]>([]);
-  const [allIngredients, setAllIngredients] = useState<{ ingredientId: number; ingredientName: string; unit: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<number>(0);
-  const [qty, setQty] = useState<number>(0);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [recipeData, ingredientsData] = await Promise.all([
-          getMenuItemIngredients(item.itemId),
-          getIngredients(),
-        ]);
-        setRecipe(recipeData);
-        setAllIngredients(ingredientsData);
-      } catch (e: any) {
-        toast.error("Lỗi khi tải dữ liệu công thức");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [item.itemId]);
-
-  function handleAdd() {
-    if (selectedIngredient === 0 || qty <= 0) return;
-    const ing = allIngredients.find(i => i.ingredientId === selectedIngredient);
-    if (!ing) return;
-
-    if (recipe.some(r => r.ingredientId === selectedIngredient)) {
-      toast.error("Nguyên liệu này đã có trong danh sách");
-      return;
-    }
-
-    setRecipe([...recipe, { ingredientId: selectedIngredient, quantity: qty, ingredientName: ing.ingredientName, unit: ing.unit }]);
-    setSelectedIngredient(0);
-    setQty(0);
-  }
-
-  function handleRemove(id: number) {
-    setRecipe(recipe.filter(r => r.ingredientId !== id));
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await updateMenuItemIngredients(item.itemId, recipe.map(r => ({ ingredientId: r.ingredientId, quantity: r.quantity })));
-      toast.success("Cập nhật định mức nguyên liệu thành công!");
-      onClose();
-    } catch (e: any) {
-      toast.error(e.message || "Lỗi khi lưu công thức");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles.modal} style={{ maxWidth: '600px' }}>
-        <div className={styles.modalHead}>
-          <span className={styles.modalTitle}>Định mức nguyên liệu — {item.itemName}</span>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <div className={styles.modalBody}>
-          {loading ? <p>Đang tải...</p> : (
-            <>
-              <div className={styles.field} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label className={styles.label}>Chọn nguyên liệu</label>
-                  <select className={styles.input} value={selectedIngredient} onChange={(e) => setSelectedIngredient(Number(e.target.value))}>
-                    <option value={0}>-- Chọn --</option>
-                    {allIngredients.map(i => (
-                      <option key={i.ingredientId} value={i.ingredientId}>{i.ingredientName} ({i.unit})</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ width: '120px' }}>
-                  <label className={styles.label}>Số lượng</label>
-                  <input type="number" step="0.001" className={styles.input} value={qty} onChange={(e) => setQty(parseFloat(e.target.value))} />
-                </div>
-                <button type="button" className={styles.btnAdd} onClick={handleAdd} style={{ marginBottom: '5px' }}>Thêm</button>
-              </div>
-
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Nguyên liệu</th>
-                      <th>Định mức</th>
-                      <th>Đơn vị</th>
-                      <th>Xoá</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recipe.length === 0 ? (
-                      <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>Chưa có định mức nào</td></tr>
-                    ) : (
-                      recipe.map(r => (
-                        <tr key={r.ingredientId}>
-                          <td>{r.ingredientName}</td>
-                          <td>{r.quantity}</td>
-                          <td>{r.unit}</td>
-                          <td>
-                            <button className={styles.btnDelete} onClick={() => handleRemove(r.ingredientId)}>Xoá</button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
-        <div className={styles.modalFoot}>
-          <button className={styles.btnCancel} onClick={onClose}>Thoát</button>
-          <button className={styles.btnSave} onClick={handleSave} disabled={saving || loading}>
-            {saving ? "Đang lưu..." : "Lưu định mức"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 function DeleteModal({
   item,
   onClose,
@@ -665,7 +586,7 @@ export default function MenuItemsPage() {
     undefined,
   );
   const [modal, setModal] = useState<{
-    type: "create" | "edit" | "delete" | "recipe";
+    type: "create" | "edit" | "delete";
     item?: MenuItem;
   } | null>(null);
 
@@ -818,6 +739,7 @@ export default function MenuItemsPage() {
                 <th>ĐVT</th>
                 <th>Danh mục</th>
                 <th>Mô tả</th>
+                <th>Loại món</th>
                 <th>Giá</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
@@ -857,6 +779,13 @@ export default function MenuItemsPage() {
                     <td>{item.unit ?? "—"}</td>
                     <td>{item.categoryName}</td>
                     <td>{item.description ?? "—"}</td>
+                    <td>
+                      {item.itemType === "READY" ? (
+                        <span style={{ color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>Món có sẵn</span>
+                      ) : (
+                        <span style={{ color: '#d97706', background: '#fffbeb', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>Món chế biến</span>
+                      )}
+                    </td>
                     <td>{formatPrice(item.basePrice)}</td>
                     <td>
                       <span
@@ -867,13 +796,7 @@ export default function MenuItemsPage() {
                     </td>
                     <td>
                       <div className={styles.btnRow}>
-                        <button
-                          className={styles.btnSecondary}
-                          style={{ color: '#6366f1', borderColor: '#6366f1' }}
-                          onClick={() => setModal({ type: "recipe", item })}
-                        >
-                          Công thức
-                        </button>
+
                         <button
                           className={styles.btnEdit}
                           onClick={() => setModal({ type: "edit", item })}
@@ -951,12 +874,7 @@ export default function MenuItemsPage() {
           onSaved={load}
         />
       )}
-      {modal?.type === "recipe" && modal.item && (
-        <RecipeModal
-          item={modal.item}
-          onClose={() => setModal(null)}
-        />
-      )}
+
     </>
   );
 }

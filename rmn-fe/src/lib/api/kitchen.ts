@@ -50,3 +50,55 @@ export const kitchenApi = {
     await handleResponse<void>(response);
   },
 };
+
+
+export type CookingListItem = {
+  itemId: number;
+  itemName: string;
+  thumbnail?: string | null;
+  unit?: string | null;
+  checkedInPreOrderQuantity: number;
+  totalPreOrderQuantity: number;
+  mustCookQuantity: number;
+  cookingQuantity: number;
+  readyServeQuantity: number;
+  lastUpdatedAt?: string | null;
+  preOrderDetails: PreOrderSlot[];
+};
+export type PreOrderSlot = { time: string; quantity: number; };
+
+export const cookingApi = {
+  async getCookingList(date?: string, shift: string = "all"): Promise<CookingListItem[]> {
+    // Tạo URL với query parameters 
+    const params = new URLSearchParams(); 
+    if (date) params.append("date", date); 
+    if (shift) params.append("shift", shift);
+    const response = await fetch(`${apiBaseUrl}/api/Kitchen/cooking-list?${params.toString()}`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    });
+    return handleResponse<CookingListItem[]>(response);
+  },
+
+  async startCookingByItem(itemId: number): Promise<void> {
+    const response = await fetch(
+      `${apiBaseUrl}/api/Kitchen/cooking-list/${itemId}/start-cooking`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      }
+    );
+    await handleResponse<void>(response);
+  },
+
+  async markReadyByItem(itemId: number): Promise<void> {
+    const response = await fetch(
+      `${apiBaseUrl}/api/Kitchen/cooking-list/${itemId}/mark-ready`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      }
+    );
+    await handleResponse<void>(response);
+  },
+};

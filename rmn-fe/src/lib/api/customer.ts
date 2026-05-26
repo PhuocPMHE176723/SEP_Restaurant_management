@@ -7,6 +7,7 @@ export interface CustomerLookupResponse {
   phone: string;
   totalPoints: number;
   email?: string;
+  currentTier?: string;
 }
 
 export interface PointLedgerEntry {
@@ -32,6 +33,7 @@ export interface CustomerProfileResponse {
   fullName: string;
   phone: string;
   email?: string;
+  isPhoneVerified: boolean;
   totalPoints: number;
   currentTier: string;
   pointHistory: PointLedgerEntry[];
@@ -83,5 +85,18 @@ export const customerApi = {
       throw new Error(json.message || "Lỗi khi lấy thông tin hồ sơ");
     }
     return json.data || json.Data;
+  },
+
+  async updateProfile(data: { fullName?: string; phone?: string; email?: string }): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/Customer/me`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const json = await response.json();
+        throw new Error(json.message || "Lỗi khi cập nhật hồ sơ");
+    }
   }
 };
