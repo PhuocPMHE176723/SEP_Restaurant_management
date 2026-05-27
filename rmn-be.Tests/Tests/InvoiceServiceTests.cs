@@ -177,7 +177,7 @@ public class InvoiceServicePostTests
         );
 
         var mapper = new Mock<IMapper>();
-        var service = new InvoiceService(context, mapper.Object);
+        var service = new InvoiceService(context, mapper.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var invoice = await service.ProcessCheckoutAsync(
             orderId: 1,
@@ -227,7 +227,7 @@ public class InvoiceServicePostTests
         );
 
         var mapper = new Mock<IMapper>();
-        var service = new InvoiceService(context, mapper.Object);
+        var service = new InvoiceService(context, mapper.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var invoice = await service.ProcessCheckoutAsync(
             orderId: 1,
@@ -267,8 +267,15 @@ public class InvoiceServicePostTests
         var customerBefore = await context.Customers.SingleAsync(c => c.CustomerId == 1);
         Assert.Equal(10, customerBefore.TotalPoints);
 
+        // Seed system configurations for points
+        context.SystemConfigs.AddRange(
+            new SystemConfig { ConfigKey = "LOYALTY_EARN_RATE", ConfigValue = "20000" },
+            new SystemConfig { ConfigKey = "LOYALTY_REDEEM_RATE", ConfigValue = "1000" }
+        );
+        await context.SaveChangesAsync();
+
         var mapper = new Mock<IMapper>();
-        var service = new InvoiceService(context, mapper.Object);
+        var service = new InvoiceService(context, mapper.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         await service.ProcessCheckoutAsync(
             orderId: 1,
@@ -328,7 +335,7 @@ public class InvoiceServicePostTests
         await context.SaveChangesAsync();
 
         var mapper = new Mock<IMapper>();
-        var service = new InvoiceService(context, mapper.Object);
+        var service = new InvoiceService(context, mapper.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var invoice = await service.ProcessCheckoutAsync(
             orderId: 1,
@@ -366,7 +373,7 @@ public class InvoiceServicePostTests
         );
 
         var mapper = new Mock<IMapper>();
-        var service = new InvoiceService(context, mapper.Object);
+        var service = new InvoiceService(context, mapper.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var invoice = await service.ProcessCheckoutAsync(
             orderId: 1,

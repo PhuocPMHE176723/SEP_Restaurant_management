@@ -9,6 +9,25 @@ public static class DbInitializer
 {
     public static async Task Initialize(IServiceProvider serviceProvider)
     {
+        var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
+
+        // Sync migration history if tables already exist
+        await context.Database.ExecuteSqlRawAsync(@"
+            IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+            BEGIN
+                CREATE TABLE [__EFMigrationsHistory] (
+                    [MigrationId] nvarchar(150) NOT NULL,
+                    [ProductVersion] nvarchar(32) NOT NULL,
+                    CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+                );
+            END;
+
+            IF NOT EXISTS(SELECT * FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260526160901_FixDB')
+            BEGIN
+                INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+                VALUES ('20260526160901_FixDB', '8.0.0');
+            END;
+        ");
 
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();

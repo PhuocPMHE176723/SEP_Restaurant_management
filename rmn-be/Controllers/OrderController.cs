@@ -8,6 +8,7 @@ using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Exceptions;
 using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace SEP_Restaurant_management.Controllers;
 
@@ -17,10 +18,12 @@ namespace SEP_Restaurant_management.Controllers;
 public class OrderController : BaseController
 {
     private readonly SepDatabaseContext _context;
+    private readonly INotificationService _notificationService;
 
-    public OrderController(SepDatabaseContext context)
+    public OrderController(SepDatabaseContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
@@ -372,6 +375,19 @@ public class OrderController : BaseController
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            try
+            {
+                var tableCodes = string.Join(", ", tables.Select(t => t.TableCode));
+                await _notificationService.CreateNotificationAsync(
+                    title: "Khách nhận bàn (Walk-in)",
+                    message: $"Khách vãng lai đã nhận bàn {tableCodes}.",
+                    type: "CHECKIN",
+                    role: "Staff",
+                    relatedId: order.OrderCode
+                );
+            }
+            catch { }
 
             return Success(
                 new { order.OrderId, order.OrderCode },

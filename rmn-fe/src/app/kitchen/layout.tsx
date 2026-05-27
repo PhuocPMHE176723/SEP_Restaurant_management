@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../../components/NotificationBell/NotificationBell";
 import styles from "../manager/manager.module.css";
 
 const KITCHEN_NAV = [
@@ -118,6 +119,9 @@ export default function KitchenLayout({
               <span style={{ fontSize: "1.2rem", marginRight: "0.5rem" }}>←</span> 
               Về trang chủ
             </Link>
+          </div>
+          <div className={styles.topbarRight}>
+            <NotificationBell />
           </div>
         </header>
 
