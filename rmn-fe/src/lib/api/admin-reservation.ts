@@ -72,4 +72,16 @@ export const adminReservationApi = {
 
         return handleResponse<{ orderId?: number | null }>(res);
     },
+    async cancelReservation(reservationId: number, body: { reason: string; detail: string }) {
+        const res = await fetch(`${apiBaseUrl}/api/AdminReservation/${reservationId}/cancel`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+        });
+
+        return handleResponse(res);
+    },
 };
+
+
+

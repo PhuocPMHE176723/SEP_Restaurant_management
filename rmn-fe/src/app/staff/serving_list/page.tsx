@@ -16,7 +16,8 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Undo2
+  Undo2,
+  Package
 } from "lucide-react";
 
 export default function ServingListPage() {
@@ -27,6 +28,7 @@ export default function ServingListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [reassignTargetOrderId, setReassignTargetOrderId] = useState<number | null>(null);
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"READY" | "PROCESSED">("PROCESSED");
 
   useEffect(() => {
     fetchServingList();
@@ -120,15 +122,47 @@ export default function ServingListPage() {
     }
   };
 
-  const filteredServingList = useMemo(() => {
-    const keyword = searchTerm.trim().toLowerCase();
-    if (!keyword) return servingList;
+  // Tính toán số lượng của từng nhóm phục vụ cho hiển thị Badge trên Tab
+  const tabCounts = useMemo(() => {
+    const ready = servingList.filter(item => item.itemType === "READY").length;
+    const cook = servingList.filter(item => item.itemType !== "READY").length;
+    return { ready, cook };
+  }, [servingList]);
 
-    return servingList.filter(item =>
+  // Bộ lọc danh sách dựa theo Tab đang chọn và từ khóa tìm kiếm
+  const filteredServingList = useMemo(() => {
+    let list = servingList.filter(item => {
+      if (activeTab === "READY") {
+        return item.itemType === "READY";
+      } else {
+        return item.itemType !== "READY";
+      }
+    });
+
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return list;
+
+    return list.filter(item =>
       item.itemName.toLowerCase().includes(keyword) ||
       (item.unit || "").toLowerCase().includes(keyword)
     );
-  }, [servingList, searchTerm]);
+  }, [servingList, activeTab, searchTerm]);
+
+  // Khi thay đổi Tab, tự động chọn món ăn đầu tiên của tab đó để tránh trống màn hình điều phối
+  const handleTabChange = (tab: "READY" | "PROCESSED") => {
+    setActiveTab(tab);
+    const firstItemInTab = servingList.find(item => 
+      tab === "READY" ? item.itemType === "READY" : item.itemType !== "READY"
+    );
+    if (firstItemInTab) {
+      setSelectedItem(firstItemInTab);
+      setTables(firstItemInTab.itemId === selectedItem?.itemId ? tables : []);
+    } else {
+      setSelectedItem(null);
+      setTables([]);
+    }
+  };
+  
 
   const formatLastUpdated = (value?: string | null) => {
     if (!value) return "Chưa cập nhật";
@@ -241,6 +275,91 @@ export default function ServingListPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {/* THANH ĐIỀU HƯỚNG TABS: ĐỒ SẴN VS ĐỒ PHẢI NẤU */}
+          <div 
+            style={{ 
+              display: "flex", 
+              background: "#f1f5f9", 
+              padding: "0.25rem", 
+              borderRadius: "1rem", 
+              gap: "0.25rem",
+              marginBottom: "1rem"
+            }}
+          >
+            {/* TAB: ĐỒ SẴN */}
+            <button
+              onClick={() => handleTabChange("READY")}
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                fontWeight: 800,
+                fontSize: "0.95rem",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                background: activeTab === "READY" ? "#fff" : "transparent",
+                color: activeTab === "READY" ? "#fb7a2a" : "#64748b",
+                boxShadow: activeTab === "READY" ? "0 4px 12px rgba(0, 0, 0, 0.05)" : "none"
+              }}
+            >
+              <Package size={18} />
+              <span>Đồ sẵn</span>
+              <span 
+                style={{ 
+                  fontSize: "0.75rem", 
+                  background: activeTab === "READY" ? "#ffedd5" : "#e2e8f0", 
+                  color: activeTab === "READY" ? "#ea580c" : "#475569", 
+                  padding: "0.15rem 0.45rem", 
+                  borderRadius: "999px",
+                  fontWeight: 900
+                }}
+              >
+                {tabCounts.ready}
+              </span>
+            </button>
+
+            {/* TAB: ĐỒ PHẢI NẤU */}
+            <button
+              onClick={() => handleTabChange("PROCESSED")}
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                fontWeight: 800,
+                fontSize: "0.95rem",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                background: activeTab === "PROCESSED" ? "#fff" : "transparent",
+                color: activeTab === "PROCESSED" ? "#fb7a2a" : "#64748b",
+                boxShadow: activeTab === "PROCESSED" ? "0 4px 12px rgba(0, 0, 0, 0.05)" : "none"
+              }}
+            >
+              <ChefHat size={18} />
+              <span>Đồ phải nấu</span>
+              <span 
+                style={{ 
+                  fontSize: "0.75rem", 
+                  background: activeTab === "PROCESSED" ? "#ffedd5" : "#e2e8f0", 
+                  color: activeTab === "PROCESSED" ? "#ea580c" : "#475569", 
+                  padding: "0.15rem 0.45rem", 
+                  borderRadius: "999px",
+                  fontWeight: 900
+                }}
+              >
+                {tabCounts.cook}
+              </span>
+            </button>
+          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", overflowY: "auto", paddingRight: "0.25rem" }}>
             {filteredServingList.length === 0 ? (
@@ -332,7 +451,7 @@ export default function ServingListPage() {
                               width: "fit-content",
                             }}
                           >
-                            🧊 Đồ sẵn
+                            Đồ sẵn
                           </div>
 
                           {/* STOCK */}
@@ -428,6 +547,23 @@ export default function ServingListPage() {
                       >
                         {item.itemName}
                       </div>
+                      {/* BADGE */}
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.4rem",
+                              background: "#fef4db",
+                              color: "#eb5325",
+                              borderRadius: "999px",
+                              padding: "0.3rem 0.7rem",
+                              fontSize: "0.8rem",
+                              fontWeight: 700,
+                              width: "fit-content",
+                            }}
+                          >
+                            Đồ nóng
+                          </div>
                       <div
                         style={{
                           marginTop: "0.4rem",
