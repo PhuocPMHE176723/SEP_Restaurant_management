@@ -164,7 +164,7 @@ public class ReservationServicePostTests
         await SeedCustomerAsync(context, customerId: 1, fullName: "Alice", phone: "091");
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var dto = await service.CreateReservationAsync(
             1,
@@ -195,7 +195,7 @@ public class ReservationServicePostTests
         await using var context = CreateContext(dbName);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ex = await Assert.ThrowsAsync<Exception>(() =>
             service.CreateReservationAsync(
@@ -238,7 +238,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var dto = await service.CreateReservationAsync(
             1,
@@ -270,7 +270,7 @@ public class ReservationServicePostTests
         await SeedCustomerAsync(context, customerId: 1);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var dto = await service.CreateReservationAsync(
             1,
@@ -304,7 +304,7 @@ public class ReservationServicePostTests
         await SeedCustomerAsync(context, customerId: 1, fullName: null, phone: null);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var dto = await service.CreateReservationAsync(
             1,
@@ -340,7 +340,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelReservationAsync(reservationId: 1, customerId: 1);
 
@@ -365,7 +365,7 @@ public class ReservationServicePostTests
         await using var context = CreateContext(dbName);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelReservationAsync(reservationId: 999, customerId: 1);
 
@@ -392,7 +392,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelReservationAsync(reservationId: 1, customerId: 1);
 
@@ -419,7 +419,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelReservationAsync(reservationId: 1, customerId: 1);
 
@@ -450,7 +450,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelReservationAsync(reservationId: 1, customerId: 1);
 
@@ -483,7 +483,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelUnpaidReservationAsync(reservationId: 1);
 
@@ -504,7 +504,7 @@ public class ReservationServicePostTests
         await using var context = CreateContext(dbName);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelUnpaidReservationAsync(reservationId: 999);
 
@@ -530,7 +530,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelUnpaidReservationAsync(reservationId: 1);
 
@@ -560,7 +560,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelUnpaidReservationAsync(reservationId: 1);
 
@@ -599,7 +599,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.CancelUnpaidReservationAsync(reservationId: 1);
 
@@ -646,7 +646,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
@@ -680,7 +680,7 @@ public class ReservationServicePostTests
         await using var context = CreateContext(dbName);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var orderId = await service.UpdateReservationStatusAsync(id: 1, status: "XYZ");
 
@@ -709,7 +709,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var orderId = await service.UpdateReservationStatusAsync(
             id: 999,
@@ -739,7 +739,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
@@ -783,7 +783,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var orderId = await service.UpdateReservationStatusAsync(
             id: 1,
@@ -845,7 +845,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.UpdateReservationItemsAsync(
             reservationId: 1,
@@ -879,7 +879,7 @@ public class ReservationServicePostTests
         await using var context = CreateContext(dbName);
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.UpdateReservationItemsAsync(
             reservationId: 999,
@@ -912,7 +912,7 @@ public class ReservationServicePostTests
         );
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.UpdateReservationItemsAsync(
             reservationId: 1,
@@ -955,7 +955,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.UpdateReservationItemsAsync(
             reservationId: 1,
@@ -1022,7 +1022,7 @@ public class ReservationServicePostTests
         await context.SaveChangesAsync();
 
         var mapperMock = CreateMapperMock();
-        var service = new ReservationService(context, mapperMock.Object);
+        var service = new ReservationService(context, mapperMock.Object, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var ok = await service.UpdateReservationItemsAsync(
             reservationId: 1,

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../NotificationBell/NotificationBell";
 import styles from "./Header.module.css";
 
 export default function Header() {
@@ -165,6 +166,11 @@ export default function Header() {
                   Cổng Quản trị
                 </Link>
               )}
+
+              {/* Notification Bell */}
+              <div style={{ marginRight: "1rem", display: "flex", alignItems: "center" }}>
+                <NotificationBell />
+              </div>
 
               {/* Avatar trigger */}
               <button

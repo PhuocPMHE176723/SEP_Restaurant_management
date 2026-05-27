@@ -12,8 +12,8 @@ using SEP_Restaurant_management.Core.Models;
 namespace rmn_be.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    [Migration("20260520070023_AddStockToMenuItem")]
-    partial class AddStockToMenuItem
+    [Migration("20260526160901_FixDB")]
+    partial class FixDB
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

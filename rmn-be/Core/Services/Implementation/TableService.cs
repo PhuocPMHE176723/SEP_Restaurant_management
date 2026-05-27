@@ -1,17 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using rmn_be.Core.DTOs;
 using rmn_be.Core.Services.Interface;
 using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace rmn_be.Core.Services.Implementation
 {
     public class TableService : ITableService
     {
         private readonly SepDatabaseContext _context;
-        public TableService(SepDatabaseContext context)
+        private readonly INotificationService _notificationService;
+        public TableService(SepDatabaseContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
         private static DateTime GetAssignmentBlockEnd(DateTime reservedAt)
         {
@@ -367,6 +370,20 @@ namespace rmn_be.Core.Services.Implementation
             reservation.Status = "CHECKED_IN";
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                var tableNamesStr = string.Join(", ", tables.Select(t => t.TableCode));
+                await _notificationService.CreateNotificationAsync(
+                    title: "Khách nhận bàn (Check-in)",
+                    message: $"Khách hàng {reservation.CustomerName} đã nhận bàn {tableNamesStr}.",
+                    type: "CHECKIN",
+                    userId: reservation.CustomerId?.ToString(),
+                    role: "Staff",
+                    relatedId: reservation.ReservationId.ToString()
+                );
+            }
+            catch { }
 
             return order.OrderId;
         }

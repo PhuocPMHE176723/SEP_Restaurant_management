@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace SEP_Restaurant_management.Core.Services.Implementation;
 
@@ -13,11 +14,13 @@ public class InvoiceService
 {
     private readonly SepDatabaseContext _context;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
 
-    public InvoiceService(SepDatabaseContext context, IMapper mapper)
+    public InvoiceService(SepDatabaseContext context, IMapper mapper, INotificationService notificationService)
     {
         _context = context;
         _mapper = mapper;
+        _notificationService = notificationService;
     }
 
     public async Task<InvoicePreviewDTO> PreCalculateInvoiceAsync(
@@ -288,7 +291,30 @@ public class InvoiceService
     }
 
     await _context.SaveChangesAsync();
-        return invoice;
+
+    try
+    {
+        var tableCodes = order.OrderTables != null 
+            ? string.Join(", ", order.OrderTables.Select(ot => ot.DiningTable?.TableCode).Where(c => c != null)) 
+            : "";
+        if (string.IsNullOrEmpty(tableCodes) && order.TableId.HasValue)
+        {
+            var table = await _context.DiningTables.FindAsync(order.TableId.Value);
+            if (table != null) tableCodes = table.TableCode;
+        }
+
+        await _notificationService.CreateNotificationAsync(
+            title: "Thanh toán thành công",
+            message: $"Hóa đơn {invoice.InvoiceCode} (bàn {tableCodes}) đã thanh toán thành công {invoice.TotalAmount:N0} VNĐ.",
+            type: "PAYMENT",
+            userId: invoice.CustomerId?.ToString(),
+            role: "Staff",
+            relatedId: invoice.InvoiceCode
+        );
+    }
+    catch { }
+
+    return invoice;
     }
 
     private async Task<decimal> GetDecimalConfigAsync(string key, decimal defaultValue)

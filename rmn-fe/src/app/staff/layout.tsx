@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../../components/NotificationBell/NotificationBell";
 import styles from "../manager/manager.module.css";
 
 const NAV_ITEMS = [
@@ -156,6 +157,9 @@ export default function StaffLayout({
               </span>
               Về trang chủ
             </Link>
+          </div>
+          <div className={styles.topbarRight}>
+            <NotificationBell />
           </div>
         </header>
 

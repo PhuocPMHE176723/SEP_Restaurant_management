@@ -94,6 +94,12 @@ builder.Services.AddScoped<
     SEP_Restaurant_management.Core.Services.Implementation.PromotionService
 >();
 
+// Notification Service
+builder.Services.AddScoped<
+    SEP_Restaurant_management.Core.Services.Interface.INotificationService,
+    SEP_Restaurant_management.Core.Services.Implementation.NotificationService
+>();
+
 // Background Cleanup Service
 builder.Services.AddScoped<
     SEP_Restaurant_management.Core.Services.Interface.ICleanupService,
