@@ -1,0 +1,253 @@
+.cancel-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.cancel-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.cancel-modal-header-top {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cancel-modal-icon {
+  font-size: 24px;
+  color: #f59e0b;
+}
+
+.cancel-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cancel-modal-subtitle {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Thông tin khách hàng */
+.cancel-info-box {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.cancel-info-top {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.cancel-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.cancel-customer-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cancel-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Form */
+.cancel-form-group {
+  margin-bottom: 16px;
+}
+
+.cancel-form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.cancel-select, .cancel-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.cancel-error {
+  border-color: #ef4444;
+}
+
+.cancel-error-text {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Footer & Buttons */
+.cancel-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cancel-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cancel-btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.cancel-btn:hover {
+  opacity: 0.9;
+}
+
+/* Container chung cho confirm step */
+.confirm-step {
+  padding: 40px 32px 32px !important;
+  text-align: center;
+  position: relative;
+}
+
+.close-x-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+/* Icon cảnh báo tròn */
+.confirm-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.confirm-icon-inner {
+  width: 64px;
+  height: 64px;
+  background-color: #fef2f2;
+  border: 4px solid #fee2e2;
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.cancel-confirm-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.cancel-confirm-desc {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Card tóm tắt lý do */
+.confirm-summary-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 32px;
+}
+
+.summary-label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.summary-reason {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.summary-detail {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Footer nút bấm */
+.cancel-modal-footer-centered {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cancel-btn-outline {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.cancel-btn-outline:hover {
+  background: #f1f5f9;
+}
+
+.cancel-btn-danger-solid {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+}
+
+.cancel-btn-danger-solid:hover {
+  background: #dc2626;
+}

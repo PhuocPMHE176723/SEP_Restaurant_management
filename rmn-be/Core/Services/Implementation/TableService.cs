@@ -317,8 +317,8 @@ namespace rmn_be.Core.Services.Implementation
 
             var earliestCheckInTime = reservation.ReservedAt.AddMinutes(-30);
 
-            if (now < earliestCheckInTime)
-                throw new Exception("Chỉ được check-in sớm hơn giờ đặt tối đa 30 phút");
+            //if (now < earliestCheckInTime)
+            //    throw new Exception("Chỉ được check-in sớm hơn giờ đặt tối đa 30 phút");
 
             var order = await _context.Orders
                 .Include(o => o.OrderTables)
@@ -340,8 +340,8 @@ namespace rmn_be.Core.Services.Implementation
 
             if (unavailableTables.Any())
             {
-                reservation.Status = "WAITING";
-                await _context.SaveChangesAsync();
+                //reservation.Status = "WAITING";
+                //await _context.SaveChangesAsync();
 
                 var tableNames = string.Join(", ", unavailableTables.Select(t => t.TableCode));
 
