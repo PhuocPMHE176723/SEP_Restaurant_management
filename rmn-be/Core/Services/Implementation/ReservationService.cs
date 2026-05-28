@@ -222,11 +222,18 @@ public class ReservationService : IReservationService
 
             try
             {
+                string? customerUserId = null;
+                if (reservation.CustomerId.HasValue)
+                {
+                    var dbCustomer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                    customerUserId = dbCustomer?.UserId;
+                }
+
                 await _notificationService.CreateNotificationAsync(
                     title: "Đơn đặt bàn mới",
                     message: $"Khách hàng {reservation.CustomerName} đã đặt bàn ({reservation.PartySize} người) lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm}.",
                     type: "RESERVATION",
-                    userId: reservation.CustomerId?.ToString(),
+                    userId: customerUserId,
                     role: "Staff",
                     relatedId: reservation.ReservationId.ToString()
                 );
@@ -380,11 +387,18 @@ public class ReservationService : IReservationService
 
         try
         {
+            string? customerUserId = null;
+            if (customerId > 0)
+            {
+                var customer = await _context.Customers.FindAsync(customerId);
+                customerUserId = customer?.UserId;
+            }
+
             await _notificationService.CreateNotificationAsync(
                 title: "Hủy đặt bàn",
                 message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} của bạn đã được HỦY thành công.",
                 type: "RESERVATION",
-                userId: customerId.ToString(),
+                userId: customerUserId,
                 relatedId: reservation.ReservationId.ToString()
             );
 
@@ -441,11 +455,18 @@ public class ReservationService : IReservationService
 
         try
         {
+            string? customerUserId = null;
+            if (reservation.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                customerUserId = customer?.UserId;
+            }
+
             await _notificationService.CreateNotificationAsync(
                 title: "Hủy đặt bàn tự động",
                 message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} đã tự động hủy do quá thời gian thanh toán cọc.",
                 type: "RESERVATION",
-                userId: reservation.CustomerId.ToString(),
+                userId: customerUserId,
                 relatedId: reservation.ReservationId.ToString()
             );
 
@@ -702,13 +723,20 @@ public class ReservationService : IReservationService
                 _ => status.ToLower()
             };
 
+            string? customerUserId = null;
             if (reservation.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                customerUserId = customer?.UserId;
+            }
+
+            if (!string.IsNullOrEmpty(customerUserId))
             {
                 await _notificationService.CreateNotificationAsync(
                     title: "Cập nhật đơn đặt bàn",
                     message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} của bạn {vnStatus}.",
                     type: "RESERVATION",
-                    userId: reservation.CustomerId.Value.ToString(),
+                    userId: customerUserId,
                     relatedId: reservation.ReservationId.ToString()
                 );
             }

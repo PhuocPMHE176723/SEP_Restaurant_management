@@ -16,7 +16,7 @@
 }
 
 .invoicePrint {
-  display: none !important;
+  display: none;
 }
 
 @media print {

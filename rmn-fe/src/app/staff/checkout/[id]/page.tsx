@@ -348,10 +348,10 @@ export default function CheckoutPage() {
             NHÀ HÀNG G26
           </h2>
           <p style={{ margin: "2px 0", fontSize: "12px" }}>
-            Địa chỉ: 123 Đường ABC, Quận XYZ, TP. HCM
+            Địa chỉ: Đầu đường Học viện Tài Chính, Thôn 3, Xã Thạch Hòa, Thạch Thất, Hà Nội
           </p>
           <p style={{ margin: "2px 0", fontSize: "12px" }}>
-            Số điện thoại: 0123 456 789
+            Số điện thoại: 0337256732
           </p>
           <div
             style={{

@@ -269,7 +269,7 @@ export default function StaffReservationsPage() {
         confirmButtonColor: "var(--brand-primary)",
       });
 
-      router.push(`/staff/orders/${result.orderId}`);
+      router.push(`/staff/orders?orderId=${result.orderId}`);
     } catch (error) {
       await fetchReservations();
 

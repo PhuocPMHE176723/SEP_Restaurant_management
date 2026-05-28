@@ -373,12 +373,19 @@ namespace rmn_be.Core.Services.Implementation
 
             try
             {
+                string? customerUserId = null;
+                if (reservation.CustomerId.HasValue)
+                {
+                    var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                    customerUserId = customer?.UserId;
+                }
+
                 var tableNamesStr = string.Join(", ", tables.Select(t => t.TableCode));
                 await _notificationService.CreateNotificationAsync(
                     title: "Khách nhận bàn (Check-in)",
                     message: $"Khách hàng {reservation.CustomerName} đã nhận bàn {tableNamesStr}.",
                     type: "CHECKIN",
-                    userId: reservation.CustomerId?.ToString(),
+                    userId: customerUserId,
                     role: "Staff",
                     relatedId: reservation.ReservationId.ToString()
                 );

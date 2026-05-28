@@ -294,6 +294,13 @@ public class InvoiceService
 
     try
     {
+        string? customerUserId = null;
+        if (invoice.CustomerId.HasValue)
+        {
+            var customer = await _context.Customers.FindAsync(invoice.CustomerId.Value);
+            customerUserId = customer?.UserId;
+        }
+
         var tableCodes = order.OrderTables != null 
             ? string.Join(", ", order.OrderTables.Select(ot => ot.DiningTable?.TableCode).Where(c => c != null)) 
             : "";
@@ -307,7 +314,7 @@ public class InvoiceService
             title: "Thanh toán thành công",
             message: $"Hóa đơn {invoice.InvoiceCode} (bàn {tableCodes}) đã thanh toán thành công {invoice.TotalAmount:N0} VNĐ.",
             type: "PAYMENT",
-            userId: invoice.CustomerId?.ToString(),
+            userId: customerUserId,
             role: "Staff",
             relatedId: invoice.InvoiceCode
         );

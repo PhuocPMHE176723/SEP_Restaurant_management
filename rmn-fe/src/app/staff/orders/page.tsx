@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Swal from "sweetalert2";
 import { orderApi, OrderResponse } from "../../../lib/api/order";
 import Pagination from "../../../components/Pagination";
 import OrderDetailModal from "../../../components/OrderDetailModal";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "../../manager/manager.module.css";
 
-export default function StaffOrdersPage() {
+function StaffOrdersContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,14 @@ export default function StaffOrdersPage() {
   const [itemsPerPage] = useState(8);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const orderIdParam = searchParams.get("orderId");
+    if (orderIdParam) {
+      setSelectedOrderId(parseInt(orderIdParam));
+      setIsModalOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchOrders();
@@ -359,5 +368,13 @@ export default function StaffOrdersPage() {
         filterStatus={statusFilter}
       />
     </div>
+  );
+}
+
+export default function StaffOrdersPage() {
+  return (
+    <Suspense fallback={<div className={styles.spinner} />}>
+      <StaffOrdersContent />
+    </Suspense>
   );
 }

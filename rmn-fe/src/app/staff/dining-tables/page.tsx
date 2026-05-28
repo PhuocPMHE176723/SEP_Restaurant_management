@@ -201,79 +201,55 @@ export default function StaffTablesPage() {
         </div>
       </div>
 
-      {cleanupInfo && (
+      <div
+        className={styles.card}
+        style={{
+          marginBottom: "1.5rem",
+          padding: "1.25rem 1.5rem",
+          background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+          borderLeft: "5px solid #3b82f6",
+          borderRadius: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          boxShadow: "0 4px 15px rgba(59, 130, 246, 0.08)",
+        }}
+      >
         <div
-          className={styles.card}
-          style={{ marginBottom: "1.5rem", padding: "1.5rem 1.75rem" }}
+          style={{
+            background: "#3b82f6",
+            color: "#fff",
+            borderRadius: "50%",
+            width: "36px",
+            height: "36px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+          }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "1rem",
-            }}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <h3 style={{ margin: 0 }}>Khung giờ dọn dẹp & nhắc khách</h3>
-            <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
-              Cập nhật: {formatTime(cleanupInfo.generatedAt)}
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gap: "1rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
-            {cleanupInfo.windows.map((w) => (
-              <div key={w.label} className={styles.statCard}>
-                <div className={styles.statLabel}>{w.label}</div>
-                <div className={styles.statValue}>
-                  {formatTime(w.start)} - {formatTime(w.end)}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: "1.5rem" }}>
-            <h4 style={{ marginBottom: "0.75rem" }}>Bàn cần nhắc</h4>
-            {cleanupInfo.reminders.length === 0 ? (
-              <div className={styles.emptyState}>Chưa có bàn cần nhắc.</div>
-            ) : (
-              <div style={{ display: "grid", gap: "0.75rem" }}>
-                {cleanupInfo.reminders.map((r: TableReminderResponse) => (
-                  <div key={r.tableId} className={styles.tableCard}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <strong>{r.tableCode}</strong>
-                        {r.tableName ? ` · ${r.tableName}` : ""}
-                      </div>
-                      <span className={styles.statusBadge}>
-                        {r.priority === 2 ? "Ưu tiên" : "Nhắc sớm"}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: "0.35rem", color: "#64748b" }}>
-                      {r.reason} · {r.minutesOccupied} phút
-                    </div>
-                    <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
-                      Gợi ý: “Dạ em xin phép thông báo sắp đến giờ dọn dẹp quán,
-                      anh/chị vui lòng dùng xong giúp em nhé ạ.”
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
         </div>
-      )}
+        <div>
+          <h4 style={{ margin: "0 0 0.25rem 0", color: "#1e3a8a", fontWeight: 600 }}>Thông báo dọn dẹp & nhắc khách</h4>
+          <p style={{ margin: 0, color: "#1e40af", fontSize: "0.9rem", lineHeight: "1.4" }}>
+            Lịch dọn dẹp định kỳ (Trưa: 14:00 - 15:00, Tối: 21:30 - 23:00) và danh sách nhắc nhở khách hàng dùng bữa quá hạn sẽ được hệ thống tự động gửi qua <strong>chuông thông báo</strong> (ở góc trên bên phải màn hình). Vui lòng theo dõi để kịp thời phục vụ.
+          </p>
+        </div>
+      </div>
 
       <div
         className={styles.filterBar}
