@@ -45,31 +45,56 @@ public class NotificationService : INotificationService
 
     public async Task<List<Notification>> GetNotificationsForUserAsync(string? userId, List<string> roles)
     {
-        var queryRoles = roles != null ? new List<string>(roles) : new List<string>();
-        if (queryRoles.Any(r => r == "Staff" || r == "Manager" || r == "Cashier" || r == "Warehouse" || r == "Kitchen"))
+        if (string.IsNullOrEmpty(userId))
         {
-            if (!queryRoles.Contains("Staff")) queryRoles.Add("Staff");
-            if (!queryRoles.Contains("Manager")) queryRoles.Add("Manager");
-            if (!queryRoles.Contains("Cashier")) queryRoles.Add("Cashier");
+            return new List<Notification>();
         }
+
+        var queryRoles = roles != null 
+            ? roles.Select(r => r.Trim()).ToList() 
+            : new List<string>();
+
+        bool isManager = queryRoles.Any(r => string.Equals(r, "Manager", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
+        bool isStaff = queryRoles.Any(r => string.Equals(r, "Staff", StringComparison.OrdinalIgnoreCase));
+        bool isCashier = queryRoles.Any(r => string.Equals(r, "Cashier", StringComparison.OrdinalIgnoreCase));
+
+        var allowedTypes = new List<string>();
+        if (isManager)
+        {
+            allowedTypes.Add("CHECKIN");
+            allowedTypes.Add("PAYMENT");
+            allowedTypes.Add("RESERVATION");
+            allowedTypes.Add("CLEANUP");
+            allowedTypes.Add("SYSTEM");
+        }
+        else if (isStaff || isCashier)
+        {
+            allowedTypes.Add("CHECKIN");
+            allowedTypes.Add("PAYMENT");
+            allowedTypes.Add("RESERVATION");
+            allowedTypes.Add("SYSTEM");
+        }
+
+        bool hasStaffRole = isStaff || isManager || isCashier || 
+                            queryRoles.Any(r => string.Equals(r, "Kitchen", StringComparison.OrdinalIgnoreCase)) ||
+                            queryRoles.Any(r => string.Equals(r, "Warehouse", StringComparison.OrdinalIgnoreCase));
 
         var query = _context.Notifications.AsQueryable();
 
-        if (!string.IsNullOrEmpty(userId) && queryRoles.Any())
+        if (hasStaffRole)
         {
-            query = query.Where(n => n.UserId == userId || queryRoles.Contains(n.Role!) || (n.UserId == null && n.Role == null));
-        }
-        else if (!string.IsNullOrEmpty(userId))
-        {
-            query = query.Where(n => n.UserId == userId || (n.UserId == null && n.Role == null));
-        }
-        else if (queryRoles.Any())
-        {
-            query = query.Where(n => queryRoles.Contains(n.Role!) || (n.UserId == null && n.Role == null));
+            query = query.Where(n => 
+                n.UserId == userId || 
+                (n.UserId == null && (
+                    (n.Role != null && queryRoles.Contains(n.Role)) ||
+                    (n.Role == "Staff" && allowedTypes.Contains(n.Type)) ||
+                    (n.Role == null && n.Type == "SYSTEM")
+                ))
+            );
         }
         else
         {
-            query = query.Where(n => n.UserId == null && n.Role == null);
+            query = query.Where(n => n.UserId == userId);
         }
 
         return await query.OrderByDescending(n => n.CreatedAt).Take(50).ToListAsync();
@@ -87,31 +112,56 @@ public class NotificationService : INotificationService
 
     public async Task<bool> MarkAllAsReadForUserAsync(string? userId, List<string> roles)
     {
-        var queryRoles = roles != null ? new List<string>(roles) : new List<string>();
-        if (queryRoles.Any(r => r == "Staff" || r == "Manager" || r == "Cashier" || r == "Warehouse" || r == "Kitchen"))
+        if (string.IsNullOrEmpty(userId))
         {
-            if (!queryRoles.Contains("Staff")) queryRoles.Add("Staff");
-            if (!queryRoles.Contains("Manager")) queryRoles.Add("Manager");
-            if (!queryRoles.Contains("Cashier")) queryRoles.Add("Cashier");
+            return false;
         }
+
+        var queryRoles = roles != null 
+            ? roles.Select(r => r.Trim()).ToList() 
+            : new List<string>();
+
+        bool isManager = queryRoles.Any(r => string.Equals(r, "Manager", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
+        bool isStaff = queryRoles.Any(r => string.Equals(r, "Staff", StringComparison.OrdinalIgnoreCase));
+        bool isCashier = queryRoles.Any(r => string.Equals(r, "Cashier", StringComparison.OrdinalIgnoreCase));
+
+        var allowedTypes = new List<string>();
+        if (isManager)
+        {
+            allowedTypes.Add("CHECKIN");
+            allowedTypes.Add("PAYMENT");
+            allowedTypes.Add("RESERVATION");
+            allowedTypes.Add("CLEANUP");
+            allowedTypes.Add("SYSTEM");
+        }
+        else if (isStaff || isCashier)
+        {
+            allowedTypes.Add("CHECKIN");
+            allowedTypes.Add("PAYMENT");
+            allowedTypes.Add("RESERVATION");
+            allowedTypes.Add("SYSTEM");
+        }
+
+        bool hasStaffRole = isStaff || isManager || isCashier || 
+                            queryRoles.Any(r => string.Equals(r, "Kitchen", StringComparison.OrdinalIgnoreCase)) ||
+                            queryRoles.Any(r => string.Equals(r, "Warehouse", StringComparison.OrdinalIgnoreCase));
 
         var query = _context.Notifications.Where(n => !n.IsRead);
 
-        if (!string.IsNullOrEmpty(userId) && queryRoles.Any())
+        if (hasStaffRole)
         {
-            query = query.Where(n => n.UserId == userId || queryRoles.Contains(n.Role!) || (n.UserId == null && n.Role == null));
-        }
-        else if (!string.IsNullOrEmpty(userId))
-        {
-            query = query.Where(n => n.UserId == userId || (n.UserId == null && n.Role == null));
-        }
-        else if (queryRoles.Any())
-        {
-            query = query.Where(n => queryRoles.Contains(n.Role!) || (n.UserId == null && n.Role == null));
+            query = query.Where(n => 
+                n.UserId == userId || 
+                (n.UserId == null && (
+                    (n.Role != null && queryRoles.Contains(n.Role)) ||
+                    (n.Role == "Staff" && allowedTypes.Contains(n.Type)) ||
+                    (n.Role == null && n.Type == "SYSTEM")
+                ))
+            );
         }
         else
         {
-            query = query.Where(n => n.UserId == null && n.Role == null);
+            query = query.Where(n => n.UserId == userId);
         }
 
         var unreadNotifications = await query.ToListAsync();
