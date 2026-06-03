@@ -3,6 +3,7 @@ name: Build and deploy ASP.Net Core app to Azure Web App - AutoFeed-API
 on:
   push:
     branches:
+      - master
       - main
   workflow_dispatch:
 
@@ -21,13 +22,13 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore AutoFeed_Backend/AutoFeed_Backend.sln
+        run: dotnet restore rmn-be/rmn-be.sln
 
       - name: Build with dotnet
-        run: dotnet build AutoFeed_Backend/AutoFeed_Backend.sln --configuration Release --no-restore
+        run: dotnet build rmn-be/rmn-be.sln --configuration Release --no-restore
 
       - name: dotnet publish
-        run: dotnet publish AutoFeed_Backend/AutoFeed_Backend/AutoFeed_Backend.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish rmn-be/rmn-be.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
