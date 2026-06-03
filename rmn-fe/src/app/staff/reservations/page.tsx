@@ -9,6 +9,8 @@ import styles from "../../manager/manager.module.css";
 import { useRouter } from "next/navigation";
 import AssignTablesModal from "../../../components/AssignTablesModal/AssignTablesModal";
 import ViewAssignTablesModal from "../../../components/ViewAssignTablesModal/ViewAssignTablesModal";
+import CancelModel from "../../../components/CancelModel/CancelModel";
+import { showSuccess, showError } from "@/lib/ui/alerts";
 import {
   tableReservationApi,
   type ReservationAssignTablesResponse,
@@ -50,6 +52,41 @@ export default function StaffReservationsPage() {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
+  // Modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
+
+  // OPEN MODAL
+  const handleOpenCancelModal = (reservation: any) => {
+    setSelectedReservation(reservation);
+    setCancelModalOpen(true);
+  };
+
+  // CONFIRM CANCEL
+  const handleConfirmCancel = async (data: {
+    reason: string;
+    detail: string;
+  }) => {
+    if (!selectedReservation) return;
+
+    try {
+      await adminReservationApi.cancelReservation(
+        selectedReservation.reservationId,
+        {
+          reason: data.reason,
+          detail: data.detail,
+        }
+      );
+
+      showSuccess("Đã huỷ đơn đặt bàn");
+
+      // reload list
+      await fetchReservations();
+    } catch (error) {
+      console.error(error);
+      showError("Không thể huỷ đơn");
+    }
+  };
   useEffect(() => {
     fetchReservations();
   }, [startDate, endDate]);
@@ -232,7 +269,7 @@ export default function StaffReservationsPage() {
         confirmButtonColor: "var(--brand-primary)",
       });
 
-      router.push(`/staff/orders/${result.orderId}`);
+      router.push(`/staff/orders?orderId=${result.orderId}`);
     } catch (error) {
       await fetchReservations();
 
@@ -279,6 +316,23 @@ export default function StaffReservationsPage() {
     }
   };
 
+  const formatNote = (status: string, note: string | null) => {
+  if (!note) return "-";
+  
+  // Nếu trạng thái là CANCELLED (Đã hủy), thực hiện lọc
+  if (status === "CANCELLED") {
+    const keyword = "Lý do:";
+    const index = note.indexOf(keyword);
+    
+    if (index !== -1) {
+      // Cắt lấy từ phần "Lý do:" trở đi
+      return note.substring(index).trim();
+    }
+  }
+  
+  // Các trạng thái khác hoặc note không chứa từ khóa thì hiển thị bình thường
+  return note;
+};
   const requestSort = (key: keyof ReservationResponse) => {
     let direction: "asc" | "desc" = "asc";
     if (
@@ -507,6 +561,7 @@ export default function StaffReservationsPage() {
                       0;
                     const hasAssignedTable = assignedTableCount > 0;
 
+
                     return (
                       <tr key={reservation.reservationId}>
                         <td>#{reservation.reservationId}</td>
@@ -556,7 +611,9 @@ export default function StaffReservationsPage() {
                                     : reservation.status}
                           </span>
                         </td>
-                        <td>{reservation.note || "-"}</td>
+                        <td style={{ fontSize: '0.85rem', whiteSpace: 'pre-line' }}>
+                          {formatNote(reservation.status, reservation.note ?? null)}
+                        </td>
                         <td>
                           <div className={styles.actionButtons}>
                             {reservation.status === "PENDING" && (
@@ -576,12 +633,7 @@ export default function StaffReservationsPage() {
                               reservation.status === "CONFIRMED") && (
                                 <button
                                   className={styles.btnDanger}
-                                  onClick={() =>
-                                    handleStatusUpdate(
-                                      reservation.reservationId,
-                                      "CANCELLED",
-                                    )
-                                  }
+                                  onClick={() => handleOpenCancelModal(reservation)}
                                 >
                                   Hủy
                                 </button>
@@ -650,6 +702,16 @@ export default function StaffReservationsPage() {
               setViewAssignedModalOpen(false);
               setAssignData(null);
             }}
+          />
+
+          <CancelModel
+            open={cancelModalOpen}
+            reservation={selectedReservation}
+            onClose={() => {
+              setCancelModalOpen(false);
+              setSelectedReservation(null);
+            }}
+            onConfirm={handleConfirmCancel}
           />
           {totalPages > 1 && (
             <div style={{ marginTop: "1rem" }}>

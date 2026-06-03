@@ -12,8 +12,8 @@ using SEP_Restaurant_management.Core.Models;
 namespace rmn_be.Migrations
 {
     [DbContext(typeof(SepDatabaseContext))]
-    [Migration("20260518201842_AddData")]
-    partial class AddData
+    [Migration("20260530015857_RefundUpdate")]
+    partial class RefundUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -765,6 +765,9 @@ namespace rmn_be.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
                     b.Property<string>("Thumbnail")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -831,6 +834,60 @@ namespace rmn_be.Migrations
                     b.HasIndex("ItemId");
 
                     b.ToTable("MenuItemPrices", (string)null);
+                });
+
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Notification", b =>
+                {
+                    b.Property<long>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RelatedId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Role")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("SYSTEM");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Order", b =>
@@ -1210,12 +1267,30 @@ namespace rmn_be.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("IsRefund")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Note")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("PartySize")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("RefundByStaffId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Refund_note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Refund_proof_url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("ReservedAt")
                         .HasColumnType("datetime2");
@@ -1246,6 +1321,8 @@ namespace rmn_be.Migrations
                     b.HasIndex("CreatedByStaffId");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("RefundByStaffId");
 
                     b.ToTable("Reservations", (string)null);
                 });
@@ -1787,6 +1864,16 @@ namespace rmn_be.Migrations
                     b.Navigation("MenuItem");
                 });
 
+            modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Notification", b =>
+                {
+                    b.HasOne("SEP_Restaurant_management.Core.Models.UserIdentity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.Order", b =>
                 {
                     b.HasOne("SEP_Restaurant_management.Core.Models.Staff", "CreatedByStaff")
@@ -1956,9 +2043,15 @@ namespace rmn_be.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("FK_Reservations_Customers");
 
+                    b.HasOne("SEP_Restaurant_management.Core.Models.Staff", "RefundByStaff")
+                        .WithMany()
+                        .HasForeignKey("RefundByStaffId");
+
                     b.Navigation("CreatedByStaff");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("RefundByStaff");
                 });
 
             modelBuilder.Entity("SEP_Restaurant_management.Core.Models.ReservationTable", b =>

@@ -93,16 +93,6 @@ public class ReservationController : BaseController
 
             var customerId = await GetCustomerIdAsync();
 
-            // Check if phone is verified
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null || !user.IsPhoneVerified)
-            {
-                return Failure(
-                    "Bạn cần xác minh số điện thoại để đặt bàn. Vui lòng cập nhật hồ sơ và xác minh OTP."
-                );
-            }
-
             // Validate reservation date is within 7 days
             // Frontend sends local time string (e.g., "2026-03-11T13:45:00")
             // ASP.NET parses it as Unspecified Kind, treat it as local time

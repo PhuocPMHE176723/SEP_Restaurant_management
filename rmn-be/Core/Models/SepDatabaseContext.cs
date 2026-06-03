@@ -23,6 +23,7 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
     public virtual DbSet<CustomerPointsLedger> CustomerPointsLedgers { get; set; }
     public virtual DbSet<DiscountCode> DiscountCodes { get; set; }
     public virtual DbSet<SystemConfig> SystemConfigs { get; set; }
+    public virtual DbSet<Notification> Notifications { get; set; }
 
     // ── Reservation ────────────────────────────────────────
     public virtual DbSet<Reservation> Reservations { get; set; }
@@ -182,6 +183,26 @@ public partial class SepDatabaseContext : IdentityDbContext<UserIdentity>
         {
             entity.ToTable("SystemConfigs");
             entity.HasKey(e => e.ConfigKey);
+        });
+
+        // ── Notifications ──────────────────────────────────
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("Notifications");
+            entity.HasKey(e => e.NotificationId);
+            entity.Property(e => e.NotificationId).UseIdentityColumn();
+            entity.Property(e => e.Title).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Message).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Type).HasMaxLength(50).IsRequired().HasDefaultValue("SYSTEM");
+            entity.Property(e => e.IsRead).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(e => e.RelatedId).HasMaxLength(100);
+
+            entity
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── Reservations ───────────────────────────────────

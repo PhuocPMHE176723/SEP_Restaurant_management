@@ -134,10 +134,10 @@ function CashierOrdersContent() {
         return s === "SERVED" || s === "CANCELLED";
       })
     ) {
-      return { text: "Đã phục vụ", class: styles.statusServed };
+      return { text: "Đang phục vụ", class: styles.statusServed };
     }
 
-    return { text: "Đang xử lý", class: styles.statusOpen };
+    return { text: "Đang phục vụ", class: styles.statusOpen };
   };
 
   const formatCurrency = (amount: number) => {

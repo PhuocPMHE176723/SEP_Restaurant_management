@@ -17,64 +17,6 @@ namespace rmn_be.Core.Services.Implementation
             _unitOfWork = unitOfWork;
         }
 
-        //public async Task<List<ServingItemDTO>> GetServingListAsync()
-        //{
-        //    var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
-        //    var menuItemRepo = _unitOfWork.GetRepository<MenuItem>();
-        //    var orderRepo = _unitOfWork.GetRepository<Order>();
-
-        //    var today = DateTime.Today;
-        //    var tomorrow = today.AddDays(1);
-
-        //    var readyItems = (
-        //        await orderItemRepo.FindAsync(x =>
-        //            x.Status == "READY_SERVE" && x.CreatedAt >= today && x.CreatedAt < tomorrow
-        //        )
-        //    ).ToList();
-
-        //    if (!readyItems.Any())
-        //        return new List<ServingItemDTO>();
-
-        //    var itemIds = readyItems.Select(x => x.ItemId).Distinct().ToList();
-        //    var orderIds = readyItems.Select(x => x.OrderId).Distinct().ToList();
-
-        //    var menuItems = (await menuItemRepo.GetAllAsync())
-        //        .Where(x => itemIds.Contains(x.ItemId))
-        //        .ToDictionary(x => x.ItemId, x => x);
-
-        //    var orders = (await orderRepo.GetAllAsync())
-        //        .Where(x => orderIds.Contains(x.OrderId))
-        //        .ToDictionary(x => x.OrderId, x => x);
-
-        //    var result = readyItems
-        //        .Where(x => menuItems.ContainsKey(x.ItemId))
-        //        .GroupBy(x => x.ItemId)
-        //        .Select(g =>
-        //        {
-        //            var menuItem = menuItems[g.Key];
-        //            var waitingTableCount = g.Where(x => orders.ContainsKey(x.OrderId))
-        //                .Select(x => x.OrderId)
-        //                .Distinct()
-        //                .Count();
-
-        //            return new ServingItemDTO
-        //            {
-        //                ItemId = menuItem.ItemId,
-        //                ItemName = menuItem.ItemName,
-        //                Thumbnail = menuItem.Thumbnail,
-        //                Unit = menuItem.Unit,
-        //                ItemType = menuItem.ItemType,
-        //                ReadyQuantity = g.Sum(x => x.Quantity),
-        //                WaitingTableCount = waitingTableCount,
-        //            };
-        //        })
-        //        .OrderByDescending(x => x.ReadyQuantity)
-        //        .ThenBy(x => x.ItemName)
-        //        .ToList();
-
-        //    return result;
-        //}
-
         public async Task<List<ServingItemDTO>> GetServingListAsync()
         {
             var orderItemRepo = _unitOfWork.GetRepository<OrderItem>();
@@ -362,12 +304,14 @@ namespace rmn_be.Core.Services.Implementation
             return true;
         }
 
-        private static async Task<bool> ServeFromReadyItemsAsync(
-            IGenericRepository<OrderItem> orderItemRepo,
-            List<OrderItem> readyItems,
-            int quantity
-        )
+        private async Task<bool> ServeFromReadyItemsAsync(
+    IGenericRepository<OrderItem> orderItemRepo,
+    List<OrderItem> readyItems,
+    int quantity
+)
         {
+            var itemRepo = _unitOfWork.GetRepository<MenuItem>();
+
             var remain = quantity;
 
             foreach (var item in readyItems.OrderBy(x => x.CreatedAt))
@@ -375,33 +319,48 @@ namespace rmn_be.Core.Services.Implementation
                 if (remain <= 0)
                     break;
 
+                var serveQty = Math.Min(item.Quantity, remain);
+
+                // deduct stock
+                var menuItem = await itemRepo.GetByIdAsync(item.ItemId);
+
+                if (menuItem?.ItemType == "READY")
+                {
+                    if (menuItem.Stock < serveQty)
+                        return false;
+
+                    menuItem.Stock -= serveQty;
+                    itemRepo.Update(menuItem);
+                }
+
                 if (item.Quantity <= remain)
                 {
                     item.Status = "SERVED";
                     orderItemRepo.Update(item);
+
                     remain -= item.Quantity;
-                    continue;
                 }
+                else
+                {
+                    item.Quantity -= remain;
+                    orderItemRepo.Update(item);
 
-                // Partial serve: split into (remaining READY_SERVE) + (new SERVED)
-                item.Quantity -= remain;
-                orderItemRepo.Update(item);
+                    await orderItemRepo.AddAsync(
+                        new OrderItem
+                        {
+                            OrderId = item.OrderId,
+                            ItemId = item.ItemId,
+                            Quantity = remain,
+                            UnitPrice = item.UnitPrice,
+                            ItemNameSnapshot = item.ItemNameSnapshot,
+                            Note = item.Note,
+                            Status = "SERVED",
+                            CreatedAt = item.CreatedAt,
+                        }
+                    );
 
-                await orderItemRepo.AddAsync(
-                    new OrderItem
-                    {
-                        OrderId = item.OrderId,
-                        ItemId = item.ItemId,
-                        Quantity = remain,
-                        UnitPrice = item.UnitPrice,
-                        ItemNameSnapshot = item.ItemNameSnapshot,
-                        Note = item.Note,
-                        Status = "SERVED",
-                        CreatedAt = item.CreatedAt,
-                    }
-                );
-
-                remain = 0;
+                    remain = 0;
+                }
             }
 
             return remain == 0;

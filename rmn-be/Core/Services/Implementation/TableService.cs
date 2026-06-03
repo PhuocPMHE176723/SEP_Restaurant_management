@@ -1,17 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using rmn_be.Core.DTOs;
 using rmn_be.Core.Services.Interface;
 using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
+using SEP_Restaurant_management.Core.Services.Interface;
 
 namespace rmn_be.Core.Services.Implementation
 {
     public class TableService : ITableService
     {
         private readonly SepDatabaseContext _context;
-        public TableService(SepDatabaseContext context)
+        private readonly INotificationService _notificationService;
+        public TableService(SepDatabaseContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
         private static DateTime GetAssignmentBlockEnd(DateTime reservedAt)
         {
@@ -317,8 +320,8 @@ namespace rmn_be.Core.Services.Implementation
 
             var earliestCheckInTime = reservation.ReservedAt.AddMinutes(-30);
 
-            if (now < earliestCheckInTime)
-                throw new Exception("Chỉ được check-in sớm hơn giờ đặt tối đa 30 phút");
+            //if (now < earliestCheckInTime)
+            //    throw new Exception("Chỉ được check-in sớm hơn giờ đặt tối đa 30 phút");
 
             var order = await _context.Orders
                 .Include(o => o.OrderTables)
@@ -340,8 +343,8 @@ namespace rmn_be.Core.Services.Implementation
 
             if (unavailableTables.Any())
             {
-                reservation.Status = "WAITING";
-                await _context.SaveChangesAsync();
+                //reservation.Status = "WAITING";
+                //await _context.SaveChangesAsync();
 
                 var tableNames = string.Join(", ", unavailableTables.Select(t => t.TableCode));
 
@@ -367,6 +370,26 @@ namespace rmn_be.Core.Services.Implementation
             reservation.Status = "CHECKED_IN";
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                string? customerUserId = null;
+                if (reservation.CustomerId.HasValue)
+                {
+                    var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                    customerUserId = customer?.UserId;
+                }
+
+                var tableNamesStr = string.Join(", ", tables.Select(t => t.TableCode));
+                await _notificationService.CreateNotificationAsync(
+                    title: "Khách nhận bàn (Check-in)",
+                    message: $"Khách hàng {reservation.CustomerName} đã nhận bàn {tableNamesStr}.",
+                    type: "CHECKIN",
+                    role: "Staff",
+                    relatedId: reservation.ReservationId.ToString()
+                );
+            }
+            catch { }
 
             return order.OrderId;
         }

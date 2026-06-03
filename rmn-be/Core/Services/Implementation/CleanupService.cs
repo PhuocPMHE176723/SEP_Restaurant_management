@@ -11,10 +11,12 @@ namespace SEP_Restaurant_management.Core.Services.Implementation;
 public class CleanupService : ICleanupService
 {
     private readonly SepDatabaseContext _context;
+    private readonly INotificationService _notificationService;
 
-    public CleanupService(SepDatabaseContext context)
+    public CleanupService(SepDatabaseContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task<(int ordersCancelled, int reservationsCleared, int tablesReleased)> DoDailyCleanupAsync()
@@ -100,6 +102,21 @@ public class CleanupService : ICleanupService
         }
 
         await _context.SaveChangesAsync();
+
+        try
+        {
+            if (ordersCancelled > 0 || reservationsCleared > 0 || tablesReleased > 0)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    title: "Dọn dẹp bàn & đặt chỗ",
+                    message: $"Dọn dẹp hoàn tất: Hủy {ordersCancelled} đơn quá hạn, xử lý {reservationsCleared} đơn đặt bàn trễ, giải phóng {tablesReleased} bàn.",
+                    type: "CLEANUP",
+                    role: "Staff"
+                );
+            }
+        }
+        catch { }
+
         return (ordersCancelled, reservationsCleared, tablesReleased);
     }
 

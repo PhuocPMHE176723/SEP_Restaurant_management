@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../NotificationBell/NotificationBell";
 import styles from "./Header.module.css";
 
 export default function Header() {
@@ -166,6 +167,11 @@ export default function Header() {
                 </Link>
               )}
 
+              {/* Notification Bell */}
+              <div style={{ marginRight: "1rem", display: "flex", alignItems: "center" }}>
+                <NotificationBell />
+              </div>
+
               {/* Avatar trigger */}
               <button
                 id="user-menu-trigger"
@@ -279,25 +285,7 @@ export default function Header() {
                         </svg>
                         Lịch sử đặt bàn
                       </Link>
-                      <Link
-                        href="/current-order"
-                        className={styles.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 3h18l-2 13H5L3 3z" />
-                          <path d="M16 16a2 2 0 1 1-4 0" />
-                          <path d="M8 16a2 2 0 1 1-4 0" />
-                        </svg>
-                        Đơn hiện tại
-                      </Link>
+                      
                     </>
                   )}
                   {isManager && (

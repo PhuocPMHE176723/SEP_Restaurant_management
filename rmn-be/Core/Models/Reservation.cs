@@ -59,4 +59,17 @@ public class Reservation
     public bool IsDepositPaid { get; set; } = false;
     
     public DateTime? DepositPaidAt { get; set; }
+    //Refund
+    public bool IsRefund {  get; set; } = false;
+    public decimal RefundAmount { get; set; }
+
+    [MaxLength(500)]
+    public string Refund_proof_url { get; set; }
+    public long? RefundByStaffId {  get; set; }
+
+    [ForeignKey(nameof(RefundByStaffId))]
+    public virtual Staff? RefundByStaff { get; set; }
+
+    [MaxLength(500)]
+    public string? Refund_note { get; set; }
 }

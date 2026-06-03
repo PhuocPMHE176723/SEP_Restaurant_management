@@ -16,6 +16,7 @@ public class ReservationService : IReservationService
 {
     private readonly SepDatabaseContext _context;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
 
     private static bool IsMissingPhone(string? phone)
     {
@@ -81,10 +82,11 @@ public class ReservationService : IReservationService
         }
     }
 
-    public ReservationService(SepDatabaseContext context, IMapper mapper)
+    public ReservationService(SepDatabaseContext context, IMapper mapper, INotificationService notificationService)
     {
         _context = context;
         _mapper = mapper;
+        _notificationService = notificationService;
     }
 
     public async Task<ReservationDTO> CreateReservationAsync(
@@ -217,6 +219,26 @@ public class ReservationService : IReservationService
             reservation.DepositAmount = Math.Max(minDeposit, totalOrderAmount * 0.2m);
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                string? customerUserId = null;
+                if (reservation.CustomerId.HasValue)
+                {
+                    var dbCustomer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                    customerUserId = dbCustomer?.UserId;
+                }
+
+                await _notificationService.CreateNotificationAsync(
+                    title: "Đơn đặt bàn mới",
+                    message: $"Khách hàng {reservation.CustomerName} đã đặt bàn ({reservation.PartySize} người) lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm}.",
+                    type: "RESERVATION",
+                    role: "Staff",
+                    relatedId: reservation.ReservationId.ToString()
+                );
+            }
+            catch { }
+
             return _mapper.Map<ReservationDTO>(reservation);
         }
         catch (Exception ex)
@@ -361,6 +383,34 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
+
+        try
+        {
+            string? customerUserId = null;
+            if (customerId > 0)
+            {
+                var customer = await _context.Customers.FindAsync(customerId);
+                customerUserId = customer?.UserId;
+            }
+
+            await _notificationService.CreateNotificationAsync(
+                title: "Hủy đặt bàn",
+                message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} của bạn đã được HỦY thành công.",
+                type: "RESERVATION",
+                userId: customerUserId,
+                relatedId: reservation.ReservationId.ToString()
+            );
+
+            await _notificationService.CreateNotificationAsync(
+                title: "Hủy đặt bàn",
+                message: $"Khách hàng {reservation.CustomerName} đã HỦY đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm}.",
+                type: "RESERVATION",
+                role: "Staff",
+                relatedId: reservation.ReservationId.ToString()
+            );
+        }
+        catch { }
+
         return true;
     }
 
@@ -401,6 +451,34 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
+
+        try
+        {
+            string? customerUserId = null;
+            if (reservation.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                customerUserId = customer?.UserId;
+            }
+
+            await _notificationService.CreateNotificationAsync(
+                title: "Hủy đặt bàn tự động",
+                message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} đã tự động hủy do quá thời gian thanh toán cọc.",
+                type: "RESERVATION",
+                userId: customerUserId,
+                relatedId: reservation.ReservationId.ToString()
+            );
+
+            await _notificationService.CreateNotificationAsync(
+                title: "Hủy đặt bàn tự động",
+                message: $"Đơn đặt bàn của {reservation.CustomerName} lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} tự động hủy (quá hạn cọc).",
+                type: "RESERVATION",
+                role: "Staff",
+                relatedId: reservation.ReservationId.ToString()
+            );
+        }
+        catch { }
+
         return true;
     }
 
@@ -630,6 +708,47 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
+
+        try
+        {
+            string vnStatus = status.ToUpper() switch
+            {
+                "PENDING" => "chờ xác nhận",
+                "CONFIRMED" => "đã xác nhận",
+                "CANCELLED" => "đã hủy",
+                "CHECKED_IN" => "đã nhận bàn",
+                "COMPLETED" => "đã hoàn thành",
+                "NO_SHOW" => "không đến (no-show)",
+                _ => status.ToLower()
+            };
+
+            string? customerUserId = null;
+            if (reservation.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                customerUserId = customer?.UserId;
+            }
+
+            if (!string.IsNullOrEmpty(customerUserId))
+            {
+                await _notificationService.CreateNotificationAsync(
+                    title: "Cập nhật đơn đặt bàn",
+                    message: $"Đơn đặt bàn lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} của bạn {vnStatus}.",
+                    type: "RESERVATION",
+                    userId: customerUserId,
+                    relatedId: reservation.ReservationId.ToString()
+                );
+            }
+
+            await _notificationService.CreateNotificationAsync(
+                title: "Cập nhật đơn đặt bàn",
+                message: $"Đơn đặt bàn của {reservation.CustomerName} lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm} chuyển sang {vnStatus}.",
+                type: "RESERVATION",
+                role: "Staff",
+                relatedId: reservation.ReservationId.ToString()
+            );
+        }
+        catch { }
 
         // Only return order id for CHECKED_IN (used by FE redirect to checkout)
         return status.ToUpper() == "CHECKED_IN" ? (order?.OrderId ?? 0) : 0;

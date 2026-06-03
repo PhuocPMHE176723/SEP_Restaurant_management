@@ -169,7 +169,7 @@ export default function KitchenPage() {
               <div>
                 <label className={styles.label}>Ca</label>
                 <div style={{ display: "flex", gap: "0.25rem" }}>
-                  
+
                   <button
                     className={styles.btnPrimary}
                     onClick={() => setSelectedShift("morning")}
@@ -199,17 +199,7 @@ export default function KitchenPage() {
                 />
               </div>
             </div>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedDate(new Date().toISOString().split("T")[0]);
-                setSelectedShift("all");
-              }}
-              style={{ background: "#f1f5f9", color: "#475569", boxShadow: "none" }}
-            >
-              <RotateCcw size={16} /> Đặt lại
-            </button>
+
           </div>
         </div>
       </div>
@@ -224,14 +214,40 @@ export default function KitchenPage() {
               borderBottom: "2px solid #e2e8f0",
               fontWeight: 700,
               // Tùy chỉnh lại lưới Grid: 5 cột (giảm từ 7 cột)
-              gridTemplateColumns: "minmax(250px, 2.5fr) 100px minmax(210px, 2fr) minmax(210px, 2fr) minmax(120px, 1fr)",
+              gridTemplateColumns: "minmax(250px, 2.5fr) minmax(210px, 2fr) minmax(210px, 2fr) minmax(210px, 2fr) ",
               gap: "1rem",
             }}
           >
             <div>Thông tin món</div>
-            <div style={{ textAlign: "center" }}>Số lượng đặt trước</div>
-            <div style={{ textAlign: "center" }}>Số lượng cần nấu</div>
-            <div style={{ textAlign: "center" }}>Số lượng sẵn sàng</div>
+            {/* Cột 1 */}
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#1e3a8a", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                <span>📅 ĐẶT TRƯỚC (LỊCH HẸN)</span>
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 400, marginTop: "2px", textTransform: "none" }}>
+                Khách đặt bàn hẹn sẵn
+              </div>
+            </div>
+
+            {/* Cột 2 */}
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#c2410c", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                <span className="animate-pulse">🔥 CẦN NẤU NGAY (TẠI BÀN)</span>
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#ea580c", fontWeight: 500, marginTop: "2px", textTransform: "none" }}>
+                Khách đang đợi tại bàn ăn
+              </div>
+            </div>
+
+            {/* Cột 3 */}
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#0f766e", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                <span>🍽️ SẴN SÀNG LÊN MÓN</span>
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: 500, marginTop: "2px", textTransform: "none" }}>
+                Bếp đã nấu xong, bưng ngay
+              </div>
+            </div>
           </div>
 
           {filteredCookingList.length === 0 ? (
@@ -252,7 +268,7 @@ export default function KitchenPage() {
                   className={styles.historyItem}
                   style={{
                     // Áp dụng chung Grid với Header
-                    gridTemplateColumns: "minmax(250px, 2.5fr) 100px minmax(210px, 2fr) minmax(210px, 2fr) minmax(120px, 1fr)",
+                    gridTemplateColumns: "minmax(250px, 2.5fr) minmax(210px, 2fr) minmax(210px, 2fr) minmax(210px, 2fr) ",
                     gap: "1rem",
                     alignItems: "center",
                   }}
@@ -317,7 +333,7 @@ export default function KitchenPage() {
                       style={{
                         fontSize: "2.25rem",
                         fontWeight: 900,
-                        color: "#0f172a",
+                        color: "#1e3a8a",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -326,12 +342,14 @@ export default function KitchenPage() {
                           style={{
                             fontSize: "2.25rem",
                             fontWeight: 900,
-                            color: "#0f172a",
+                            color: "#1e3a8a",
                           }}
                         >
-                          {item.checkedInPreOrderQuantity}/{item.totalPreOrderQuantity}
+                          {item.totalPreOrderQuantity}
                         </div>
-
+                        <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "4px", fontWeight: 500 }}>
+                          Khách đã đến: {item.checkedInPreOrderQuantity}
+                        </div>
                         {item.preOrderDetails?.length > 0 && (
                           <>
                             <button
@@ -394,7 +412,7 @@ export default function KitchenPage() {
                       style={{
                         fontSize: "2.25rem", // Tăng size một chút cho nổi bật
                         fontWeight: 900,
-                        color: "#059669",
+                        color: "#c2410c",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -408,7 +426,7 @@ export default function KitchenPage() {
                       style={{
                         fontSize: "2.25rem",
                         fontWeight: 900,
-                        color: "#3b82f6",
+                        color: "#0f766e",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >

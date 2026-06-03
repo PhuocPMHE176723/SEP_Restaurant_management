@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace rmn_be.Migrations
 {
     /// <inheritdoc />
-    public partial class AddData : Migration
+    public partial class FixDB : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -424,6 +424,7 @@ namespace rmn_be.Migrations
                     Thumbnail = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     ItemType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Stock = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
                 },
                 constraints: table =>

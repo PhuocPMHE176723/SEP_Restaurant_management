@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../../components/NotificationBell/NotificationBell";
 import styles from "./manager.module.css";
 
 const NAV_ITEMS = [
@@ -92,6 +93,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <Link href="/" className={styles.backHome}>← Về trang chủ</Link>
                     </div>
                     <div className={styles.topbarRight}>
+                        <div style={{ marginRight: "1rem", display: "flex", alignItems: "center" }}>
+                            <NotificationBell />
+                        </div>
                         <span className={styles.topbarUser}>{user.fullName}</span>
                     </div>
                 </header>

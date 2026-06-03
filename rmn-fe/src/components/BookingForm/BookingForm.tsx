@@ -25,7 +25,7 @@ function generateTimeSlots(): string[] {
   const slots: string[] = [];
   // Lunch: 11:00 - 14:00
   for (let h = 11; h <= 14; h++) {
-    for (let m = 0; m < 60; m += 15) {
+    for (let m = 0; m < 60; m += 30) {
       if (h === 14 && m > 0) break;
       slots.push(
         `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
@@ -34,7 +34,7 @@ function generateTimeSlots(): string[] {
   }
   // Dinner: 17:00 - 21:30
   for (let h = 17; h <= 21; h++) {
-    for (let m = 0; m < 60; m += 15) {
+    for (let m = 0; m < 60; m += 30) {
       if (h === 21 && m > 30) break;
       slots.push(
         `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
@@ -129,6 +129,7 @@ function pickTablesFromAvailability(
   return picked;
 }
 
+
 export default function BookingForm() {
   const { user, isLoggedIn } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -194,6 +195,7 @@ export default function BookingForm() {
       [capacity]: Math.max(0, prev[capacity] + delta),
     }));
   };
+
   useEffect(() => {
     setMounted(true);
     getSepayConfig()
@@ -292,6 +294,11 @@ export default function BookingForm() {
     return Math.max(1, initialPlan.totalTables || 1);
   });
   const [tableCountTouched, setTableCountTouched] = useState(false);
+  const actualTableCount =
+    bookingMode === "table"
+      ? selectedTableCount
+      : suggestedTables;
+
 
   useEffect(() => {
     if (!tableCountTouched) setTableCount(suggestedTables);
@@ -345,7 +352,11 @@ export default function BookingForm() {
       const newMap = new Map(prev);
       if (!newMap.has(itemId)) {
         // Clamp quantity to something reasonable (max tables for 100 people is ~25)
-        const initialQty = Math.min(tableCount, 50);
+        // const initialQty = Math.min(tableCount, 50);
+        const initialQty = Math.min(
+          actualTableCount || 1,
+          50,
+        );
         console.log(
           `[BookingForm] Adding MenuItem ${itemId} with quantity ${initialQty} (tableCount: ${tableCount})`,
         );
@@ -354,7 +365,22 @@ export default function BookingForm() {
       return newMap;
     });
   }
+  useEffect(() => {
+  if (selectedItems.size === 0) return;
 
+  setSelectedItems((prev) => {
+    const updated = new Map(prev);
+
+    updated.forEach((_, itemId) => {
+      updated.set(
+        itemId,
+        Math.min(actualTableCount || 1, 50),
+      );
+    });
+
+    return updated;
+  });
+}, [actualTableCount]);
   function updateQuantity(itemId: number, quantity: number) {
     if (quantity <= 0) {
       setSelectedItems((prev) => {
@@ -502,7 +528,16 @@ export default function BookingForm() {
       console.log(`[BookingForm] Calculated _totalAmount: ${_totalAmount}`);
 
       if (sepayConfig?.account) {
-        const depositAmount = Math.max(2000, Math.round(_totalAmount * 0.2)); // Min 200k or 20%
+        const tableBasedDeposit =
+          actualTableCount * 2000;
+
+        const foodBasedDeposit =
+          Math.round(_totalAmount * 0.2);
+
+        const depositAmount = Math.max(
+          tableBasedDeposit,
+          foodBasedDeposit
+        );
         console.log(`[BookingForm] Calculated depositAmount: ${depositAmount}`);
         setQrAmount(depositAmount);
         setCurrentReservationId(result.reservationId);
@@ -1304,7 +1339,7 @@ export default function BookingForm() {
                       }}
                     >
                       {Math.max(
-                        2000,
+                        actualTableCount * 2000,
                         Math.round(totalAmount * 0.2),
                       ).toLocaleString("vi-VN")}{" "}
                       đ

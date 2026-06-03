@@ -1,4 +1,5 @@
 using System;
+using Moq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.Middlewares;
@@ -34,7 +35,7 @@ public class CleanupServicePostTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var context = CreateContext(dbName);
-        var service = new CleanupService(context);
+        var service = new CleanupService(context, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var today = DateTimeHelper.VietnamNow().Date;
 
@@ -83,7 +84,7 @@ public class CleanupServicePostTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var context = CreateContext(dbName);
-        var service = new CleanupService(context);
+        var service = new CleanupService(context, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var today = DateTimeHelper.VietnamNow().Date;
 
@@ -139,7 +140,7 @@ public class CleanupServicePostTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var context = CreateContext(dbName);
-        var service = new CleanupService(context);
+        var service = new CleanupService(context, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         context.DiningTables.Add(
             new DiningTable
@@ -172,7 +173,7 @@ public class CleanupServicePostTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var context = CreateContext(dbName);
-        var service = new CleanupService(context);
+        var service = new CleanupService(context, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var today = DateTimeHelper.VietnamNow().Date;
 
@@ -221,7 +222,7 @@ public class CleanupServicePostTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var context = CreateContext(dbName);
-        var service = new CleanupService(context);
+        var service = new CleanupService(context, new Mock<SEP_Restaurant_management.Core.Services.Interface.INotificationService>().Object);
 
         var today = DateTimeHelper.VietnamNow().Date;
 
