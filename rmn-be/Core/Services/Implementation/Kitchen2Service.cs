@@ -1,4 +1,4 @@
-﻿using rmn_be.Core.DTOs;
+using rmn_be.Core.DTOs;
 using rmn_be.Core.Services.Interface;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Repositories.Interface;
@@ -115,7 +115,7 @@ namespace rmn_be.Core.Services.Implementation
 
                     foreach (var orderItem in relatedItems)
                     {
-                        if (orderItem.MenuItem.ItemType != "PROCESSED") continue;
+                        if (menuItems[orderItem.ItemId].ItemType != "PROCESSED") continue;
                         var order = orders[orderItem.OrderId];
 
                         bool isPreOrder = order.ReservationId.HasValue;
