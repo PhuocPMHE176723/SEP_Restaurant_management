@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using SEP_Restaurant_management.Core.DTOs;
@@ -307,10 +308,46 @@ public class AuthService : IAuthService
     {
         const string role = "Customer"; // 👉 FIX CỨNG ROLE
 
+        // 1. Kiểm tra và dọn dẹp trùng Email (cho phép đăng ký lại nếu chưa xác thực)
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            return (false, new List<string> { "Email is already registered." });
+            if (!existingUser.EmailConfirmed)
+            {
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.UserId == existingUser.Id);
+                if (customer != null)
+                {
+                    _context.Customers.Remove(customer);
+                    await _context.SaveChangesAsync();
+                }
+                await _userManager.DeleteAsync(existingUser);
+            }
+            else
+            {
+                return (false, new List<string> { "Email đã được đăng ký bởi tài khoản khác." });
+            }
+        }
+
+        // 2. Kiểm tra và dọn dẹp trùng Số điện thoại
+        if (!string.IsNullOrEmpty(request.Phone))
+        {
+            var duplicateCustomer = await _context.Customers
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.Phone == request.Phone);
+
+            if (duplicateCustomer != null)
+            {
+                if (duplicateCustomer.User != null && !duplicateCustomer.User.EmailConfirmed)
+                {
+                    _context.Customers.Remove(duplicateCustomer);
+                    await _context.SaveChangesAsync();
+                    await _userManager.DeleteAsync(duplicateCustomer.User);
+                }
+                else
+                {
+                    return (false, new List<string> { "Số điện thoại đã được đăng ký bởi tài khoản khác." });
+                }
+            }
         }
 
         var roleExists = await _roleManager.RoleExistsAsync(role);
@@ -335,45 +372,58 @@ public class AuthService : IAuthService
             return (false, createResult.Errors.Select(e => e.Description).ToList());
         }
 
-        var addRoleResult = await _userManager.AddToRoleAsync(user, role);
-        if (!addRoleResult.Succeeded)
+        try
         {
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+            if (!addRoleResult.Succeeded)
+            {
+                throw new Exception(string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+            }
+
+            // 👉 tạo Customer profile
+            var customer = new Customer
+            {
+                UserId = user.Id,
+                FullName = request.FullName,
+                Phone = request.Phone,
+                Email = request.Email,
+                TotalPoints = 0,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+
+            // 👉 tạo OTP
+            var otp = GenerateOtp();
+            _memoryCache.Set(GetOtpKey(request.Email), otp, TimeSpan.FromMinutes(5));
+
+            if (!string.IsNullOrWhiteSpace(request.Phone))
+            {
+                _memoryCache.Set(GetPhoneOtpKey(request.Phone), otp, TimeSpan.FromMinutes(5));
+                Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
+            }
+            else
+            {
+                Console.WriteLine($"[OTP for Email {request.Email}]: {otp}");
+            }
+
+            try
+            {
+                // 👉 gửi mail (vẫn giữ gửi mail để demo/debug)
+                await _emailService.SendEmailVerificationOtpAsync(request.Email, request.FullName, otp);
+            }
+            catch (Exception emailEx)
+            {
+                Console.WriteLine($"[Email Error] Failed to send registration OTP email: {emailEx.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Dọn dẹp user đã tạo trong AspNetUsers nếu có lỗi trong quá trình tiếp theo để tránh trạng thái không đồng nhất
             await _userManager.DeleteAsync(user);
-            return (false, addRoleResult.Errors.Select(e => e.Description).ToList());
+            return (false, new List<string> { $"Đăng ký thất bại: {ex.Message}" });
         }
-
-        // 👉 tạo Customer profile
-        var customer = new Customer
-        {
-            UserId = user.Id,
-            FullName = request.FullName,
-            Phone = request.Phone,
-            Email = request.Email,
-            TotalPoints = 0,
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        _context.Customers.Add(customer);
-        await _context.SaveChangesAsync();
-
-        // 👉 tạo OTP
-        var otp = GenerateOtp();
-        _memoryCache.Set(GetOtpKey(request.Email), otp, TimeSpan.FromMinutes(5));
-
-        if (!string.IsNullOrWhiteSpace(request.Phone))
-        {
-            _memoryCache.Set(GetPhoneOtpKey(request.Phone), otp, TimeSpan.FromMinutes(5));
-            // Ghi log OTP ra console để dễ test nếu không có SMS service
-            Console.WriteLine($"[OTP for {request.Phone}]: {otp}");
-        }
-        else
-        {
-            // Log for email only if no phone
-            Console.WriteLine($"[OTP for Email {request.Email}]: {otp}");
-        }
-
-        // 👉 gửi mail (vẫn giữ gửi mail để demo/debug)
-        await _emailService.SendEmailVerificationOtpAsync(request.Email, request.FullName, otp);
 
         return (true, new List<string>());
     }
