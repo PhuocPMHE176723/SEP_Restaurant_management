@@ -20,7 +20,7 @@ namespace rmn_be.Core.Services.Implementation
             var menuItemRepo = _unitOfWork.GetRepository<MenuItem>();
             var reservationRepo = _unitOfWork.GetRepository<Reservation>();
 
-            var date = targetDate ?? DateTime.Today;
+            var date = targetDate ?? DateTime.UtcNow.AddHours(7).Date;
 
             // 1. Lấy OrderItem (chỉ lọc status)
             var orderItems = (await orderItemRepo.FindAsync(x =>
@@ -53,7 +53,7 @@ namespace rmn_be.Core.Services.Implementation
                 .Where(x => reservationIds.Contains(x.ReservationId))
                 .ToDictionary(x => x.ReservationId, x => x);
 
-            // 5. FILTER ĐÚNG THEO DATE + SHIFT
+            // 5. FILTER ĐÚNG THEO DATE + SHIFT (Chuyển sang múi giờ Việt Nam UTC+7 trước khi so sánh)
             orderItems = orderItems.Where(oi =>
             {
                 if (!orders.TryGetValue(oi.OrderId, out var order))
@@ -69,20 +69,22 @@ namespace rmn_be.Core.Services.Implementation
                 }
                 else
                 {
-                    // Order thường → dùng Order.CreatedAt
+                    // Order thường → dùng Order.OpenedAt
                     referenceTime = order.OpenedAt;
                 }
 
+                var localTime = referenceTime.AddHours(7);
+
                 // Filter theo ngày
-                if (referenceTime.Date != date.Date)
+                if (localTime.Date != date.Date)
                     return false;
 
                 // Filter theo ca
                 if (shift == "morning")
-                    return referenceTime.Hour >= 1 && referenceTime.Hour < 14;
+                    return localTime.Hour < 14;
 
                 if (shift == "afternoon")
-                    return referenceTime.Hour >= 14 && referenceTime.Hour < 24;
+                    return localTime.Hour >= 14;
 
                 return true; // shift = all
             }).ToList();
@@ -363,14 +365,15 @@ namespace rmn_be.Core.Services.Implementation
             var orderRepo = _unitOfWork.GetRepository<Order>();
             var reservationRepo = _unitOfWork.GetRepository<Reservation>();
 
-            var today = DateTime.Today;
-            var tomorrow = today.AddDays(1);
+            var vnNow = DateTime.UtcNow.AddHours(7);
+            var utcTodayStart = vnNow.Date.AddHours(-7);
+            var utcTomorrowStart = utcTodayStart.AddDays(1);
 
             var pendingItems = (await orderItemRepo.FindAsync(x =>
                     x.ItemId == itemId &&
                     x.Status == "PENDING" &&
-                    x.CreatedAt >= today &&
-                    x.CreatedAt < tomorrow))
+                    x.CreatedAt >= utcTodayStart &&
+                    x.CreatedAt < utcTomorrowStart))
                 .OrderBy(x => x.CreatedAt)
                 .ToList();
 

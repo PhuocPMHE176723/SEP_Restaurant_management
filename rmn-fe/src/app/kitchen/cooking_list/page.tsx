@@ -222,7 +222,7 @@ export default function KitchenPage() {
             {/* Cột 1 */}
             <div style={{ textAlign: "center" }}>
               <div style={{ color: "#1e3a8a", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                <span>📅 ĐẶT TRƯỚC (LỊCH HẸN)</span>
+                <span>ĐẶT TRƯỚC (LỊCH HẸN)</span>
               </div>
               <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 400, marginTop: "2px", textTransform: "none" }}>
                 Khách đặt bàn hẹn sẵn
@@ -232,7 +232,7 @@ export default function KitchenPage() {
             {/* Cột 2 */}
             <div style={{ textAlign: "center" }}>
               <div style={{ color: "#c2410c", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                <span className="animate-pulse">🔥 CẦN NẤU NGAY (TẠI BÀN)</span>
+                <span className="animate-pulse">CẦN NẤU NGAY (TẠI BÀN)</span>
               </div>
               <div style={{ fontSize: "0.7rem", color: "#ea580c", fontWeight: 500, marginTop: "2px", textTransform: "none" }}>
                 Khách đang đợi tại bàn ăn
@@ -242,7 +242,7 @@ export default function KitchenPage() {
             {/* Cột 3 */}
             <div style={{ textAlign: "center" }}>
               <div style={{ color: "#0f766e", fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                <span>🍽️ SẴN SÀNG LÊN MÓN</span>
+                <span>SẴN SÀNG LÊN MÓN</span>
               </div>
               <div style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: 500, marginTop: "2px", textTransform: "none" }}>
                 Bếp đã nấu xong, bưng ngay
@@ -252,7 +252,6 @@ export default function KitchenPage() {
 
           {filteredCookingList.length === 0 ? (
             <div style={{ padding: "4rem", textAlign: "center", color: "#94a3b8" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>👨‍🍳</div>
               Không tìm thấy món nào phù hợp
             </div>
           ) : (
