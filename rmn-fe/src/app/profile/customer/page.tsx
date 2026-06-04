@@ -417,30 +417,7 @@ export default function CustomerProfilePage() {
                 </div>
 
                 <div className={styles.field}>
-                  <div className={styles.fieldLabelRow}>
-                    <label className={styles.fieldLabel}>Số điện thoại</label>
-                    <span
-                      className={`${styles.verificationBadge} ${
-                        profile?.isPhoneVerified
-                          ? styles.verifiedBadge
-                          : styles.unverifiedBadge
-                      }`}
-                    >
-                      {profile?.isPhoneVerified
-                        ? "Đã xác thực"
-                        : "Chưa xác thực"}
-                    </span>
-                    {!profile?.isPhoneVerified &&
-                      (formData.phone || profile?.phone) && (
-                        <button
-                          type="button"
-                          className={styles.verifyButton}
-                          onClick={handleRequestPhoneVerification}
-                        >
-                          Xác thực ngay
-                        </button>
-                      )}
-                  </div>
+                  <label className={styles.fieldLabel}>Số điện thoại</label>
                   <input
                     className={`${styles.underlineInput} ${
                       !isEditing ? styles.readOnlyInput : ""

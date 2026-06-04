@@ -36,13 +36,16 @@ export default function Header() {
     router.push("/login");
   }
 
-  const isManager = user?.roles.includes("Manager");
-  const isWarehouse = user?.roles.includes("Warehouse");
-  const isStaff = user?.roles.includes("Staff");
-  const isKitchen = user?.roles.includes("Kitchen");
-  const isCashier = user?.roles.includes("Cashier");
-  const isCustomer = user?.roles.includes("Customer");
-  const isAdmin = user?.roles.includes("Admin");
+  const hasRole = (roleName: string) =>
+    user?.roles?.some((r) => r.trim().toLowerCase() === roleName.toLowerCase()) ?? false;
+
+  const isManager = hasRole("Manager");
+  const isWarehouse = hasRole("Warehouse");
+  const isStaff = hasRole("Staff");
+  const isKitchen = hasRole("Kitchen");
+  const isCashier = hasRole("Cashier");
+  const isCustomer = hasRole("Customer");
+  const isAdmin = hasRole("Admin");
 
   if (!mounted) {
     return (

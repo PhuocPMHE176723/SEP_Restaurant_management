@@ -116,19 +116,21 @@ export default function NotificationBell() {
 
     setIsOpen(false);
 
-    // 2. Perform redirect logic based on roles and notification type
-    const isCustomer = user?.roles.includes("Customer");
-    const isStaff = user?.roles.some((r) =>
-      ["Staff", "Cashier", "Manager", "Kitchen", "Warehouse", "Admin"].includes(r)
-    );
+    const hasRole = (roleName: string) =>
+      user?.roles?.some((r) => r.trim().toLowerCase() === roleName.toLowerCase()) ?? false;
+
+    const isCustomer = hasRole("Customer");
+    const isStaff = user?.roles?.some((r) =>
+      ["staff", "cashier", "manager", "kitchen", "warehouse", "admin"].includes(r.trim().toLowerCase())
+    ) ?? false;
 
     if (item.type === "RESERVATION") {
       if (isCustomer) {
         router.push("/reservations");
       } else if (isStaff) {
-        if (user?.roles.includes("Cashier")) {
+        if (hasRole("Cashier")) {
           router.push("/cashier/reservations");
-        } else if (user?.roles.includes("Manager") || user?.roles.includes("Admin")) {
+        } else if (hasRole("Manager") || hasRole("Admin")) {
           router.push("/manager/reservations");
         } else {
           router.push("/staff/reservations");
@@ -136,7 +138,7 @@ export default function NotificationBell() {
       }
     } else if (item.type === "CHECKIN") {
       if (isStaff) {
-        if (user?.roles.includes("Cashier")) {
+        if (hasRole("Cashier")) {
           router.push("/cashier/dining-tables");
         } else {
           router.push("/staff/dining-tables");
@@ -146,18 +148,18 @@ export default function NotificationBell() {
       if (isCustomer) {
         router.push("/profile/customer");
       } else if (isStaff) {
-        if (user?.roles.includes("Cashier")) {
+        if (hasRole("Cashier")) {
           router.push("/cashier/orders");
-        } else if (user?.roles.includes("Manager") || user?.roles.includes("Admin")) {
+        } else if (hasRole("Manager") || hasRole("Admin")) {
           router.push("/manager/loyalty-history");
         } else {
           router.push("/staff/orders");
         }
       }
     } else if (item.type === "CLEANUP") {
-      if (user?.roles.includes("Manager") || user?.roles.includes("Admin")) {
+      if (hasRole("Manager") || hasRole("Admin")) {
         router.push("/manager/dining-tables?action=cleanup");
-      } else if (user?.roles.includes("Staff")) {
+      } else if (hasRole("Staff")) {
         router.push("/staff/dining-tables");
       }
     }

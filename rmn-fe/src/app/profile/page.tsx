@@ -202,22 +202,11 @@ export default function ProfilePage() {
                     <p style={{ marginBottom: "1rem" }}><strong>Họ và tên:</strong> {profile.fullName}</p>
                     <p style={{ marginBottom: "1rem" }}>
                         <strong>Số điện thoại:</strong> {profile.phone || "Chưa cập nhật"}
-                        {profile.phone && (
-                            profile.isPhoneVerified 
-                                ? <span style={{ color: "#10b981", marginLeft: "8px", fontSize: "0.85rem" }}>✓ Đã xác thực</span>
-                                : <span style={{ color: "#f59e0b", marginLeft: "8px", fontSize: "0.85rem" }}>⚠ Chưa xác thực</span>
-                        )}
                     </p>
                     <p style={{ marginBottom: "1rem" }}><strong>Email:</strong> {profile.email || "Chưa cập nhật"}</p>
                     
                     <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
                         <button className="btn btn-primary" onClick={() => setIsEditing(true)}>Cập nhật thông tin</button>
-                        
-                        {profile.phone && !profile.isPhoneVerified && !confirmationResult && (
-                            <button className="btn" style={{ backgroundColor: "#f59e0b", color: "white" }} onClick={sendOtp} disabled={verifying}>
-                                {verifying ? "Đang xử lý..." : "Xác thực ngay"}
-                            </button>
-                        )}
                     </div>
 
                     {confirmationResult && (
