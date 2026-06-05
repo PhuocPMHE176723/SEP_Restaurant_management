@@ -20,12 +20,14 @@ public class AdminReservationController : BaseController
     private readonly SepDatabaseContext _context;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
-    public AdminReservationController(IReservationService reservationService, SepDatabaseContext context, IEmailService emailService, INotificationService notificationService)
+    private readonly ICloudinaryService _cloudinaryService;
+    public AdminReservationController(IReservationService reservationService, SepDatabaseContext context, IEmailService emailService, INotificationService notificationService, ICloudinaryService cloudinaryService)
     {
         _reservationService = reservationService;
         _context = context;
         _emailService = emailService;
         _notificationService = notificationService;
+        _cloudinaryService = cloudinaryService;
     }
 
     [HttpGet]
@@ -476,9 +478,12 @@ Thời gian huỷ: {now:dd/MM/yyyy HH:mm:ss}
 
         string? imageUrl = null;
 
-        if (request.refundProff != null)
+        if (request.refundProff != null && request.refundProff.Length > 0)
         {
-            imageUrl = await SaveRefundImage(request.refundProff);
+            imageUrl = await _cloudinaryService.UploadImageAsync(
+                request.refundProff,
+                "refunds"
+            );
         }
 
         reservation.IsRefund = true;

@@ -339,32 +339,50 @@ const handleViewRefund = (
   const currentReservations = filteredReservations.slice(startIndex, endIndex);
 
   const handleStatusUpdate = async (
-    id: number,
-    status: string,
-    tableIds?: number[],
-  ) => {
-    try {
-      await adminReservationApi.updateReservationStatus(id, {
-        status,
-        tableIds,
-      });
-      await fetchReservations(); // Refresh data
-      Swal.fire({
-        title: "Thành công",
-        text: "Cập nhật trạng thái thành công!",
-        icon: "success",
+  id: number,
+  status: string,
+  tableIds?: number[],
+) => {
+  try {
+    if (status === "CONFIRMED") {
+      const result = await Swal.fire({
+        title: "Xác nhận đặt bàn?",
+        text: "Bạn có chắc chắn muốn xác nhận đơn đặt bàn này không?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Xác nhận",
+        cancelButtonText: "Hủy",
         confirmButtonColor: "var(--brand-primary)",
+        cancelButtonColor: "var(--error)",
       });
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      Swal.fire({
-        title: "Lỗi",
-        text: "Cập nhật thất bại!",
-        icon: "error",
-        confirmButtonColor: "var(--error)",
-      });
+
+      if (!result.isConfirmed) return;
     }
-  };
+
+    await adminReservationApi.updateReservationStatus(id, {
+      status,
+      tableIds,
+    });
+
+    await fetchReservations();
+
+    Swal.fire({
+      title: "Thành công",
+      text: "Cập nhật trạng thái thành công!",
+      icon: "success",
+      confirmButtonColor: "var(--brand-primary)",
+    });
+  } catch (error) {
+    console.error("Failed to update status:", error);
+
+    Swal.fire({
+      title: "Lỗi",
+      text: "Cập nhật thất bại!",
+      icon: "error",
+      confirmButtonColor: "var(--error)",
+    });
+  }
+};
   const formatNote = (status: string, note: string | null) => {
     if (!note) return "-";
 

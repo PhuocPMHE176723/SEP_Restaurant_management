@@ -17,6 +17,7 @@ public class ReservationService : IReservationService
     private readonly SepDatabaseContext _context;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
 
     private static bool IsMissingPhone(string? phone)
     {
@@ -82,11 +83,12 @@ public class ReservationService : IReservationService
         }
     }
 
-    public ReservationService(SepDatabaseContext context, IMapper mapper, INotificationService notificationService)
+    public ReservationService(SepDatabaseContext context, IMapper mapper, INotificationService notificationService, IEmailService emailService)
     {
         _context = context;
         _mapper = mapper;
         _notificationService = notificationService;
+        _emailService = emailService;
     }
 
     public async Task<ReservationDTO> CreateReservationAsync(
@@ -721,7 +723,50 @@ public class ReservationService : IReservationService
         }
 
         await _context.SaveChangesAsync();
+        if (status.ToUpper() == "CONFIRMED")
+        {
+            var customerEmail = reservation.ContactEmail;
 
+            if (!string.IsNullOrEmpty(customerEmail))
+            {
+                string subject = "Xác nhận đặt bàn thành công";
+
+                string body = $@"
+        <h2>Đặt bàn đã được xác nhận</h2>
+
+        <p>Xin chào <strong>{reservation.CustomerName}</strong>,</p>
+
+        <p>Nhà hàng đã xác nhận yêu cầu đặt bàn của bạn.</p>
+
+        <table style='border-collapse: collapse'>
+            <tr>
+                <td><strong>Mã đặt bàn:</strong></td>
+                <td>#{reservation.ReservationId}</td>
+            </tr>
+            <tr>
+                <td><strong>Thời gian:</strong></td>
+                <td>{reservation.ReservedAt:dd/MM/yyyy HH:mm}</td>
+            </tr>
+            <tr>
+                <td><strong>Số khách:</strong></td>
+                <td>{reservation.PartySize}</td>
+            </tr>
+        </table>
+
+        <br/>
+
+        <p>Vui lòng đến đúng giờ để được phục vụ tốt nhất.</p>
+
+        <p>Xin cảm ơn quý khách.</p>
+        ";
+
+                await _emailService.SendEmailAsync(
+                    customerEmail,
+                    subject,
+                    body
+                );
+            }
+        }
         try
         {
             string vnStatus = status.ToUpper() switch
@@ -867,6 +912,7 @@ public class ReservationService : IReservationService
         reservation.DepositAmount = Math.Max(200000, total * 0.2m);
 
         await _context.SaveChangesAsync();
+
         return true;
     }
 
