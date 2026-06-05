@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
+using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Repositories.Interface;
 using SEP_Restaurant_management.Core.Services.Interface;
@@ -20,11 +21,51 @@ public class DiningTableService : IDiningTableService
         _context = context;
     }
 
+    //public async Task<IEnumerable<DiningTableDTO>> GetAllAsync()
+    //{
+    //    // Lấy tất cả bàn active, đã sắp xếp theo TableCode
+    //    var tables = await _unitOfWork.DiningTables.GetActiveTablesAsync();
+    //    return _mapper.Map<IEnumerable<DiningTableDTO>>(tables);
+    //}
     public async Task<IEnumerable<DiningTableDTO>> GetAllAsync()
     {
-        // Lấy tất cả bàn active, đã sắp xếp theo TableCode
         var tables = await _unitOfWork.DiningTables.GetActiveTablesAsync();
-        return _mapper.Map<IEnumerable<DiningTableDTO>>(tables);
+
+        var currentShift = GetShiftKey(DateTimeHelper.VietnamNow());
+
+        var orderTables = await _context.OrderTables
+            .Include(ot => ot.Order)
+                .ThenInclude(o => o.Reservation)
+            .Where(ot =>
+                ot.Order != null &&
+                ot.Order.Reservation != null &&
+                ot.Order.Reservation.Status != "CANCELLED" &&
+                ot.Order.Reservation.Status != "COMPLETED" &&
+                ot.Order.Reservation.Status != "NO_SHOW"
+            )
+            .ToListAsync();
+        var reservedTableIds = orderTables
+            .Where(ot =>
+                GetShiftKey(ot.Order!.Reservation!.ReservedAt) == currentShift
+            )
+            .Select(ot => ot.TableId)
+            .Distinct()
+            .ToList();
+
+        var result = tables.Select(t => new DiningTableDTO
+        {
+            TableId = t.TableId,
+            TableCode = t.TableCode,
+            TableName = t.TableName,
+            Capacity = t.Capacity,
+            Status = t.Status,
+            IsActive = t.IsActive,
+
+            // Quan trọng
+            IsReserved = reservedTableIds.Contains(t.TableId)
+        });
+
+        return result;
     }
 
     public async Task<IEnumerable<DiningTableWithOrderDTO>> GetAllWithOrdersAsync()
@@ -102,12 +143,15 @@ public class DiningTableService : IDiningTableService
         }
         
         var targetTime = date.Date.Add(ts);
-        
+
         var reservations = await _context.Reservations
-            .Include(r => r.ReservationTables)
-            .Where(r => r.Status != "CANCELLED" && r.Status != "COMPLETED" && r.Status != "NO_SHOW")
-            .ToListAsync();
-            
+    .Include(r => r.Order)
+        .ThenInclude(o => o.OrderTables)
+    .Where(r => r.Status != "CANCELLED"
+             && r.Status != "COMPLETED"
+             && r.Status != "NO_SHOW")
+    .ToListAsync();
+
         var availabilityList = new List<TableAvailabilityDTO>();
         
         foreach (var table in tables)
@@ -131,24 +175,52 @@ public class DiningTableService : IDiningTableService
                     dto.StatusMessage = "Đang có khách/Bận";
                 }
             }
-            
-            var tableReservations = reservations.Where(r => r.ReservationTables.Any(rt => rt.TableId == table.TableId));
+
+            var tableReservations = reservations
+    .Where(r =>
+        r.Order != null &&
+        r.Order.OrderTables.Any(
+            ot => ot.TableId == table.TableId));
+            var targetShift = GetShiftKey(targetTime);
+
             foreach (var res in tableReservations)
             {
-                var endTime = res.ReservedAt.AddMinutes(res.DurationMinutes);
-                // Giữ chỗ cho khách khác +- 90 phút
-                if (targetTime >= res.ReservedAt.AddMinutes(-90) && targetTime <= endTime)
-                {
-                    dto.IsAvailable = false;
-                    dto.CustomerName = null; // Privacy: Don't leak names to public API
-                    dto.StatusMessage = res.Status == "CHECKED_IN" ? "Đang có khách" : $"Đã đặt ({res.ReservedAt:HH:mm})";
-                    break;
-                }
+                if (res.ReservedAt.Date != targetTime.Date)
+                    continue;
+
+                if (GetShiftKey(res.ReservedAt) != targetShift)
+                    continue;
+
+                dto.IsAvailable = false;
+                dto.StatusMessage =
+                    res.Status == "CHECKED_IN"
+                        ? "Đang có khách"
+                        : "Đã được đặt";
+
+                break;
             }
-            
+
             availabilityList.Add(dto);
         }
         
         return availabilityList;
+    }
+    private static string GetShiftKey(DateTime date)
+    {
+        var time = date.TimeOfDay;
+
+        if (time >= new TimeSpan(11, 0, 0) &&
+            time <= new TimeSpan(14, 0, 0))
+        {
+            return $"{date:yyyyMMdd}_MORNING";
+        }
+
+        if (time >= new TimeSpan(17, 0, 0) &&
+            time <= new TimeSpan(24, 0, 0))
+        {
+            return $"{date:yyyyMMdd}_EVENING";
+        }
+
+        return $"{date:yyyyMMdd}_OTHER";
     }
 }

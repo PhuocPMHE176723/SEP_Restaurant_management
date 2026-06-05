@@ -37,6 +37,7 @@ export interface OrderDTO {
     status: string;
     subtotal: number;
     orderItems: OrderItemDTO[];
+    tableCodes?: string[]; // For display purposes
 }
 
 export interface CreateReservationRequest {
@@ -51,6 +52,22 @@ export interface CreateReservationRequest {
     table4Count?: number;
     table6Count?: number;
     table8Count?: number;
+}
+
+export interface CreateCashierReservationRequest {
+  customerName: string;
+
+  customerPhone: string;
+
+  contactEmail?: string;
+
+  reservedAt: string;
+
+  note?: string;
+
+  tableIds: number[];
+
+  menuItems: OrderItemRequest[];
 }
 
 export interface TableAvailability {
@@ -80,6 +97,7 @@ export interface ReservationDTO {
     createdAt: string;
     createdByStaffId?: number | null;
     order?: OrderDTO | null;
+    
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -155,4 +173,19 @@ export async function getPublicTableAvailability(date: string, timeSlot: string)
         cache: "no-store"
     });
     return handleResponse<TableAvailability[]>(res);
+}
+
+export async function createCashierReservation(
+  request: CreateCashierReservationRequest
+): Promise<ReservationDTO> {
+  const res = await fetch(
+    `${apiBaseUrl}/api/reservation/cashier`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(request),
+    }
+  );
+
+  return handleResponse<ReservationDTO>(res);
 }

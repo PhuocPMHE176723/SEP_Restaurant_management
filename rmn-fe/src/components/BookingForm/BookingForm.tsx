@@ -65,6 +65,8 @@ const EMPTY_TABLE_TYPE_COUNTS: TableTypeCounts = {
   8: 0,
 };
 
+
+
 function buildSeatingPlan(partySize: number): SeatingPlan {
   const target = Math.max(0, Math.floor(partySize));
   let best: SeatingPlan = {
@@ -157,6 +159,11 @@ export default function BookingForm() {
   );
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [tableAvailability, setTableAvailability] = useState<
+    TableAvailability[]
+  >([]);
+
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -188,6 +195,22 @@ export default function BookingForm() {
 
   const selectedSeatCount =
     tableTypeCounts[4] * 4 + tableTypeCounts[6] * 6 + tableTypeCounts[8] * 8;
+
+  const availableTableCounts = useMemo(() => {
+    return {
+      4: tableAvailability.filter(
+        (t) => t.isAvailable && t.capacity === 4
+      ).length,
+
+      6: tableAvailability.filter(
+        (t) => t.isAvailable && t.capacity === 6
+      ).length,
+
+      8: tableAvailability.filter(
+        (t) => t.isAvailable && t.capacity === 8
+      ).length,
+    };
+  }, [tableAvailability]);
 
   const updateTableTypeCount = (capacity: TableCapacity, delta: number) => {
     setTableTypeCounts((prev) => ({
@@ -267,11 +290,30 @@ export default function BookingForm() {
   }, [user, form.email]);
 
   useEffect(() => {
-    if (form.date && form.timeSlot) {
-      // Intentionally no table diagram/selection.
-    } else {
-      // no-op
+    async function loadAvailability() {
+      if (!form.date || !form.timeSlot) {
+        setTableAvailability([]);
+        return;
+      }
+
+      try {
+        setLoadingAvailability(true);
+
+        const result = await getPublicTableAvailability(
+          form.date,
+          form.timeSlot
+        );
+
+        setTableAvailability(result);
+      } catch (error) {
+        console.error("Load availability failed", error);
+        setTableAvailability([]);
+      } finally {
+        setLoadingAvailability(false);
+      }
     }
+
+    loadAvailability();
   }, [form.date, form.timeSlot]);
 
   function set(field: keyof typeof form, value: string | number) {
@@ -283,6 +325,14 @@ export default function BookingForm() {
     () => buildSeatingPlan(form.partySize || 0),
     [form.partySize],
   );
+
+  const totalAvailableSeats =
+    availableTableCounts[4] * 4 +
+    availableTableCounts[6] * 6 +
+    availableTableCounts[8] * 8;
+
+  const canServeParty =
+    totalAvailableSeats >= form.partySize;
 
   const suggestedTables = useMemo(
     () => Math.max(1, seatingPlan.totalTables || 1),
@@ -366,21 +416,21 @@ export default function BookingForm() {
     });
   }
   useEffect(() => {
-  if (selectedItems.size === 0) return;
+    if (selectedItems.size === 0) return;
 
-  setSelectedItems((prev) => {
-    const updated = new Map(prev);
+    setSelectedItems((prev) => {
+      const updated = new Map(prev);
 
-    updated.forEach((_, itemId) => {
-      updated.set(
-        itemId,
-        Math.min(actualTableCount || 1, 50),
-      );
+      updated.forEach((_, itemId) => {
+        updated.set(
+          itemId,
+          Math.min(actualTableCount || 1, 50),
+        );
+      });
+
+      return updated;
     });
-
-    return updated;
-  });
-}, [actualTableCount]);
+  }, [actualTableCount]);
   function updateQuantity(itemId: number, quantity: number) {
     if (quantity <= 0) {
       setSelectedItems((prev) => {
@@ -833,7 +883,7 @@ export default function BookingForm() {
               <p className={styles.error}>{errors.timeSlot}</p>
             )}
             <p className={styles.hint}>
-              Khung giờ cách nhau 15 phút · Trưa (11:00-14:00) · Tối
+              Khung giờ cách nhau 30 phút · Trưa (11:00-14:00) · Tối
               (17:00-21:30)
             </p>
           </div>
@@ -961,6 +1011,29 @@ export default function BookingForm() {
                     {tableBreakdown.unused}
                   </span>
                 </span>
+                {form.partySize > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    {canServeParty ? (
+                      <span
+                        style={{
+                          color: "#16a34a",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✓ Hiện còn đủ chỗ cho {form.partySize} khách
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          color: "#dc2626",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✕ Không còn đủ chỗ cho {form.partySize} khách
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -973,6 +1046,10 @@ export default function BookingForm() {
                 <div key={capacity} className={styles.tableTypeItem}>
                   <span className={styles.tableTypeLabel}>
                     Bàn {capacity} Chỗ
+                    <br />
+                    <small style={{ color: "red" }}>
+                      Còn {availableTableCounts[capacity]} bàn
+                    </small>
                   </span>
 
                   <div className={styles.tableCounter}>
@@ -993,6 +1070,10 @@ export default function BookingForm() {
                       type="button"
                       className={styles.tableCounterBtn}
                       onClick={() => updateTableTypeCount(capacity, 1)}
+                      disabled={
+                        tableTypeCounts[capacity] >=
+                        availableTableCounts[capacity]
+                      }
                     >
                       +
                     </button>

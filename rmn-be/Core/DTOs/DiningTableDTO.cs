@@ -9,6 +9,7 @@ public class DiningTableDTO
     public int Capacity { get; set; }
     public string Status { get; set; } = null!;
     public bool IsActive { get; set; }
+    public bool IsReserved { get; set; }
 }
 
 public class DiningTableWithOrderDTO : DiningTableDTO
@@ -41,3 +42,4 @@ public class UpdateDiningTableDTO
     public string? Status { get; set; }
     public bool? IsActive { get; set; }
 }
+

@@ -64,7 +64,7 @@ public class Reservation
     public decimal RefundAmount { get; set; }
 
     [MaxLength(500)]
-    public string Refund_proof_url { get; set; }
+    public string? Refund_proof_url { get; set; }
     public long? RefundByStaffId {  get; set; }
 
     [ForeignKey(nameof(RefundByStaffId))]

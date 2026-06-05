@@ -335,29 +335,64 @@ namespace rmn_be.Core.Services.Implementation
 
                 if (item.Quantity <= remain)
                 {
-                    item.Status = "SERVED";
-                    orderItemRepo.Update(item);
+                    var qty = item.Quantity;
 
-                    remain -= item.Quantity;
+                    var servedItem = (await orderItemRepo.FindAsync(x =>
+                        x.OrderId == item.OrderId &&
+                        x.ItemId == item.ItemId &&
+                        x.Status == "SERVED"))
+                        .FirstOrDefault();
+
+                    if (servedItem != null)
+                    {
+                        servedItem.Quantity += qty;
+                        orderItemRepo.Update(servedItem);
+
+                        orderItemRepo.Delete(item);
+                    }
+                    else
+                    {
+                        item.Status = "SERVED";
+                        orderItemRepo.Update(item);
+                    }
+
+                    remain -= qty;
                 }
                 else
                 {
                     item.Quantity -= remain;
                     orderItemRepo.Update(item);
 
-                    await orderItemRepo.AddAsync(
-                        new OrderItem
-                        {
-                            OrderId = item.OrderId,
-                            ItemId = item.ItemId,
-                            Quantity = remain,
-                            UnitPrice = item.UnitPrice,
-                            ItemNameSnapshot = item.ItemNameSnapshot,
-                            Note = item.Note,
-                            Status = "SERVED",
-                            CreatedAt = item.CreatedAt,
-                        }
-                    );
+                    var servedItem = (await orderItemRepo.FindAsync(x =>
+                        x.OrderId == item.OrderId &&
+                        x.ItemId == item.ItemId &&
+                        x.Status == "SERVED"))
+                        .FirstOrDefault();
+
+                    if (servedItem != null)
+                    {
+                        servedItem.Quantity += remain;
+                        orderItemRepo.Update(servedItem);
+                    }
+                    else
+                    {
+                        await orderItemRepo.AddAsync(
+                            new OrderItem
+                            {
+                                OrderId = item.OrderId,
+                                ItemId = item.ItemId,
+                                Quantity = remain,
+
+                                UnitPrice = item.UnitPrice,
+                                DiscountAmount = item.DiscountAmount,
+                                ItemNameSnapshot = item.ItemNameSnapshot,
+                                Note = item.Note,
+
+                                Status = "SERVED",
+                                CreatedAt = item.CreatedAt,
+                            }
+                        );
+                    }
 
                     remain = 0;
                 }

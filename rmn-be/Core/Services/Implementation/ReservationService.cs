@@ -253,19 +253,32 @@ public class ReservationService : IReservationService
     public async Task<List<ReservationDTO>> GetCustomerReservationsAsync(long customerId)
     {
         var reservations = await _context
-            .Reservations.Where(r => r.CustomerId == customerId)
-            .Include(r => r.Customer)
-                .ThenInclude(c => c!.User)
-            .Include(r => r.ReservationTables)
-            .Include(r => r.Order)
-                .ThenInclude(o => o!.OrderItems)
-            .OrderByDescending(r => r.CreatedAt)
-            .ToListAsync();
+    .Reservations
+    .Where(r => r.CustomerId == customerId)
+    .Include(r => r.Customer)
+        .ThenInclude(c => c!.User)
+    .Include(r => r.ReservationTables)
+    .Include(r => r.Order)
+        .ThenInclude(o => o!.OrderItems)
+    .Include(r => r.Order)
+        .ThenInclude(o => o!.OrderTables)
+            .ThenInclude(ot => ot.DiningTable)
+    .OrderByDescending(r => r.CreatedAt)
+    .ToListAsync();
 
         var dtos = _mapper.Map<List<ReservationDTO>>(reservations);
         for (var i = 0; i < dtos.Count && i < reservations.Count; i++)
         {
             NormalizeReservationDto(reservations[i], dtos[i]);
+            if (reservations[i].Order != null)
+            {
+                dtos[i].Order!.TableCodes = reservations[i]
+                    .Order
+                    .OrderTables
+                    .Where(ot => ot.DiningTable != null)
+                    .Select(ot => ot.DiningTable.TableCode)
+                    .ToList();
+            }
         }
 
         return dtos;
@@ -856,5 +869,144 @@ public class ReservationService : IReservationService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<ReservationDTO> CreateCashierReservationAsync(
+    CreateCashierReservationRequest request)
+    {
+        try
+        {
+            if (request.TableIds == null || !request.TableIds.Any())
+            {
+                throw new Exception("Vui lòng chọn ít nhất một bàn");
+            }
+
+            var reservation = new Reservation
+            {
+                CustomerName = request.CustomerName,
+                CustomerPhone = request.CustomerPhone,
+                ContactEmail = request.ContactEmail,
+
+                ReservedAt = request.ReservedAt,
+
+                Status = "PENDING",
+                Note = request.Note,
+
+                CreatedAt = DateTimeHelper.VietnamNow(),
+
+                TotalTables = request.TableIds.Count
+            };
+
+            _context.Reservations.Add(reservation);
+
+            await _context.SaveChangesAsync();
+
+            var orderCode =
+                $"RES-{reservation.ReservationId}-{DateTimeHelper.VietnamNow():yyyyMMddHHmmss}";
+
+            var order = new Order
+            {
+                OrderCode = orderCode,
+
+                ReservationId = reservation.ReservationId,
+
+                OrderType = "DINE_IN",
+
+                Status = "RESERVED",
+
+                OpenedAt = DateTimeHelper.VietnamNow(),
+
+                Note = "Cashier reservation"
+            };
+
+            _context.Orders.Add(order);
+
+            await _context.SaveChangesAsync();
+
+            foreach (var tableId in request.TableIds)
+            {
+                _context.OrderTables.Add(
+                    new OrderTable
+                    {
+                        OrderId = order.OrderId,
+                        TableId = (int)tableId,
+                        AssignedAt = DateTimeHelper.VietnamNow()
+                    });
+            }
+
+            await _context.SaveChangesAsync();
+
+            decimal totalOrderAmount = 0;
+
+            foreach (var item in request.MenuItems)
+            {
+                var menuItem = await _context.MenuItems
+                    .Include(x => x.MenuItemPrices)
+                    .FirstOrDefaultAsync(x => x.ItemId == item.ItemId);
+
+                if (menuItem == null)
+                    continue;
+
+                var currentPrice = menuItem.MenuItemPrices
+                    .Where(x => x.EffectiveFrom <= DateTimeHelper.VietnamNow())
+                    .OrderByDescending(x => x.EffectiveFrom)
+                    .FirstOrDefault();
+
+                var unitPrice =
+                    currentPrice?.Price ??
+                    menuItem.BasePrice;
+
+                totalOrderAmount += unitPrice * item.Quantity;
+
+                _context.OrderItems.Add(
+                    new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ItemId = item.ItemId,
+                        Quantity = item.Quantity,
+                        UnitPrice = unitPrice,
+                        DiscountAmount = 0,
+                        ItemNameSnapshot = menuItem.ItemName,
+                        CreatedAt = DateTimeHelper.VietnamNow()
+                    });
+            }
+
+            await _context.SaveChangesAsync();
+
+            decimal depositByFood =
+                totalOrderAmount * 0.2m;
+
+            decimal depositByTables =
+                request.TableIds.Count * 200000;
+
+            reservation.DepositAmount =
+                Math.Max(
+                    depositByFood,
+                    depositByTables);
+
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _notificationService.CreateNotificationAsync(
+                    title: "Đơn đặt bàn mới",
+                    message:
+                        $"Khách hàng {reservation.CustomerName} đã được tạo đặt bàn bởi nhân viên.",
+                    type: "RESERVATION",
+                    userId: null,
+                    role: "Staff",
+                    relatedId: reservation.ReservationId.ToString()
+                );
+            }
+            catch { }
+
+            return _mapper.Map<ReservationDTO>(reservation);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(
+                $"Failed to create cashier reservation: {ex.Message}",
+                ex);
+        }
     }
 }

@@ -24,6 +24,10 @@ public class ReservationDTO
     public bool IsDepositPaid { get; set; }
     public DateTime? DepositPaidAt { get; set; }
     public int AssignedTableCount { get; set; }
+    public bool IsRefund {  get; set; }
+    public decimal RefundAmount { get; set; }
+    public string? Refund_note { get; set; }
+    public string? Refund_proof_url { get; set; }
     public OrderDTO? Order { get; set; }
 }
 
@@ -41,6 +45,7 @@ public class OrderDTO
     public DateTime? ClosedAt { get; set; }
     public decimal TotalAmount { get; set; }
     public List<OrderItemDTO> OrderItems { get; set; } = new();
+    public List<string> TableCodes { get; set; } = new();
 }
 
 public class OrderItemDTO
@@ -125,6 +130,24 @@ public class CreateWalkinOrderRequest
 
     [MaxLength(255)]
     public string? Note { get; set; }
+}
+
+public class CreateCashierReservationRequest
+{
+    public string CustomerName { get; set; } = "";
+
+    public string CustomerPhone { get; set; } = "";
+
+    public string? ContactEmail { get; set; }
+
+    public DateTime ReservedAt { get; set; }
+
+    public string? Note { get; set; }
+    [Required]
+    [MinLength(1, ErrorMessage = "At least one table must be selected.")]
+    public List<long> TableIds { get; set; } = new();
+
+    public List<OrderItemRequest> MenuItems { get; set; } = new();
 }
 
 public class TransferTableRequest

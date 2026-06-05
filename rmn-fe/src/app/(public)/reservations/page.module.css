@@ -458,6 +458,44 @@
     color: var(--brand-primary);
 }
 
+.bookingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bookingInfo {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+}
+
+.tableCount {
+  font-size: 20px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.tableList {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tableBadge {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid #dbe2ea;
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.assignedText {
+  color: #10b981;
+  font-size: 14px;
+}
+
 @media (max-width: 640px) {
     .filterBar {
         flex-direction: column;

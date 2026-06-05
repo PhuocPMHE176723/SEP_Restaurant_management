@@ -76,7 +76,6 @@ export default function BookingPage() {
                 <div className={styles.policyCard}>
                   <h3 className={styles.infoTitle}>Chính sách đặt bàn</h3>
                   <ul className={styles.policyList}>
-                    <li>Đặt bàn miễn phí, không thu phí giữ chỗ</li>
                     <li>Bàn được giữ 15 phút sau giờ hẹn</li>
                     <li>Xác nhận qua điện thoại trong vòng 30 phút</li>
                     <li>Hỗ trợ tổ chức sinh nhật, sự kiện đặc biệt</li>
