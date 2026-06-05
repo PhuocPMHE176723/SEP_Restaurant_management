@@ -233,7 +233,6 @@ public class ReservationService : IReservationService
                     title: "Đơn đặt bàn mới",
                     message: $"Khách hàng {reservation.CustomerName} đã đặt bàn ({reservation.PartySize} người) lúc {reservation.ReservedAt:dd/MM/yyyy HH:mm}.",
                     type: "RESERVATION",
-                    userId: customerUserId,
                     role: "Staff",
                     relatedId: reservation.ReservationId.ToString()
                 );

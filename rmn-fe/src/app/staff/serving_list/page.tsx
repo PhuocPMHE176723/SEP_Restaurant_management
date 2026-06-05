@@ -465,7 +465,7 @@ export default function ServingListPage() {
                               color: "#374151",
                             }}
                           >
-                            📦 Tồn: {item.stock} {item.unit || ""}
+                            Tồn: {item.stock} {item.unit || ""}
                           </div>
                         </div>
                       </div>
@@ -577,7 +577,7 @@ export default function ServingListPage() {
                           flexWrap: "wrap",
                         }}
                       >
-                        <span>📍 {item.waitingTableCount} bàn chờ</span>
+                        <span>{item.waitingTableCount} bàn chờ</span>
                       </div>
                     </div>
 
@@ -652,7 +652,6 @@ export default function ServingListPage() {
               <div className="flex-1 overflow-y-auto space-y-4.5 pr-1">
                 {tables.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-[2rem] text-slate-400 p-8 shadow-sm">
-                    <span className="text-5xl mb-4">🏆</span>
                     <h3 className="text-lg font-bold text-slate-700">Đã hoàn tất xuất sắc!</h3>
                     <p className="text-xs mt-1 text-slate-400">Không còn bàn nào đang chờ phục vụ món ăn này.</p>
                   </div>
@@ -752,7 +751,7 @@ export default function ServingListPage() {
                                 gap: "0.25rem",
                               }}
                             >
-                              🕒 {elapsedMins} phút trước ({statusLabel})
+                              {elapsedMins} phút trước ({statusLabel})
                             </span>
                           </div>
 

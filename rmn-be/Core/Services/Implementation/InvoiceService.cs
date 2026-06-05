@@ -314,7 +314,6 @@ public class InvoiceService
             title: "Thanh toán thành công",
             message: $"Hóa đơn {invoice.InvoiceCode} (bàn {tableCodes}) đã thanh toán thành công {invoice.TotalAmount:N0} VNĐ.",
             type: "PAYMENT",
-            userId: customerUserId,
             role: "Staff",
             relatedId: invoice.InvoiceCode
         );

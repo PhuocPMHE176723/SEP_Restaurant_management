@@ -117,6 +117,7 @@ function CreateModal({
     basePrice: 0,
     itemType: "PROCESSED",
     thumbnail: undefined,
+    isFeatured: false,
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -163,132 +164,145 @@ function CreateModal({
       className={styles.modalOverlay}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={styles.modal}>
+      <div className={styles.modal} style={{ maxWidth: '600px' }}>
         <div className={styles.modalHead}>
           <span className={styles.modalTitle}>Thêm món ăn</span>
           <button className={styles.modalClose} onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className={styles.modalBody}>
+        <div className={styles.modalBody} style={{ padding: '1.5rem' }}>
           {error && <div className={styles.modalError}>{error}</div>}
 
-          <div className={styles.field}>
-            <label className={styles.label}>Tên món *</label>
-            <input
-              className={styles.input}
-              placeholder="VD: Phở bò"
-              value={form.itemName}
-              onChange={(e) => setForm({ ...form, itemName: e.target.value })}
-            />
-          </div>
+          <div className={styles.formGrid}>
+            <div className={styles.field}>
+              <label className={styles.label}>Tên món *</label>
+              <input
+                className={styles.input}
+                placeholder="VD: Phở bò"
+                value={form.itemName}
+                onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              />
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>
-              Đơn vị / Định lượng (Sz, Phần, Con...)
-            </label>
-            <input
-              className={styles.input}
-              list="unit-options-create"
-              placeholder="VD: Phần, Sz L, Con, Kg..."
-              value={form.unit ?? ""}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
-            />
-            <datalist id="unit-options-create">
-              <option value="Phần" />
-              <option value="Suất" />
-              <option value="Con" />
-              <option value="Kg" />
-              <option value="100g" />
-              <option value="Sz S" />
-              <option value="Sz M" />
-              <option value="Sz L" />
-              <option value="Sz XL" />
-              <option value="Lon" />
-              <option value="Chai" />
-              <option value="Ly" />
-              <option value="Túi" />
-            </datalist>
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Danh mục *</label>
-            <select
-              className={styles.input}
-              value={form.categoryId}
-              onChange={(e) =>
-                setForm({ ...form, categoryId: Number(e.target.value) })
-              }
-            >
-              <option value={0}>-- Chọn danh mục --</option>
-              {categories.map((cat) => (
-                <option key={cat.categoryId} value={cat.categoryId}>
-                  {cat.categoryName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Mô tả</label>
-            <textarea
-              className={styles.textarea}
-              placeholder="Mô tả ngắn về món ăn..."
-              value={form.description ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              rows={3}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Giá (VNĐ) *</label>
-            <input
-              className={styles.input}
-              type="number"
-              min={0}
-              step={1000}
-              value={form.basePrice}
-              onChange={(e) =>
-                setForm({ ...form, basePrice: Number(e.target.value) })
-              }
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Loại món *</label>
-            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="itemTypeCreate"
-                  value="PROCESSED"
-                  checked={form.itemType === "PROCESSED"}
-                  onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
-                />
-                Món chế biến
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Đơn vị / Định lượng
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                className={styles.input}
+                list="unit-options-create"
+                placeholder="VD: Phần, Sz L, Con, Kg..."
+                value={form.unit ?? ""}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              />
+              <datalist id="unit-options-create">
+                <option value="Phần" />
+                <option value="Suất" />
+                <option value="Con" />
+                <option value="Kg" />
+                <option value="100g" />
+                <option value="Sz S" />
+                <option value="Sz M" />
+                <option value="Sz L" />
+                <option value="Sz XL" />
+                <option value="Lon" />
+                <option value="Chai" />
+                <option value="Ly" />
+                <option value="Túi" />
+              </datalist>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Danh mục *</label>
+              <select
+                className={styles.input}
+                value={form.categoryId}
+                onChange={(e) =>
+                  setForm({ ...form, categoryId: Number(e.target.value) })
+                }
+              >
+                <option value={0}>-- Chọn danh mục --</option>
+                {categories.map((cat) => (
+                  <option key={cat.categoryId} value={cat.categoryId}>
+                    {cat.categoryName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Giá (VNĐ) *</label>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={1000}
+                value={form.basePrice}
+                onChange={(e) =>
+                  setForm({ ...form, basePrice: Number(e.target.value) })
+                }
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Loại món *</label>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input
+                    type="radio"
+                    name="itemTypeCreate"
+                    value="PROCESSED"
+                    checked={form.itemType === "PROCESSED"}
+                    onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
+                  />
+                  Chế biến
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input
+                    type="radio"
+                    name="itemTypeCreate"
+                    value="READY"
+                    checked={form.itemType === "READY"}
+                    onChange={() => setForm({ ...form, itemType: "READY" })}
+                  />
+                  Có sẵn
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.field} style={{ justifyContent: 'center' }}>
+              <label className={styles.checkRow}>
                 <input
-                  type="radio"
-                  name="itemTypeCreate"
-                  value="READY"
-                  checked={form.itemType === "READY"}
-                  onChange={() => setForm({ ...form, itemType: "READY" })}
+                  type="checkbox"
+                  checked={form.isFeatured ?? false}
+                  onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
                 />
-                Món có sẵn
+                Món ăn nổi bật
               </label>
             </div>
-          </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Ảnh món ăn</label>
-            <ImageUpload
-              value={imageUrl}
-              onChange={setImageUrl}
-              onFileChange={setImageFile}
-            />
+            <div className={`${styles.field} ${styles.fullWidth}`}>
+              <label className={styles.label}>Mô tả</label>
+              <textarea
+                className={styles.textarea}
+                placeholder="Mô tả ngắn về món ăn..."
+                value={form.description ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                rows={2}
+              />
+            </div>
+
+            <div className={`${styles.field} ${styles.fullWidth}`}>
+              <label className={styles.label}>Ảnh món ăn</label>
+              <ImageUpload
+                value={imageUrl}
+                onChange={setImageUrl}
+                onFileChange={setImageFile}
+              />
+            </div>
           </div>
         </div>
         <div className={styles.modalFoot}>
@@ -333,6 +347,7 @@ function EditModal({
     thumbnail: item.thumbnail ? item.thumbnail : undefined,
     itemType: item.itemType,
     isActive: item.isActive,
+    isFeatured: item.isFeatured,
   });
   const [imageUrl, setImageUrl] = useState<string | null>(
     item.thumbnail ?? null,
@@ -371,137 +386,149 @@ function EditModal({
       className={styles.modalOverlay}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={styles.modal}>
+      <div className={styles.modal} style={{ maxWidth: '600px' }}>
         <div className={styles.modalHead}>
           <span className={styles.modalTitle}>Sửa — {item.itemName}</span>
           <button className={styles.modalClose} onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className={styles.modalBody}>
+        <div className={styles.modalBody} style={{ padding: '1.5rem' }}>
           {error && <div className={styles.modalError}>{error}</div>}
 
-          <div className={styles.field}>
-            <label className={styles.label}>Tên món</label>
-            <input
-              className={styles.input}
-              value={form.itemName ?? ""}
-              onChange={(e) => setForm({ ...form, itemName: e.target.value })}
-            />
-          </div>
+          <div className={styles.formGrid}>
+            <div className={styles.field}>
+              <label className={styles.label}>Tên món</label>
+              <input
+                className={styles.input}
+                value={form.itemName ?? ""}
+                onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              />
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Đơn vị / Định lượng</label>
-            <input
-              className={styles.input}
-              list="unit-options-edit"
-              placeholder="VD: Phần, Sz L, Con, Kg..."
-              value={form.unit ?? ""}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
-            />
-            <datalist id="unit-options-edit">
-              <option value="Phần" />
-              <option value="Suất" />
-              <option value="Con" />
-              <option value="Kg" />
-              <option value="100g" />
-              <option value="Sz S" />
-              <option value="Sz M" />
-              <option value="Sz L" />
-              <option value="Sz XL" />
-              <option value="Lon" />
-              <option value="Chai" />
-              <option value="Ly" />
-              <option value="Túi" />
-            </datalist>
-          </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Đơn vị / Định lượng</label>
+              <input
+                className={styles.input}
+                list="unit-options-edit"
+                placeholder="VD: Phần, Sz L, Con, Kg..."
+                value={form.unit ?? ""}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              />
+              <datalist id="unit-options-edit">
+                <option value="Phần" />
+                <option value="Suất" />
+                <option value="Con" />
+                <option value="Kg" />
+                <option value="100g" />
+                <option value="Sz S" />
+                <option value="Sz M" />
+                <option value="Sz L" />
+                <option value="Sz XL" />
+                <option value="Lon" />
+                <option value="Chai" />
+                <option value="Ly" />
+                <option value="Túi" />
+              </datalist>
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Danh mục</label>
-            <select
-              className={styles.input}
-              value={form.categoryId ?? item.categoryId}
-              onChange={(e) =>
-                setForm({ ...form, categoryId: Number(e.target.value) })
-              }
-            >
-              {categories.map((cat) => (
-                <option key={cat.categoryId} value={cat.categoryId}>
-                  {cat.categoryName}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Danh mục</label>
+              <select
+                className={styles.input}
+                value={form.categoryId ?? item.categoryId}
+                onChange={(e) =>
+                  setForm({ ...form, categoryId: Number(e.target.value) })
+                }
+              >
+                {categories.map((cat) => (
+                  <option key={cat.categoryId} value={cat.categoryId}>
+                    {cat.categoryName}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Mô tả</label>
-            <textarea
-              className={styles.textarea}
-              value={form.description ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              rows={3}
-            />
-          </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Giá (VNĐ)</label>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={1000}
+                value={form.basePrice ?? item.basePrice}
+                onChange={(e) =>
+                  setForm({ ...form, basePrice: Number(e.target.value) })
+                }
+              />
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Giá (VNĐ)</label>
-            <input
-              className={styles.input}
-              type="number"
-              min={0}
-              step={1000}
-              value={form.basePrice ?? item.basePrice}
-              onChange={(e) =>
-                setForm({ ...form, basePrice: Number(e.target.value) })
-              }
-            />
-          </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Loại món</label>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input
+                    type="radio"
+                    name="itemTypeEdit"
+                    value="PROCESSED"
+                    checked={form.itemType === "PROCESSED"}
+                    onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
+                  />
+                  Chế biến
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input
+                    type="radio"
+                    name="itemTypeEdit"
+                    value="READY"
+                    checked={form.itemType === "READY"}
+                    onChange={() => setForm({ ...form, itemType: "READY" })}
+                  />
+                  Có sẵn
+                </label>
+              </div>
+            </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Loại món</label>
-            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <div className={styles.field} style={{ gap: '0.5rem', justifyContent: 'center' }}>
+              <label className={styles.checkRow}>
                 <input
-                  type="radio"
-                  name="itemTypeEdit"
-                  value="PROCESSED"
-                  checked={form.itemType === "PROCESSED"}
-                  onChange={() => setForm({ ...form, itemType: "PROCESSED" })}
+                  type="checkbox"
+                  checked={form.isActive ?? item.isActive}
+                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
-                Món chế biến
+                Còn hoạt động
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <label className={styles.checkRow}>
                 <input
-                  type="radio"
-                  name="itemTypeEdit"
-                  value="READY"
-                  checked={form.itemType === "READY"}
-                  onChange={() => setForm({ ...form, itemType: "READY" })}
+                  type="checkbox"
+                  checked={form.isFeatured ?? item.isFeatured}
+                  onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
                 />
-                Món có sẵn
+                Món ăn nổi bật
               </label>
             </div>
-          </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Ảnh món ăn</label>
-            <ImageUpload
-              value={imageUrl}
-              onChange={setImageUrl}
-              onFileChange={setImageFile}
-            />
-          </div>
+            <div className={`${styles.field} ${styles.fullWidth}`}>
+              <label className={styles.label}>Mô tả</label>
+              <textarea
+                className={styles.textarea}
+                value={form.description ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                rows={2}
+              />
+            </div>
 
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={form.isActive ?? item.isActive}
-              onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-            />
-            Còn hoạt động
-          </label>
+            <div className={`${styles.field} ${styles.fullWidth}`}>
+              <label className={styles.label}>Ảnh món ăn</label>
+              <ImageUpload
+                value={imageUrl}
+                onChange={setImageUrl}
+                onFileChange={setImageFile}
+              />
+            </div>
+          </div>
         </div>
         <div className={styles.modalFoot}>
           <button className={styles.btnCancel} onClick={onClose}>
@@ -742,19 +769,20 @@ export default function MenuItemsPage() {
                 <th>Loại món</th>
                 <th>Giá</th>
                 <th>Trạng thái</th>
+                <th>Nổi bật</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className={styles.loading}>
+                  <td colSpan={11} className={styles.loading}>
                     Đang tải...
                   </td>
                 </tr>
               ) : paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className={styles.empty}>
+                  <td colSpan={11} className={styles.empty}>
                     Chưa có món nào phù hợp
                   </td>
                 </tr>
@@ -765,9 +793,9 @@ export default function MenuItemsPage() {
                     <td>
                       {item.thumbnail ? (
                         <img
-                          src={item.thumbnail}
-                          alt={item.itemName}
-                          className={styles.thumbnail}
+                           src={item.thumbnail}
+                           alt={item.itemName}
+                           className={styles.thumbnail}
                         />
                       ) : (
                         <div className={styles.noImage}>Sửa ảnh</div>
@@ -793,6 +821,13 @@ export default function MenuItemsPage() {
                       >
                         {item.isActive ? "Hoạt động" : "Ngừng"}
                       </span>
+                    </td>
+                    <td>
+                      {item.isFeatured ? (
+                        <span style={{ color: '#10b981', background: '#e6fffa', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid #b2f5ea' }}>Nổi bật</span>
+                      ) : (
+                        <span style={{ color: '#94a3b8', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>Thường</span>
+                      )}
                     </td>
                     <td>
                       <div className={styles.btnRow}>

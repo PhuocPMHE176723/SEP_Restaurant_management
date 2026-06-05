@@ -110,14 +110,18 @@ builder.Services.AddHostedService<DailyTableCleanupService>();
 // ─────────────────────────────────────────────────────────────
 //  CORS
 // ─────────────────────────────────────────────────────────────
+var allowedOrigins =
+    builder.Configuration.GetSection("Frontend:AllowedOrigins").Get<string[]>() ??
+    [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://khoique-restaurant.vercel.app",
+    ];
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy
-            .SetIsOriginAllowed(origin => true) // Allow any origin
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials() // Allow credentials for cookies if needed
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
     );
 });
 

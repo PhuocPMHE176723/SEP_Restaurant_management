@@ -150,12 +150,7 @@ export async function getMenuItems(categoryId?: string | number): Promise<MenuIt
 
 export async function getFeaturedItems(): Promise<MenuItem[]> {
   const all = await getMenuItems();
-  const featured = all.filter((i) => i.isFeatured && i.isActive !== false && i.isAvailable !== false);
-  if (featured.length > 0) return featured;
-
-  // Fallback: surface active items when no item is flagged featured
-  const active = all.filter((i) => i.isActive !== false && i.isAvailable !== false);
-  return active.slice(0, 8);
+  return all.filter((i) => i.isFeatured && i.isActive !== false && i.isAvailable !== false);
 }
 
 export async function createBooking(data: Omit<Booking, "id" | "status" | "confirmedAt">): Promise<Booking> {

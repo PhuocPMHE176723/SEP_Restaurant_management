@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Middlewares;
+using SEP_Restaurant_management.Core.Models;
 
 namespace SEP_Restaurant_management.Core.Data;
 
@@ -12,7 +12,8 @@ public static class DbInitializer
         var context = serviceProvider.GetRequiredService<SepDatabaseContext>();
 
         // Sync migration history if tables already exist
-        await context.Database.ExecuteSqlRawAsync(@"
+        await context.Database.ExecuteSqlRawAsync(
+            @"
             IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
             BEGIN
                 CREATE TABLE [__EFMigrationsHistory] (
@@ -27,7 +28,49 @@ public static class DbInitializer
                 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
                 VALUES ('20260526160901_FixDB', '8.0.0');
             END;
-        ");
+        "
+        );
+
+        // Ensure custom Identity columns exist in AspNetUsers table
+        await context.Database.ExecuteSqlRawAsync(
+            @"
+            IF OBJECT_ID(N'[AspNetUsers]') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH(N'[AspNetUsers]', N'FullName') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [FullName] nvarchar(max) NULL;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'IsPhoneVerified') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [IsPhoneVerified] bit NOT NULL DEFAULT 0;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'PhoneVerifiedAt') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [PhoneVerifiedAt] datetime2 NULL;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'PendingPhoneNumber') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [PendingPhoneNumber] nvarchar(max) NULL;
+                END;
+            END;
+            "
+        );
+
+        // Ensure IsFeatured column exists in MenuItems table
+        await context.Database.ExecuteSqlRawAsync(
+            @"
+            IF OBJECT_ID(N'[MenuItems]') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH(N'[MenuItems]', N'IsFeatured') IS NULL
+                BEGIN
+                    ALTER TABLE [MenuItems] ADD [IsFeatured] bit NOT NULL DEFAULT 0;
+                END;
+            END;
+            "
+        );
+
+        // Automatically apply any pending migrations (e.g., Notifications, RefundUpdate)
+        await context.Database.MigrateAsync();
 
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
@@ -41,8 +84,7 @@ public static class DbInitializer
             "Customer",
             "Warehouse",
             "Kitchen",
-           "Cashier",
-          
+            "Cashier",
         };
 
         foreach (var roleName in roleNames)
@@ -83,7 +125,13 @@ public static class DbInitializer
         );
 
         // Seed default Customer account
-        await SeedUser(userManager, "customer@restaurant.com", "Customer@123", "Customer", "Customer");
+        await SeedUser(
+            userManager,
+            "customer@restaurant.com",
+            "Customer@123",
+            "Customer",
+            "Customer"
+        );
         await SeedUser(userManager, "trongytb2@gmail.com", "123456", "Test Customer", "Customer");
         await SeedUser(
             userManager,
@@ -123,11 +171,8 @@ public static class DbInitializer
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(user, role);
-
             }
-
         }
-
     }
 
     private static async Task SeedSystemConfig(IServiceProvider serviceProvider)
@@ -686,4 +731,3 @@ public static class DbInitializer
         await context.SaveChangesAsync();
     }
 }
-

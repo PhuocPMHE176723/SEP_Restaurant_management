@@ -367,7 +367,6 @@ namespace rmn_be.Core.Services.Implementation
                     title: "Khách nhận bàn (Check-in)",
                     message: $"Khách hàng {reservation.CustomerName} đã nhận bàn {tableNamesStr}.",
                     type: "CHECKIN",
-                    userId: customerUserId,
                     role: "Staff",
                     relatedId: reservation.ReservationId.ToString()
                 );

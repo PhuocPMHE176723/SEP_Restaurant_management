@@ -28,7 +28,7 @@ public class RegisterRequestDTO
     public string FullName { get; set; } = string.Empty;
 
     [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
-    public string? Phone { get; set; } = string.Empty;
+    public string? Phone { get; set; }
 
     /// <summary>
     /// Cho phép: Admin, Staff, Customer, Warehouse, Kitchen, Cashier

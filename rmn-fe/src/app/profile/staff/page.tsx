@@ -228,11 +228,29 @@ export default function StaffProfilePage() {
   };
 
   if (loading) {
-    return <div className={styles.state}>Đang tải hồ sơ...</div>;
+    return (
+      <div className={styles.page}>
+        <div className={styles.contentWrapper}>
+          <Header />
+          <div className={styles.headerSpacer} />
+          <div className={styles.state}>Đang tải hồ sơ...</div>
+        </div>
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div className={styles.error}>Không có dữ liệu hồ sơ</div>;
+    return (
+      <div className={styles.page}>
+        <div className={styles.contentWrapper}>
+          <Header />
+          <div className={styles.headerSpacer} />
+          <div className={styles.error}>
+            {profileStatus.message || "Không có dữ liệu hồ sơ"}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
