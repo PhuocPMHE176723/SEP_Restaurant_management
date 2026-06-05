@@ -31,6 +31,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!user?.roles.includes("Manager") && !user?.roles.includes("Admin")) { router.replace("/"); }
     }, [mounted, isLoggedIn, user, router]);
 
+    const isAdmin = user?.roles.some((r: string) => r.toLowerCase() === "admin") ?? false;
+
+    // Filter standard nav items: Admin only sees Dashboard and User List
+    const filteredNavItems = NAV_ITEMS.filter(item => {
+        if (isAdmin) {
+            return item.href === "/manager" || item.href === "/manager/userList";
+        }
+        return true;
+    });
+
     const getLinkClass = (href: string) => {
         const baseHref = href.split("?")[0];
         const isActive = baseHref === "/manager"
@@ -54,13 +64,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarTop}>
                     <Link href="/manager" className={styles.brand}>
-                        <span className={styles.brandLabel}>Manager Panel</span>
+                        <span className={styles.brandLabel}>{isAdmin ? "Admin Panel" : "Manager Panel"}</span>
                     </Link>
                 </div>
 
                 <nav className={styles.sideNav}>
                     <p className={styles.navGroup}>Quản lý</p>
-                    {NAV_ITEMS.map((item) => (
+                    {filteredNavItems.map((item) => (
                         <Link key={item.href} href={item.href} className={getLinkClass(item.href)}>
                             {item.label}
                         </Link>
@@ -68,16 +78,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Khuyến mãi & Cấu hình</p>
                     <Link href="/manager/system-config" className={getLinkClass("/manager/system-config")}>Cấu hình Thuế (VAT)</Link>
-                    <Link href="/manager/discount-codes" className={getLinkClass("/manager/discount-codes")}>Quản lý Mã giảm giá</Link>
+                    {!isAdmin && (
+                        <Link href="/manager/discount-codes" className={getLinkClass("/manager/discount-codes")}>Quản lý Mã giảm giá</Link>
+                    )}
                     <Link href="/manager/loyalty-config" className={getLinkClass("/manager/loyalty-config")}>Cấu hình Tích điểm</Link>
-                    <Link href="/manager/loyalty-history" className={getLinkClass("/manager/loyalty-history")}>Lịch sử Điểm</Link>
-                    
+                    {!isAdmin && (
+                        <>
+                            <Link href="/manager/loyalty-history" className={getLinkClass("/manager/loyalty-history")}>Lịch sử Điểm</Link>
+                            
 
-                    <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
-                    <Link href="/manager/reservations" className={getLinkClass("/manager/reservations")}>Lịch sử Đặt bàn</Link>
+                            <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
+                            <Link href="/manager/reservations" className={getLinkClass("/manager/reservations")}>Lịch sử Đặt bàn</Link>
 
-                    <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Hệ thống & Bảo trì</p>
-                    <Link href="/manager/dining-tables?action=cleanup" className={getLinkClass("/manager/dining-tables?action=cleanup")}>Dọn dẹp & Giải phóng bàn</Link>
+                            <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Hệ thống & Bảo trì</p>
+                            <Link href="/manager/dining-tables?action=cleanup" className={getLinkClass("/manager/dining-tables?action=cleanup")}>Dọn dẹp & Giải phóng bàn</Link>
+                        </>
+                    )}
 
                 </nav>
 
@@ -86,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className={styles.userAvatar}>{user.fullName.charAt(0).toUpperCase()}</div>
                         <div className={styles.userMeta}>
                             <span className={styles.userName}>{user.fullName}</span>
-                            <span className={styles.userRole}>Manager</span>
+                            <span className={styles.userRole}>{isAdmin ? "Admin" : "Manager"}</span>
                         </div>
                     </div>
                     <button className={styles.logoutBtn} onClick={() => { logout(); router.push("/login"); }}>

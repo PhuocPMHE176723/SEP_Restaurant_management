@@ -264,6 +264,19 @@ export interface DailyRevenuePoint {
     revenue: number;
 }
 
+export interface SalesExpensePoint {
+    date: string;
+    dayOfWeek: string;
+    revenue: number;
+    expense: number;
+}
+
+export interface NewRegistrationPoint {
+    date: string;
+    dayOfWeek: string;
+    count: number;
+}
+
 export interface TopSellerItem {
     name: string;
     quantity: number;
@@ -276,19 +289,104 @@ export interface StaffPerformanceMetric {
     revenue: number;
 }
 
+export interface LoyaltyTierGroup {
+    tierName: string;
+    minPoints: number;
+    discountRate: number;
+    count: number;
+}
+
+export interface PaymentMethodShare {
+    method: string;
+    amount: number;
+}
+
+export interface OrderTypeShare {
+    orderType: string;
+    revenue: number;
+}
+
+export interface DiscountCodeStats {
+    code: string;
+    discountType: string;
+    discountValue: number;
+    usedCount: number;
+    maxUses: number | null;
+    isActive: boolean;
+}
+
+export interface InventoryAuditSummary {
+    auditCode: string;
+    auditDate: string;
+    staffName: string;
+    itemsCount: number;
+    note: string | null;
+}
+
+export interface TodayReservationItem {
+    reservationId: number;
+    customerName: string;
+    customerPhone: string;
+    reservedAt: string;
+    status: string;
+    durationMinutes: number;
+    totalTables: number;
+    depositAmount: number;
+    contactEmail: string | null;
+}
+
+export interface DiningTableStatusItem {
+    tableId: number;
+    tableCode: string;
+    capacity: number;
+    status: string;
+}
+
+export interface KitchenQueueStatus {
+    status: string;
+    count: number;
+}
+
 export interface DashboardStats {
+    vatEnabled: string;
+    vatRate: string;
+
+    // Common Overview
     dailyRevenue: number;
     monthlyRevenue: number;
     totalTables: number;
     occupiedTables: number;
     todayReservations: number;
+    activeOrdersCount: number;
     reservationStatus: ReservationStatusCount[];
-    lowStockIngredients: LowStockIngredient[];
-    dailyRevenueChart: DailyRevenuePoint[];
     topSellers: TopSellerItem[];
+
+    // Manager operational metrics
+    todayReservationsList: TodayReservationItem[];
+    tableStatusList: DiningTableStatusItem[];
+    kitchenStatus: KitchenQueueStatus[];
+    lowStockIngredients: LowStockIngredient[];
+
+    // Admin financial metrics
+    totalSales30Days: number;
+    restockingCost30Days: number;
+    netProfit30Days: number;
+    aov30Days: number;
+    totalDiscounts30Days: number;
+    totalVat30Days: number;
     totalCustomers: number;
     totalStaff: number;
+    loyaltyTiers: LoyaltyTierGroup[];
+    paymentMethodShare: PaymentMethodShare[];
+    orderTypeShare: OrderTypeShare[];
     staffPerformance: StaffPerformanceMetric[];
+    discountStats: DiscountCodeStats[];
+    recentAudits: InventoryAuditSummary[];
+
+    // Charts
+    dailyRevenueChart: DailyRevenuePoint[];
+    salesExpenseChart: SalesExpensePoint[];
+    newRegistrationsChart: NewRegistrationPoint[];
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
