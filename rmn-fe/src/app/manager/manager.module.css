@@ -1495,6 +1495,65 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
+.bookingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bookingMeta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+}
+
+.assignedTables {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tableCount {
+  text-align: center;
+  font-size: 18px;
+  color: #374151;
+}
+
+.tableList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tableBadge {
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.assignedText {
+  color: #10b981;
+  font-size: 14px;
+}
+
+.noteBox {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 16px;
+  color: #4b5563;
+}
+
 /* Form compact grid for Modals */
 .formGrid {
     display: grid;

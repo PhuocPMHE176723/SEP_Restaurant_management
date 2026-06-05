@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
 import { orderApi } from "../../../lib/api/order";
@@ -15,6 +16,7 @@ interface Table {
   tableName: string;
   capacity: number;
   status: string;
+  isReserved: boolean;
 }
 
 interface Customer {
@@ -44,6 +46,7 @@ export default function WalkinPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  const router = useRouter();
   useEffect(() => {
     fetchTables();
   }, []);
@@ -58,6 +61,7 @@ export default function WalkinPage() {
           tableName: table.tableName || table.tableCode,
           capacity: table.capacity,
           status: table.status,
+          isReserved: table.isReserved,
         })),
       );
       setLoading(false);
@@ -157,6 +161,7 @@ export default function WalkinPage() {
       setSelectedTableIds([]);
       await fetchTables();
       showSuccess("Thành công", "Đã gán bàn và mở order thành công!");
+      router.push(`/cashier/orders`);
     } catch (error) {
       console.error("Failed to assign table:", error);
       showError("Lỗi", "Gán bàn thất bại!");
@@ -372,7 +377,6 @@ export default function WalkinPage() {
                 <option value="2">&ge; 2 người</option>
                 <option value="4">&ge; 4 người</option>
                 <option value="6">&ge; 6 người</option>
-                <option value="10">&ge; 10 người</option>
               </select>
 
               <select 
@@ -403,7 +407,10 @@ export default function WalkinPage() {
             <>
               <div className={styles.tableGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                   {currentTables.map((table) => {
-                    const isAvailable = table.status === "AVAILABLE";
+                    const isOccupied = table.status === "OCCUPIED";
+                  const isReserved = table.isReserved;
+
+                  const isAvailable = !isOccupied && !isReserved;
                     const isSelected = selectedTableIds.includes(table.tableId);
                     // Single table assignment is now part of multi-selection
                     const isSelectable = isAvailable;
@@ -411,7 +418,7 @@ export default function WalkinPage() {
                     return (
                       <div
                         key={table.tableId}
-                        className={`${styles.tableCard} ${isAvailable ? styles.available : styles.occupied}`}
+                        className={`${styles.tableCard} ${isOccupied ? styles.occupied : isReserved ? styles.reserved : styles.available}`}
                         onClick={() => isSelectable && toggleTableSelection(table.tableId)}
                         style={{
                           opacity: isSelectable ? 1 : 0.6,
@@ -450,13 +457,13 @@ export default function WalkinPage() {
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isAvailable ? '#166534' : '#991b1b' }}>{table.tableName}</h4>
+                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isAvailable ? '#166534' : isOccupied ? '#991b1b' : '#ea580c' }}>{table.tableName}</h4>
                           <span style={{ 
                             fontSize: '0.65rem', 
                             padding: '0.15rem 0.5rem', 
                             borderRadius: '1rem',
-                            backgroundColor: isAvailable ? '#dcfce7' : '#fee2e2',
-                            color: isAvailable ? '#166534' : '#991b1b',
+                            backgroundColor: isAvailable ? '#dcfce7' : isOccupied ? '#fee2e2' : '#fef3c7',
+                            color: isAvailable ? '#166534' : isOccupied ? '#991b1b' : '#ea580c',
                             fontWeight: 700
                           }}>
                             {table.status === "AVAILABLE" ? "TRỐNG" : table.status === "OCCUPIED" ? "BẬN" : "ĐÃ ĐẶT"}
@@ -464,13 +471,15 @@ export default function WalkinPage() {
                         </div>
                         <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> người</p>
                         
-                        {!isAvailable ? (
-                          <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang bận</div>
-                        ) : (
-                          <div style={{ color: isSelected ? '#ea580c' : '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>
-                            {isSelected ? "Đã chọn" : "Nhấp để chọn bàn →"}
-                          </div>
-                        )}
+                        {isOccupied ? (
+                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang có khách</div>
+                      ) : isReserved ? (
+                        <div style={{ color: '#ea580c', fontSize: '0.75rem', fontWeight: 600 }}>📅 Bàn đã được đặt trước</div>
+                      ) : (
+                        <div style={{ color: isSelected ? '#ea580c' : '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>
+                          {isSelected ? "Đã chọn" : "Nhấp để chọn bàn →"}
+                        </div>
+                      ) }
                       </div>
                     );
                   })}

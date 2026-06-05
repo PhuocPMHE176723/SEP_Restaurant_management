@@ -16,29 +16,6 @@ namespace rmn_be.Core.Services.Implementation
             _context = context;
             _notificationService = notificationService;
         }
-        private static DateTime GetAssignmentBlockEnd(DateTime reservedAt)
-        {
-            var time = reservedAt.TimeOfDay;
-
-            // Ca sáng: 11:00 - 14:00 => giữ bàn 2.5 tiếng
-            if (time >= new TimeSpan(11, 0, 0) && time <= new TimeSpan(14, 0, 0))
-            {
-                return reservedAt.AddHours(2.5);
-            }
-
-            // Ca chiều: 17:00 - 22:00 => giữ bàn 4 tiếng
-            if (time >= new TimeSpan(17, 0, 0) && time <= new TimeSpan(22, 0, 0))
-            {
-                return reservedAt.AddHours(4);
-            }
-
-            return reservedAt.AddMinutes(90);
-        }
-
-        private static bool IsOverlapping(DateTime start1, DateTime end1, DateTime start2, DateTime end2)
-        {
-            return start1 < end2 && start2 < end1;
-        }
 
         private static string GetShift(DateTime reservedAt)
         {
@@ -74,8 +51,7 @@ namespace rmn_be.Core.Services.Implementation
                 .Select(ot => ot.TableId)
                 .ToList() ?? new List<int>();
 
-            var targetStart = reservation.ReservedAt;
-            var targetEnd = GetAssignmentBlockEnd(targetStart);
+            var targetShift = GetShiftKey(reservation.ReservedAt);
 
             var tables = await _context.DiningTables
                 .Where(t => t.IsActive)
@@ -103,12 +79,7 @@ namespace rmn_be.Core.Services.Implementation
 
                 var conflictOrder = otherReservationOrders.FirstOrDefault(o =>
                     o.OrderTables.Any(ot => ot.TableId == table.TableId) &&
-                    IsOverlapping(
-                        targetStart,
-                        targetEnd,
-                        o.Reservation!.ReservedAt,
-                        GetAssignmentBlockEnd(o.Reservation.ReservedAt)
-                    )
+                    GetShiftKey(o.Reservation!.ReservedAt) == targetShift
                 );
 
                 var isReservedByOther = conflictOrder != null;
@@ -192,9 +163,9 @@ namespace rmn_be.Core.Services.Implementation
             }
 
             var requestedTableTypeCount =
-    reservation.Table4Count +
-    reservation.Table6Count +
-    reservation.Table8Count;
+                reservation.Table4Count +
+                reservation.Table6Count +
+                reservation.Table8Count;
 
             var isBookingByTable = requestedTableTypeCount > 0;
             var isBookingByPeople = !isBookingByTable;
@@ -220,8 +191,7 @@ namespace rmn_be.Core.Services.Implementation
                 throw new Exception("Tổng sức chứa của bàn chưa đủ cho số lượng khách");
             }
 
-            var targetStart = reservation.ReservedAt;
-            var targetEnd = GetAssignmentBlockEnd(targetStart);
+            var targetShift = GetShiftKey(reservation.ReservedAt);
 
             var otherReservationOrders = await _context.Orders
                 .Include(o => o.OrderTables)
@@ -244,12 +214,7 @@ namespace rmn_be.Core.Services.Implementation
 
                 var conflictOrder = otherReservationOrders.FirstOrDefault(o =>
                     o.OrderTables.Any(ot => ot.TableId == table.TableId) &&
-                    IsOverlapping(
-                        targetStart,
-                        targetEnd,
-                        o.Reservation!.ReservedAt,
-                        GetAssignmentBlockEnd(o.Reservation.ReservedAt)
-                    )
+                    GetShiftKey(o.Reservation!.ReservedAt) == targetShift
                 );
 
                 if (conflictOrder != null)
@@ -299,7 +264,24 @@ namespace rmn_be.Core.Services.Implementation
             }
 
             await _context.SaveChangesAsync();
+            string? customerUserId = null;
+            if (reservation.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FindAsync(reservation.CustomerId.Value);
+                customerUserId = customer?.UserId;
+            }
+            var assignedTableCodes = selectedTables
+    .Select(t => t.TableCode)
+    .OrderBy(x => x)
+    .ToList();
 
+            await _notificationService.CreateNotificationAsync(
+                title: "Đơn đặt bàn đã được xác nhận",
+                message: $"Đơn đặt bàn của bạn đã được gán bàn thành công. Bàn: {string.Join(", ", assignedTableCodes)}. Thời gian: {reservation.ReservedAt:dd/MM/yyyy HH:mm}.",
+                type: "RESERVATION_CONFIRMED",
+                userId: customerUserId,
+                relatedId: reservation.ReservationId.ToString()
+            );
             return true;
         }
         public async Task<long> CheckInReservationAsync(long reservationId)
@@ -393,5 +375,24 @@ namespace rmn_be.Core.Services.Implementation
 
             return order.OrderId;
         }
+        private static string GetShiftKey(DateTime reservedAt)
+        {
+            var time = reservedAt.TimeOfDay;
+
+            if (time >= new TimeSpan(11, 0, 0) &&
+                time <= new TimeSpan(14, 0, 0))
+            {
+                return $"{reservedAt:yyyyMMdd}_MORNING";
+            }
+
+            if (time >= new TimeSpan(17, 0, 0) &&
+                time <= new TimeSpan(22, 0, 0))
+            {
+                return $"{reservedAt:yyyyMMdd}_EVENING";
+            }
+
+            return $"{reservedAt:yyyyMMdd}_OTHER";
+        }
+
     }
 }

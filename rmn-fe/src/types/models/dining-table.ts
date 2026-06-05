@@ -5,6 +5,7 @@ export interface DiningTableResponse {
     capacity: number;
     status: "AVAILABLE" | "OCCUPIED" | "RESERVED" | "MAINTENANCE";
     isActive: boolean;
+    isReserved: boolean;
 }
 
 export interface CreateDiningTableRequest {

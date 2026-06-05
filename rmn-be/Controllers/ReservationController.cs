@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP_Restaurant_management.Core.DTOs;
+using SEP_Restaurant_management.Core.Exceptions;
 using SEP_Restaurant_management.Core.Middlewares;
 using SEP_Restaurant_management.Core.Models;
 using SEP_Restaurant_management.Core.Services.Interface;
@@ -14,7 +15,7 @@ using SEP_Restaurant_management.Core.Services.Interface;
 namespace SEP_Restaurant_management.Controllers;
 
 [Route("api/[controller]")]
-[Authorize(Roles = "Customer")]
+
 public class ReservationController : BaseController
 {
     private readonly IReservationService _reservationService;
@@ -78,6 +79,7 @@ public class ReservationController : BaseController
     }
 
     [HttpPost]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CreateReservation([FromBody] CreateReservationRequest request)
     {
         try
@@ -160,6 +162,7 @@ public class ReservationController : BaseController
     }
 
     [HttpGet("my-reservations")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyReservations()
     {
         try
@@ -175,6 +178,7 @@ public class ReservationController : BaseController
     }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetReservationById(long id)
     {
         try
@@ -202,6 +206,7 @@ public class ReservationController : BaseController
     }
 
     [HttpPost("{id}/cancel")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CancelReservation(long id)
     {
         try
@@ -223,6 +228,7 @@ public class ReservationController : BaseController
     }
 
     [HttpPut("{id}/items")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> UpdateReservationItems(
         long id,
         [FromBody] List<OrderItemRequest> newItems
@@ -248,5 +254,20 @@ public class ReservationController : BaseController
         {
             return Failure(ex.Message);
         }
+    }
+    [HttpPost("cashier")]
+    public async Task<IActionResult> CreateCashierReservation(
+    [FromBody] CreateCashierReservationRequest request)
+    {
+        Console.WriteLine("===== CASHIER API HIT =====");
+        var result =
+            await _reservationService
+                .CreateCashierReservationAsync(request);
+
+        return Ok(new
+        {
+            success = true,
+            data = result
+        });
     }
 }

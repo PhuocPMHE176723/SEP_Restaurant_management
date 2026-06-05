@@ -32,17 +32,20 @@ export default function ServingListPage() {
 
   useEffect(() => {
     fetchServingList();
+  }, []);
 
+  useEffect(() => {
     const interval = setInterval(() => {
       fetchServingList();
-      if (selectedItem) {
+
+      if (selectedItem?.itemId) {
         fetchTables(selectedItem.itemId);
       }
     }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
-
+  }, [selectedItem?.itemId]);
+  
   useEffect(() => {
     if (selectedItem) {
       fetchTables(selectedItem.itemId);
@@ -90,12 +93,12 @@ export default function ServingListPage() {
 
     try {
       await servingApi.serveReadyItem(selectedItem.itemId, orderId, 1);
-      showSuccess("Đã xác nhận bế món");
+      showSuccess("Đã xác nhận phục vụ món");
       await fetchServingList();
       await fetchTables(selectedItem.itemId);
     } catch (error) {
       console.error(error);
-      showError("Không thể xác nhận bế món");
+      showError("Không thể xác nhận phục vụ món");
     }
   };
 
@@ -138,7 +141,7 @@ export default function ServingListPage() {
         return item.itemType !== "READY";
       }
     });
-
+    
     const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return list;
 
@@ -151,7 +154,7 @@ export default function ServingListPage() {
   // Khi thay đổi Tab, tự động chọn món ăn đầu tiên của tab đó để tránh trống màn hình điều phối
   const handleTabChange = (tab: "READY" | "PROCESSED") => {
     setActiveTab(tab);
-    const firstItemInTab = servingList.find(item => 
+    const firstItemInTab = servingList.find(item =>
       tab === "READY" ? item.itemType === "READY" : item.itemType !== "READY"
     );
     if (firstItemInTab) {
@@ -162,7 +165,7 @@ export default function ServingListPage() {
       setTables([]);
     }
   };
-  
+
 
   const formatLastUpdated = (value?: string | null) => {
     if (!value) return "Chưa cập nhật";
@@ -240,7 +243,7 @@ export default function ServingListPage() {
         <div className={styles.card} style={{ padding: "1rem", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
             <h1 className={styles.pageTitle} style={{ marginBottom: 0, fontSize: "1.9rem" }}>
-              Danh sách chờ bế
+              Danh sách chờ phục vụ
             </h1>
             <div
               style={{
@@ -276,12 +279,12 @@ export default function ServingListPage() {
             />
           </div>
           {/* THANH ĐIỀU HƯỚNG TABS: ĐỒ SẴN VS ĐỒ PHẢI NẤU */}
-          <div 
-            style={{ 
-              display: "flex", 
-              background: "#f1f5f9", 
-              padding: "0.25rem", 
-              borderRadius: "1rem", 
+          <div
+            style={{
+              display: "flex",
+              background: "#f1f5f9",
+              padding: "0.25rem",
+              borderRadius: "1rem",
               gap: "0.25rem",
               marginBottom: "1rem"
             }}
@@ -309,12 +312,12 @@ export default function ServingListPage() {
             >
               <Package size={18} />
               <span>Đồ sẵn</span>
-              <span 
-                style={{ 
-                  fontSize: "0.75rem", 
-                  background: activeTab === "READY" ? "#ffedd5" : "#e2e8f0", 
-                  color: activeTab === "READY" ? "#ea580c" : "#475569", 
-                  padding: "0.15rem 0.45rem", 
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  background: activeTab === "READY" ? "#ffedd5" : "#e2e8f0",
+                  color: activeTab === "READY" ? "#ea580c" : "#475569",
+                  padding: "0.15rem 0.45rem",
                   borderRadius: "999px",
                   fontWeight: 900
                 }}
@@ -346,12 +349,12 @@ export default function ServingListPage() {
             >
               <ChefHat size={18} />
               <span>Đồ phải nấu</span>
-              <span 
-                style={{ 
-                  fontSize: "0.75rem", 
-                  background: activeTab === "PROCESSED" ? "#ffedd5" : "#e2e8f0", 
-                  color: activeTab === "PROCESSED" ? "#ea580c" : "#475569", 
-                  padding: "0.15rem 0.45rem", 
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  background: activeTab === "PROCESSED" ? "#ffedd5" : "#e2e8f0",
+                  color: activeTab === "PROCESSED" ? "#ea580c" : "#475569",
+                  padding: "0.15rem 0.45rem",
                   borderRadius: "999px",
                   fontWeight: 900
                 }}
@@ -548,22 +551,22 @@ export default function ServingListPage() {
                         {item.itemName}
                       </div>
                       {/* BADGE */}
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.4rem",
-                              background: "#fef4db",
-                              color: "#eb5325",
-                              borderRadius: "999px",
-                              padding: "0.3rem 0.7rem",
-                              fontSize: "0.8rem",
-                              fontWeight: 700,
-                              width: "fit-content",
-                            }}
-                          >
-                            Đồ nóng
-                          </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          background: "#fef4db",
+                          color: "#eb5325",
+                          borderRadius: "999px",
+                          padding: "0.3rem 0.7rem",
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          width: "fit-content",
+                        }}
+                      >
+                        Đồ nóng
+                      </div>
                       <div
                         style={{
                           marginTop: "0.4rem",
@@ -650,7 +653,7 @@ export default function ServingListPage() {
                 {tables.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-[2rem] text-slate-400 p-8 shadow-sm">
                     <h3 className="text-lg font-bold text-slate-700">Đã hoàn tất xuất sắc!</h3>
-                    <p className="text-xs mt-1 text-slate-400">Không còn bàn nào đang chờ bế món ăn này.</p>
+                    <p className="text-xs mt-1 text-slate-400">Không còn bàn nào đang chờ phục vụ món ăn này.</p>
                   </div>
                 ) : (
                   tables.map((table) => {
@@ -731,7 +734,7 @@ export default function ServingListPage() {
                         <div style={{ flex: 1, minWidth: "250px", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                             <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              Vị trí bế món
+                              Vị trí phục vụ món
                             </span>
                             <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#cbd5e1" }} />
                             <span
@@ -846,7 +849,7 @@ export default function ServingListPage() {
                             {/* Tiến độ mini bar */}
                             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", fontWeight: 850 }}>
-                                <span style={{ color: "#94a3b8" }}>Đã bế:</span>
+                                <span style={{ color: "#94a3b8" }}>Đã phục vụ:</span>
                                 <span style={{ color: "#00b074", marginLeft: "auto" }}>{table.servedQuantity}/{table.orderedQuantity}</span>
                               </div>
                               <div
@@ -897,7 +900,7 @@ export default function ServingListPage() {
                             <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: "50%", width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", marginRight: "6px" }}>
                               <CheckCircle2 size={13} strokeWidth={3} />
                             </span>
-                            <span style={{ letterSpacing: "0.02em" }}>Xác nhận bế</span>
+                            <span style={{ letterSpacing: "0.02em" }}>Xác nhận phục vụ</span>
                           </button>
                         </div>
 

@@ -21,4 +21,7 @@ public interface IReservationService
         long customerId,
         List<OrderItemRequest> newItems
     );
+    Task<ReservationDTO> CreateCashierReservationAsync(
+    CreateCashierReservationRequest request
+);
 }

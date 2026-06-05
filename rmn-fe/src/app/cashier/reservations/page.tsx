@@ -9,6 +9,7 @@ import styles from "../../manager/manager.module.css";
 import { useRouter } from "next/navigation";
 import AssignTablesModal from "../../../components/AssignTablesModal/AssignTablesModal";
 import ViewAssignTablesModal from "../../../components/ViewAssignTablesModal/ViewAssignTablesModal";
+import RefundModal from "../../../components/RefundModal/RefundModal";
 import CancelModel from "../../../components/CancelModel/CancelModel";
 import { showSuccess, showError } from "@/lib/ui/alerts";
 import {
@@ -54,13 +55,33 @@ export default function StaffReservationsPage() {
   // Modal state
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
-
+  //Modal refund
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [selectedRefundReservation, setSelectedRefundReservation] =
+    useState<ReservationResponse | null>(null);
+  const [viewRefundMode, setViewRefundMode] =
+  useState(false);
   // OPEN MODAL
   const handleOpenCancelModal = (reservation: any) => {
     setSelectedReservation(reservation);
     setCancelModalOpen(true);
   };
 
+  const handleOpenRefundModal = (
+  reservation: any
+) => {
+  setSelectedReservation(reservation);
+  setViewRefundMode(false);
+  setRefundModalOpen(true);
+};
+
+const handleViewRefund = (
+  reservation: any
+) => {
+  setSelectedReservation(reservation);
+  setViewRefundMode(true);
+  setRefundModalOpen(true);
+};
   // CONFIRM CANCEL
   const handleConfirmCancel = async (data: {
     reason: string;
@@ -86,6 +107,36 @@ export default function StaffReservationsPage() {
       showError("Không thể huỷ đơn");
     }
   };
+
+  const handleConfirmRefund = async (data: {
+    refundMethod: string;
+    refundProff: File | null;
+  }) => {
+    if (!selectedReservation) return;
+
+    try {
+      await adminReservationApi.refundReservation(
+        selectedReservation.reservationId,
+        data
+      );
+
+      showSuccess("Hoàn tiền thành công");
+
+      setRefundModalOpen(false);
+      setSelectedRefundReservation(null);
+
+      await fetchReservations();
+    } catch (error) {
+      console.error(error);
+
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Không thể hoàn tiền"
+      );
+    }
+  };
+
   useEffect(() => {
     fetchReservations();
   }, [startDate, endDate]);
@@ -671,6 +722,61 @@ export default function StaffReservationsPage() {
                                 Check-in
                               </button>
                             )}
+                            {reservation.status === "CANCELLED" &&
+                              !reservation.isRefund && reservation.refundAmount != 0 && (
+                                <button
+                                  style={{
+                                    background: "#0943f3",
+                                    color: "#f8f3f3",
+                                    border: "none",
+                                    padding: "8px 12px",
+                                    borderRadius: "6px",
+                                    cursor: "not-allowed",
+                                    opacity: 0.8,
+                                  }}
+                                  onClick={() =>
+                                    handleOpenRefundModal(reservation)
+                                  }
+                                >
+                                  Hoàn tiền
+                                </button>
+                              )}
+                            {reservation.status === "CANCELLED" &&
+                              reservation.isRefund && reservation.refundAmount != 0 && (
+                                <button
+                                  style={{
+                                    background: "#b5fcb9",
+                                    color: "#2f5204",
+                                    border: "none",
+                                    padding: "8px 12px",
+                                    borderRadius: "6px",
+                                    cursor: "not-allowed",
+                                    opacity: 0.8,
+                                  }}
+                                  onClick={() =>
+                                    handleViewRefund(reservation)
+                                  }
+                                >
+                                  Đã hoàn tiền
+                                </button>
+                              )}
+                            {reservation.status === "CANCELLED" &&
+                              reservation.refundAmount == 0 && (
+                                <button
+                                  disabled
+                                  style={{
+                                    background: "#abb3ab",
+                                    color: "#141414",
+                                    border: "none",
+                                    padding: "8px 12px",
+                                    borderRadius: "6px",
+                                    cursor: "not-allowed",
+                                    opacity: 0.8,
+                                  }}
+                                >
+                                  Không hoàn tiền
+                                </button>
+                              )}
                           </div>
                         </td>
                       </tr>
@@ -708,6 +814,17 @@ export default function StaffReservationsPage() {
               setSelectedReservation(null);
             }}
             onConfirm={handleConfirmCancel}
+          />
+          <RefundModal
+            open={refundModalOpen}
+            reservation={selectedReservation}
+            viewOnly={viewRefundMode}
+            loading={false}
+            onClose={() => {
+              setRefundModalOpen(false);
+              setSelectedReservation(null);
+            }}
+            onConfirm={handleConfirmRefund}
           />
           {totalPages > 1 && (
             <div style={{ marginTop: "1rem" }}>

@@ -31,4 +31,9 @@ export interface ReservationResponse {
     tableIds?: number[];
     order?: OrderResponse;
     assignedTableCount?: number;
+    isRefund?: boolean;
+    refundAmount?: number;
+    refundByStaffId?: number | null;
+    refundNote?: string;
+    refundProff?: string;
 }

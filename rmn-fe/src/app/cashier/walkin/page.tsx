@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { diningTableApi } from "../../../lib/api/dining-table";
 import { orderApi } from "../../../lib/api/order";
@@ -15,6 +16,7 @@ interface Table {
   tableName: string;
   capacity: number;
   status: string;
+  isReserved: boolean;
 }
 
 interface Customer {
@@ -34,16 +36,17 @@ export default function WalkinPage() {
   });
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Filters and Search
   const [searchTerm, setSearchTerm] = useState("");
   const [capacityFilter, setCapacityFilter] = useState<number | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  const router = useRouter();
   useEffect(() => {
     fetchTables();
   }, []);
@@ -58,6 +61,7 @@ export default function WalkinPage() {
           tableName: table.tableName || table.tableCode,
           capacity: table.capacity,
           status: table.status,
+          isReserved: table.isReserved,
         })),
       );
       setLoading(false);
@@ -69,15 +73,15 @@ export default function WalkinPage() {
 
   const findBestFitTables = (target: number, available: Table[]): number[] => {
     if (available.length === 0) return [];
-    
+
     // Sort tables by capacity descending to try larger groups first
     const sortedAvailable = [...available].sort((a, b) => b.capacity - a.capacity);
-    
+
     // 1. First, check if any single table fits perfectly or is the smallest that fits
     const singleFits = sortedAvailable
       .filter(t => t.capacity >= target)
       .sort((a, b) => a.capacity - b.capacity);
-      
+
     if (singleFits.length > 0) return [singleFits[0].tableId];
 
     // 2. If no single table fits, try to find a combination
@@ -85,13 +89,13 @@ export default function WalkinPage() {
     let remaining = target;
     const result: number[] = [];
     const sortedForCombo = [...available].sort((a, b) => b.capacity - a.capacity);
-    
+
     for (const table of sortedForCombo) {
       if (remaining <= 0) break;
       result.push(table.tableId);
       remaining -= table.capacity;
     }
-    
+
     return result;
   };
 
@@ -105,12 +109,12 @@ export default function WalkinPage() {
     }
 
     const bestIds = findBestFitTables(customer.partySize, availableTables);
-    
+
     if (bestIds.length === 0) {
       showError("Lỗi", "Không có đủ bàn trống.");
       return;
     }
-    
+
     setSelectedTableIds(bestIds);
   };
 
@@ -124,7 +128,7 @@ export default function WalkinPage() {
       showError("Lỗi", "Số điện thoại không hợp lệ.");
       return;
     }
-    
+
     const availableTables = tables.filter(t => t.status === "AVAILABLE");
     const totalAvailableCapacity = availableTables.reduce((sum, t) => sum + t.capacity, 0);
 
@@ -157,6 +161,7 @@ export default function WalkinPage() {
       setSelectedTableIds([]);
       await fetchTables();
       showSuccess("Thành công", "Đã gán bàn và mở order thành công!");
+      router.push(`/cashier/orders`);
     } catch (error) {
       console.error("Failed to assign table:", error);
       showError("Lỗi", "Gán bàn thất bại!");
@@ -166,20 +171,20 @@ export default function WalkinPage() {
   };
 
   const toggleTableSelection = (tableId: number) => {
-    setSelectedTableIds(prev => 
-      prev.includes(tableId) 
-        ? prev.filter(id => id !== tableId) 
+    setSelectedTableIds(prev =>
+      prev.includes(tableId)
+        ? prev.filter(id => id !== tableId)
         : [...prev, tableId]
     );
   };
 
   // Filter logic
   const filteredTables = tables.filter(t => {
-    const matchesSearch = t.tableName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         t.tableCode.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = t.tableName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.tableCode.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCapacity = capacityFilter === "ALL" || t.capacity >= (capacityFilter as number);
     const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
-    
+
     return matchesSearch && matchesCapacity && matchesStatus;
   });
 
@@ -203,18 +208,18 @@ export default function WalkinPage() {
       <div style={{ display: 'grid', gridTemplateColumns: "350px 1fr", gap: "2rem" }}>
         {/* Customer form - Beautified */}
         <div className={styles.card} style={{ height: 'fit-content', position: 'sticky', top: '1.5rem', overflow: 'hidden', padding: 0 }}>
-          <div style={{ 
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
-            padding: '1.5rem', 
+          <div style={{
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            padding: '1.5rem',
             borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem'
           }}>
-            <div style={{ 
-              background: 'white', 
-              padding: '0.5rem', 
-              borderRadius: '0.5rem', 
+            <div style={{
+              background: 'white',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
               color: '#3b82f6'
             }}>
@@ -284,18 +289,18 @@ export default function WalkinPage() {
             <div style={{ marginTop: '2rem' }}>
               <button
                 className={styles.btnAdd}
-                style={{ 
-                  width: '100%', 
-                  padding: '1.125rem', 
+                style={{
+                  width: '100%',
+                  padding: '1.125rem',
                   height: 'auto',
                   borderRadius: '0.875rem',
                   fontSize: '1rem',
                   fontWeight: 700,
                   textTransform: 'none',
-                  background: selectedTableIds.length > 0 
+                  background: selectedTableIds.length > 0
                     ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
                     : 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
-                  boxShadow: selectedTableIds.length > 0 
+                  boxShadow: selectedTableIds.length > 0
                     ? '0 10px 15px -3px rgba(249, 115, 22, 0.3)'
                     : 'none',
                   border: 'none',
@@ -308,7 +313,7 @@ export default function WalkinPage() {
               >
                 Gán {selectedTableIds.length > 0 ? selectedTableIds.length : ""} bàn và Check-in
               </button>
-              
+
               <button
                 onClick={handleAutoCheckin}
                 style={{
@@ -327,15 +332,15 @@ export default function WalkinPage() {
                 ✨ Tự động tìm bàn khít
               </button>
 
-              <p style={{ 
-                fontSize: '0.7rem', 
-                color: '#94a3b8', 
-                textAlign: 'center', 
+              <p style={{
+                fontSize: '0.7rem',
+                color: '#94a3b8',
+                textAlign: 'center',
                 marginTop: '1rem',
                 fontStyle: 'italic',
                 lineHeight: 1.4
               }}>
-                {selectedTableIds.length > 0 
+                {selectedTableIds.length > 0
                   ? `Đang chọn: ${tables.filter(t => selectedTableIds.includes(t.tableId)).map(t => t.tableName).join(", ")}`
                   : `Hệ thống sẽ tự động tìm bàn phù hợp nhất cho ${customer.partySize} khách`}
               </p>
@@ -358,9 +363,9 @@ export default function WalkinPage() {
                 }}
               />
             </div>
-            
+
             <div className={styles.filterGroup} style={{ display: 'flex', gap: '1rem' }}>
-              <select 
+              <select
                 className={styles.select}
                 value={capacityFilter}
                 onChange={(e) => {
@@ -372,10 +377,9 @@ export default function WalkinPage() {
                 <option value="2">&ge; 2 người</option>
                 <option value="4">&ge; 4 người</option>
                 <option value="6">&ge; 6 người</option>
-                <option value="10">&ge; 10 người</option>
               </select>
 
-              <select 
+              <select
                 className={styles.select}
                 value={statusFilter}
                 onChange={(e) => {
@@ -402,78 +406,100 @@ export default function WalkinPage() {
           ) : (
             <>
               <div className={styles.tableGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                  {currentTables.map((table) => {
-                    const isAvailable = table.status === "AVAILABLE";
-                    const isSelected = selectedTableIds.includes(table.tableId);
-                    // Single table assignment is now part of multi-selection
-                    const isSelectable = isAvailable;
+                {currentTables.map((table) => {
+                  const isOccupied = table.status === "OCCUPIED";
+                  const isReserved = table.isReserved;
 
-                    return (
-                      <div
-                        key={table.tableId}
-                        className={`${styles.tableCard} ${isAvailable ? styles.available : styles.occupied}`}
-                        onClick={() => isSelectable && toggleTableSelection(table.tableId)}
-                        style={{
-                          opacity: isSelectable ? 1 : 0.6,
-                          cursor: isSelectable ? 'pointer' : 'not-allowed',
-                          padding: '1.25rem',
-                          borderRadius: '0.75rem',
-                          border: isSelected 
-                            ? '3px solid #f97316' 
-                            : isSelectable ? '2px solid #e2e8f0' : '2px solid transparent',
-                          backgroundColor: isSelected ? '#fff7ed' : isAvailable ? '#f0fdf4' : '#fff1f2',
-                          transform: isSelected ? 'scale(1.02)' : 'none',
-                          boxShadow: isSelected ? '0 10px 15px -3px rgba(249, 115, 22, 0.2)' : 'none',
-                          transition: 'all 0.2s ease',
-                          position: 'relative'
-                        }}
-                      >
-                        {isSelected && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            right: '-8px',
-                            background: '#f97316',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                            zIndex: 10
-                          }}>
-                            ✓
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isAvailable ? '#166534' : '#991b1b' }}>{table.tableName}</h4>
-                          <span style={{ 
-                            fontSize: '0.65rem', 
-                            padding: '0.15rem 0.5rem', 
-                            borderRadius: '1rem',
-                            backgroundColor: isAvailable ? '#dcfce7' : '#fee2e2',
-                            color: isAvailable ? '#166534' : '#991b1b',
-                            fontWeight: 700
-                          }}>
-                            {table.status === "AVAILABLE" ? "TRỐNG" : table.status === "OCCUPIED" ? "BẬN" : "ĐÃ ĐẶT"}
-                          </span>
+                  const isAvailable = !isOccupied && !isReserved;
+                  const isSelected = selectedTableIds.includes(table.tableId);
+                  // Single table assignment is now part of multi-selection
+                  const isSelectable = isAvailable;
+
+                  return (
+                    <div
+                      key={table.tableId}
+                      className={`${styles.tableCard} ${isOccupied ? styles.occupied : isReserved ? styles.reserved : styles.available}`}
+                      onClick={() => isSelectable && toggleTableSelection(table.tableId)}
+                      style={{
+                        opacity: isSelectable ? 1 : 0.6,
+                        cursor: isSelectable ? 'pointer' : 'not-allowed',
+                        padding: '1.25rem',
+                        borderRadius: '0.75rem',
+                        border: isSelected
+                          ? '3px solid #f97316'
+                          : isSelectable ? '2px solid #e2e8f0' : '2px solid transparent',
+                        backgroundColor: isSelected ? '#fff7ed' : isAvailable ? '#f0fdf4' : '#fff1f2',
+                        transform: isSelected ? 'scale(1.02)' : 'none',
+                        boxShadow: isSelected ? '0 10px 15px -3px rgba(249, 115, 22, 0.2)' : 'none',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          background: '#f97316',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          zIndex: 10
+                        }}>
+                          ✓
                         </div>
-                        <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> người</p>
-                        
-                        {!isAvailable ? (
-                          <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang bận</div>
-                        ) : (
-                          <div style={{ color: isSelected ? '#ea580c' : '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>
-                            {isSelected ? "Đã chọn" : "Nhấp để chọn bàn →"}
-                          </div>
-                        )}
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h4 style={{
+                          margin: 0, fontSize: '1.1rem', fontWeight: 700, color: isOccupied
+                            ? "#991b1b"
+                            : isReserved
+                              ? "#ea580c"
+                              : "#16a34a"
+                        }}>{table.tableName}</h4>
+                        <span style={{
+                          fontSize: '0.65rem',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '1rem',
+                          backgroundColor: isAvailable ? '#dcfce7' : '#fee2e2',
+                          color: isOccupied
+                            ? "#991b1b"
+                            : isReserved
+                              ? "#ea580c"
+                              : "#16a34a",
+                          fontWeight: 700
+                        }}>
+                          {
+                            isOccupied
+                              ? "ĐANG DÙNG"
+                              : isReserved
+                                ? "ĐẶT TRƯỚC"
+                                : "TRỐNG"
+                          }
+                        </span>
                       </div>
-                    );
-                  })}
+                      <p style={{ margin: '0.5rem 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem' }}>Sức chứa: <strong>{table.capacity}</strong> người</p>
+
+                      
+                      {isOccupied ? (
+                        <div style={{ color: '#991b1b', fontSize: '0.75rem', fontWeight: 600 }}>❌ Bàn đang có khách</div>
+                      ) : isReserved ? (
+                        <div style={{ color: '#ea580c', fontSize: '0.75rem', fontWeight: 600 }}>📅 Bàn đã được đặt trước</div>
+                      ) : (
+                        <div style={{ color: isSelected ? '#ea580c' : '#16a34a', fontSize: '0.75rem', fontWeight: 700 }}>
+                          {isSelected ? "Đã chọn" : "Nhấp để chọn bàn →"}
+                        </div>
+                      ) }
+                    </div>
+                  );
+                })}
               </div>
 
               {totalPages > 1 && (

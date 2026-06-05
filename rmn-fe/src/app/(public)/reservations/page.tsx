@@ -126,6 +126,7 @@ export default function ReservationsPage() {
     const statusMap: Record<string, string> = {
       PENDING: "Chờ xác nhận",
       CONFIRMED: "Đã xác nhận",
+      CHECKED_IN: "Đang phục vụ",
       CANCELLED: "Đã hủy",
       NO_SHOW: "Không đến",
       COMPLETED: "Hoàn thành",
@@ -138,6 +139,7 @@ export default function ReservationsPage() {
     const classMap: Record<string, string> = {
       PENDING: styles.statusPending,
       CONFIRMED: styles.statusConfirmed,
+      CHECKED_IN: styles.statusConfirmed,
       RESERVED: styles.statusConfirmed,
       CANCELLED: styles.statusCancelled,
       NO_SHOW: styles.statusCancelled,
@@ -278,31 +280,63 @@ export default function ReservationsPage() {
                     </div>
 
                     <div className={styles.cardBody}>
-                      <div className={styles.infoRow}>
-                        <div className={styles.infoGroup}>
-                          <span className={styles.infoLabel}>Ngày:</span>
-                          <span className={styles.infoValue}>
-                            {formatDate(reservation.reservedAt)}
-                          </span>
+                      <div className={styles.bookingSection}>
+                        <div className={styles.bookingInfo}>
+                          <div className={styles.infoGroup}>
+                            <span className={styles.infoLabel}>Ngày:</span>
+                            <span className={styles.infoValue}>
+                              {formatDate(reservation.reservedAt)}
+                            </span>
+                          </div>
+
+                          <div className={styles.infoGroup}>
+                            <span className={styles.infoLabel}>Giờ:</span>
+                            <span className={styles.infoValue}>
+                              {formatTime(reservation.reservedAt)}
+                            </span>
+                          </div>
                         </div>
-                        <div className={styles.infoGroup}>
-                          <span className={styles.infoLabel}>Giờ:</span>
-                          <span className={styles.infoValue}>
-                            {formatTime(reservation.reservedAt)}
-                          </span>
-                        </div>
-                        <div className={styles.infoGroup}>
-                          <span className={styles.infoLabel}>Số khách:</span>
-                          <span className={styles.infoValue}>
-                            {reservation.partySize} người
-                          </span>
-                        </div>
-                        <div className={styles.infoGroup}>
-                          <span className={styles.infoLabel}>Số bàn:</span>
-                          <span className={styles.infoValue}>
-                            {getReservationTotalTables(reservation)} bàn
-                          </span>
-                        </div>
+
+                        {reservation.order?.tableCodes &&
+                          reservation.order.tableCodes.length > 0 && (
+                            <>
+                              <div className={styles.infoGroup}>
+                              <span className={styles.infoLabel}>
+                                Số bàn:
+                              </span>
+                              <span className={styles.infoValue}>
+                                {reservation.totalTables} bàn
+                              </span>
+                            </div>
+
+                              <div className={styles.tableList}>
+                                {reservation.order.tableCodes.map((tableCode) => (
+                                  <div
+                                    key={tableCode}
+                                    className={styles.tableBadge}
+                                  >
+                                    🍽️ BÀN {tableCode}
+                                  </div>
+                                ))}
+
+                                <span className={styles.assignedText}>
+                                  ✓ Đã gán {reservation.order.tableCodes.length} bàn cụ thể
+                                </span>
+                              </div>
+                            </>
+                          )}
+
+                        {!reservation.order?.tableCodes?.length &&
+                          reservation.partySize > 0 && (
+                            <div className={styles.infoGroup}>
+                              <span className={styles.infoLabel}>
+                                Số người:
+                              </span>
+                              <span className={styles.infoValue}>
+                                {reservation.partySize} người
+                              </span>
+                            </div>
+                          )}
                       </div>
                       {reservation.note && (
                         <div className={styles.note}>

@@ -10,6 +10,14 @@ function authHeaders(): Record<string, string> {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 }
+function authFormDataHeaders(): Record<string, string> {
+  const token = getToken();
+
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 
 async function handleResponse<T>(res: Response): Promise<T> {
     if (!res.ok) {
@@ -81,6 +89,35 @@ export const adminReservationApi = {
 
         return handleResponse(res);
     },
+    async refundReservation(
+  reservationId: number,
+  data: {
+    refundMethod: string;
+    refundProff: File | null;
+  }
+): Promise<void> {
+  const formData = new FormData();
+
+  formData.append("refundMethod", data.refundMethod);
+
+  if (data.refundProff) {
+    formData.append(
+      "refundProff",
+      data.refundProff
+    );
+  }
+
+  const res = await fetch(
+    `${apiBaseUrl}/api/AdminReservation/${reservationId}/refund`,
+    {
+      method: "POST",
+      headers: authFormDataHeaders(),
+      body: formData,
+    }
+  );
+
+  return handleResponse<void>(res);
+},
 };
 
 
