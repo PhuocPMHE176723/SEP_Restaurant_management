@@ -244,3 +244,57 @@ export async function cleanupTables(): Promise<{ ordersCancelled: number; reserv
     });
     return handleResponse<{ ordersCancelled: number; reservationsCleared: number; tablesReleased: number }>(res);
 }
+
+// ── Dashboard API ──────────────────────────────────────────────────
+export interface ReservationStatusCount {
+    status: string;
+    count: number;
+}
+
+export interface LowStockIngredient {
+    ingredientId: number;
+    ingredientName: string;
+    unit: string;
+    stock: number;
+}
+
+export interface DailyRevenuePoint {
+    date: string;
+    dayOfWeek: string;
+    revenue: number;
+}
+
+export interface TopSellerItem {
+    name: string;
+    quantity: number;
+    revenue: number;
+}
+
+export interface StaffPerformanceMetric {
+    staffName: string;
+    invoicesCount: number;
+    revenue: number;
+}
+
+export interface DashboardStats {
+    dailyRevenue: number;
+    monthlyRevenue: number;
+    totalTables: number;
+    occupiedTables: number;
+    todayReservations: number;
+    reservationStatus: ReservationStatusCount[];
+    lowStockIngredients: LowStockIngredient[];
+    dailyRevenueChart: DailyRevenuePoint[];
+    topSellers: TopSellerItem[];
+    totalCustomers: number;
+    totalStaff: number;
+    staffPerformance: StaffPerformanceMetric[];
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+    const res = await fetch(`${apiBaseUrl}/api/dashboard/stats`, {
+        headers: authHeaders(),
+        cache: "no-store",
+    });
+    return handleResponse<DashboardStats>(res);
+}

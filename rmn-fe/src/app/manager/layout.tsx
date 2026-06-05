@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
 import NotificationBell from "../../components/NotificationBell/NotificationBell";
 import styles from "./manager.module.css";
 
 const NAV_ITEMS = [
+    { href: "/manager", label: "Tổng quan (Dashboard)" },
     { href: "/manager/dining-tables", label: "Quản lý bàn ăn" },
     { href: "/manager/menu-categories", label: "Danh mục món" },
     { href: "/manager/menu-items", label: "Quản lý món ăn" },
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoggedIn, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [mounted, setMounted] = useState(false);
 
     // Đánh dấu đã hydrate xong
@@ -28,6 +30,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!isLoggedIn) { router.replace("/login?redirect=/manager"); return; }
         if (!user?.roles.includes("Manager") && !user?.roles.includes("Admin")) { router.replace("/"); }
     }, [mounted, isLoggedIn, user, router]);
+
+    const getLinkClass = (href: string) => {
+        const baseHref = href.split("?")[0];
+        const isActive = baseHref === "/manager"
+            ? pathname === "/manager"
+            : pathname.startsWith(baseHref);
+        return `${styles.navItem} ${isActive ? styles.navItemActive : ""}`;
+    };
 
     // Chờ hydration hoặc đang chờ auth state
     if (!mounted || !isLoggedIn || (!user?.roles.includes("Manager") && !user?.roles.includes("Admin"))) {
@@ -51,23 +61,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <nav className={styles.sideNav}>
                     <p className={styles.navGroup}>Quản lý</p>
                     {NAV_ITEMS.map((item) => (
-                        <Link key={item.href} href={item.href} className={styles.navItem}>
+                        <Link key={item.href} href={item.href} className={getLinkClass(item.href)}>
                             {item.label}
                         </Link>
                     ))}
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Khuyến mãi & Cấu hình</p>
-                    <Link href="/manager/system-config" className={styles.navItem}>Cấu hình Thuế (VAT)</Link>
-                    <Link href="/manager/discount-codes" className={styles.navItem}>Quản lý Mã giảm giá</Link>
-                    <Link href="/manager/loyalty-config" className={styles.navItem}>Cấu hình Tích điểm</Link>
-                    <Link href="/manager/loyalty-history" className={styles.navItem}>Lịch sử Điểm</Link>
+                    <Link href="/manager/system-config" className={getLinkClass("/manager/system-config")}>Cấu hình Thuế (VAT)</Link>
+                    <Link href="/manager/discount-codes" className={getLinkClass("/manager/discount-codes")}>Quản lý Mã giảm giá</Link>
+                    <Link href="/manager/loyalty-config" className={getLinkClass("/manager/loyalty-config")}>Cấu hình Tích điểm</Link>
+                    <Link href="/manager/loyalty-history" className={getLinkClass("/manager/loyalty-history")}>Lịch sử Điểm</Link>
                     
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
-                    <Link href="/manager/reservations" className={styles.navItem}>Lịch sử Đặt bàn</Link>
+                    <Link href="/manager/reservations" className={getLinkClass("/manager/reservations")}>Lịch sử Đặt bàn</Link>
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Hệ thống & Bảo trì</p>
-                    <Link href="/manager/dining-tables?action=cleanup" className={styles.navItem}>Dọn dẹp & Giải phóng bàn</Link>
+                    <Link href="/manager/dining-tables?action=cleanup" className={getLinkClass("/manager/dining-tables?action=cleanup")}>Dọn dẹp & Giải phóng bàn</Link>
 
                 </nav>
 
