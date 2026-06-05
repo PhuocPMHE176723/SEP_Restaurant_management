@@ -33,12 +33,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const isAdmin = user?.roles.some((r: string) => r.toLowerCase() === "admin") ?? false;
 
-    // Filter standard nav items: Admin only sees Dashboard and User List
+    // Filter standard nav items
     const filteredNavItems = NAV_ITEMS.filter(item => {
         if (isAdmin) {
+            // Admin only sees Dashboard and User List
             return item.href === "/manager" || item.href === "/manager/userList";
         }
-        return true;
+        // Manager sees everything except User List
+        return item.href !== "/manager/userList";
     });
 
     const getLinkClass = (href: string) => {
@@ -77,16 +79,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     ))}
 
                     <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Khuyến mãi & Cấu hình</p>
-                    <Link href="/manager/system-config" className={getLinkClass("/manager/system-config")}>Cấu hình Thuế (VAT)</Link>
-                    {!isAdmin && (
-                        <Link href="/manager/discount-codes" className={getLinkClass("/manager/discount-codes")}>Quản lý Mã giảm giá</Link>
+                    {isAdmin ? (
+                        <>
+                            <Link href="/manager/system-config" className={getLinkClass("/manager/system-config")}>Cấu hình Thuế (VAT)</Link>
+                            <Link href="/manager/loyalty-config" className={getLinkClass("/manager/loyalty-config")}>Cấu hình Tích điểm</Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/manager/discount-codes" className={getLinkClass("/manager/discount-codes")}>Quản lý Mã giảm giá</Link>
+                            <Link href="/manager/loyalty-history" className={getLinkClass("/manager/loyalty-history")}>Lịch sử Điểm</Link>
+                        </>
                     )}
-                    <Link href="/manager/loyalty-config" className={getLinkClass("/manager/loyalty-config")}>Cấu hình Tích điểm</Link>
+
                     {!isAdmin && (
                         <>
-                            <Link href="/manager/loyalty-history" className={getLinkClass("/manager/loyalty-history")}>Lịch sử Điểm</Link>
-                            
-
                             <p className={styles.navGroup} style={{ marginTop: '1.5rem' }}>Quản lý Đặt bàn & Order</p>
                             <Link href="/manager/reservations" className={getLinkClass("/manager/reservations")}>Lịch sử Đặt bàn</Link>
 
