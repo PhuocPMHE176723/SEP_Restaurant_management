@@ -306,6 +306,11 @@ public class AuthService : IAuthService
         RegisterRequestDTO request
     )
     {
+        if (string.IsNullOrWhiteSpace(request.Phone))
+        {
+            request.Phone = null;
+        }
+
         const string role = "Customer"; // 👉 FIX CỨNG ROLE
 
         // 1. Kiểm tra và dọn dẹp trùng Email (cho phép đăng ký lại nếu chưa xác thực)
@@ -421,7 +426,14 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             // Dọn dẹp user đã tạo trong AspNetUsers nếu có lỗi trong quá trình tiếp theo để tránh trạng thái không đồng nhất
-            await _userManager.DeleteAsync(user);
+            try
+            {
+                await _userManager.DeleteAsync(user);
+            }
+            catch (Exception deleteEx)
+            {
+                Console.WriteLine($"[Delete Error] Failed to delete temporary user: {deleteEx.Message}");
+            }
             return (false, new List<string> { $"Đăng ký thất bại: {ex.Message}" });
         }
 

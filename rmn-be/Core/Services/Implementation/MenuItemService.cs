@@ -57,6 +57,7 @@ public class MenuItemService : IMenuItemService
             ItemType    = dto.ItemType,
             Thumbnail   = dto.Thumbnail,
             IsActive    = true,
+            IsFeatured  = dto.IsFeatured,
             CreatedAt   = DateTime.UtcNow,
         };
 
@@ -85,6 +86,7 @@ public class MenuItemService : IMenuItemService
         if (dto.ItemType != null)     item.ItemType    = dto.ItemType;
         if (dto.Thumbnail  != null)   item.Thumbnail   = dto.Thumbnail;
         if (dto.IsActive.HasValue)    item.IsActive    = dto.IsActive.Value;
+        if (dto.IsFeatured.HasValue)  item.IsFeatured  = dto.IsFeatured.Value;
 
         return await _db.SaveChangesAsync() > 0;
     }
@@ -109,6 +111,7 @@ public class MenuItemService : IMenuItemService
         BasePrice    = m.BasePrice,
         Thumbnail    = m.Thumbnail,
         IsActive     = m.IsActive,
+        IsFeatured   = m.IsFeatured,
         ItemType     = m.ItemType,
         CreatedAt    = m.CreatedAt,
     };

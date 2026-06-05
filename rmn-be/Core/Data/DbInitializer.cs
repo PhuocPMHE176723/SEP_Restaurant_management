@@ -31,6 +31,47 @@ public static class DbInitializer
         "
         );
 
+        // Ensure custom Identity columns exist in AspNetUsers table
+        await context.Database.ExecuteSqlRawAsync(
+            @"
+            IF OBJECT_ID(N'[AspNetUsers]') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH(N'[AspNetUsers]', N'FullName') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [FullName] nvarchar(max) NULL;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'IsPhoneVerified') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [IsPhoneVerified] bit NOT NULL DEFAULT 0;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'PhoneVerifiedAt') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [PhoneVerifiedAt] datetime2 NULL;
+                END;
+                IF COL_LENGTH(N'[AspNetUsers]', N'PendingPhoneNumber') IS NULL
+                BEGIN
+                    ALTER TABLE [AspNetUsers] ADD [PendingPhoneNumber] nvarchar(max) NULL;
+                END;
+            END;
+            "
+        );
+
+        // Ensure IsFeatured column exists in MenuItems table
+        await context.Database.ExecuteSqlRawAsync(
+            @"
+            IF OBJECT_ID(N'[MenuItems]') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH(N'[MenuItems]', N'IsFeatured') IS NULL
+                BEGIN
+                    ALTER TABLE [MenuItems] ADD [IsFeatured] bit NOT NULL DEFAULT 0;
+                END;
+            END;
+            "
+        );
+
+        // Automatically apply any pending migrations (e.g., Notifications, RefundUpdate)
+        await context.Database.MigrateAsync();
+
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<UserIdentity>>();
 

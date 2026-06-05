@@ -58,6 +58,7 @@ export interface MenuItem {
     basePrice: number;
     thumbnail?: string | null;
     isActive: boolean;
+    isFeatured: boolean;
     itemType: string;
     createdAt: string;
 }
@@ -70,6 +71,7 @@ export interface CreateMenuItemRequest {
     basePrice: number;
     itemType: string;
     thumbnail?: string;
+    isFeatured?: boolean;
 }
 
 export interface UpdateMenuItemRequest {
@@ -81,6 +83,7 @@ export interface UpdateMenuItemRequest {
     itemType?: string;
     thumbnail?: string;
     isActive?: boolean;
+    isFeatured?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────

@@ -6,14 +6,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { profileApi } from "../../../lib/api/profile";
 import { forgotPasswordApi } from "../../../lib/api/auth";
 import type { CustomerProfileDTO } from "../../../types/models/profile";
-import { auth } from "@/lib/firebase";
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
-} from "firebase/auth";
-import { verifyOtpApi } from "@/lib/api/auth";
-import { isValidVNPhone } from "@/lib/validation";
+// Removed phone verification imports
 import Swal from "sweetalert2";
 import Header from "@/components/Header/Header";
 import PasswordSecuritySection from "../PasswordSecuritySection";
@@ -39,15 +32,6 @@ export default function CustomerProfilePage() {
   const [profile, setProfile] = useState<CustomerProfileWithUsername | null>(
     null,
   );
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [pendingPhoneNumber, setPendingPhoneNumber] = useState("");
-  const [recaptchaVerifier, setRecaptchaVerifier] =
-    useState<RecaptchaVerifier | null>(null);
-  const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult | null>(null);
-  const [otpCode, setOtpCode] = useState("");
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -129,61 +113,6 @@ export default function CustomerProfilePage() {
     setProfileStatus({ type: "", message: "" });
   };
 
-  const handleRequestPhoneVerification = async () => {
-    if (!profile) return;
-
-    const phoneToVerify = formData.phone || profile.phone || "";
-    if (!phoneToVerify || !isValidVNPhone(phoneToVerify)) {
-      Swal.fire({
-        icon: "error",
-        title: "Lỗi",
-        text: "Số điện thoại không hợp lệ.",
-        confirmButtonText: "Đóng",
-      });
-      return;
-    }
-
-    setPendingPhoneNumber(phoneToVerify);
-    setShowOtpVerification(true);
-
-    Swal.fire({
-      icon: "info",
-      title: "Xác minh số điện thoại",
-      text: "Vui lòng xác minh số điện thoại bằng OTP",
-      confirmButtonText: "OK",
-    });
-
-    try {
-      if (recaptchaVerifier) recaptchaVerifier.clear();
-      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-        callback: () => {
-          console.log("Recaptcha verified");
-        },
-      });
-      setRecaptchaVerifier(verifier);
-
-      const formattedPhone = phoneToVerify.startsWith("+")
-        ? phoneToVerify
-        : "+84" + phoneToVerify.slice(1);
-      const result = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        verifier,
-      );
-      setConfirmationResult(result);
-    } catch (err) {
-      console.error("Recaptcha error:", err);
-      Swal.fire({
-        icon: "error",
-        title: "Lỗi",
-        text: "Không thể gửi mã OTP. Vui lòng thử lại!",
-        confirmButtonText: "Đóng",
-      });
-      setShowOtpVerification(false);
-    }
-  };
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -207,60 +136,25 @@ export default function CustomerProfilePage() {
       );
 
       setIsEditing(false);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              fullName: formData.fullName,
+              username: formData.username,
+              email: formData.email,
+              phone: formData.phone,
+            }
+          : prev
+      );
 
-      // Check backend response instead of current profile verification state
-      if (result.phoneRequiresVerification) {
-        // Revert displayed phone back to the previously stored (verified) value
-        setFormData((p) => ({ ...p, phone: profile.phone || "" }));
-        setPendingPhoneNumber(formData.phone);
-        setShowOtpVerification(true);
-
-        Swal.fire({
-          icon: "info",
-          title: "Xác minh số điện thoại",
-          text: "Vui lòng xác minh số điện thoại mới bằng OTP",
-          confirmButtonText: "OK",
-        });
-
-        // Initialize recaptcha for phone verification
-        try {
-          const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-            size: "invisible",
-            callback: () => {
-              console.log("Recaptcha verified");
-            },
-          });
-          setRecaptchaVerifier(verifier);
-
-          // Auto-send OTP
-          const formattedPhone = formData.phone.startsWith("+")
-            ? formData.phone
-            : "+84" + formData.phone.slice(1);
-          const result = await signInWithPhoneNumber(
-            auth,
-            formattedPhone,
-            verifier,
-          );
-          setConfirmationResult(result);
-        } catch (err) {
-          console.error("Recaptcha error:", err);
-          Swal.fire({
-            icon: "error",
-            title: "Lỗi",
-            text: "Không thể gửi mã OTP. Vui lòng thử lại!",
-            confirmButtonText: "Đóng",
-          });
-          setShowOtpVerification(false);
-        }
-      } else {
-        Swal.fire({
-          icon: "success",
-          title: "Thành công",
-          text: result.message || "Cập nhật thông tin cá nhân thành công!",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      }
+      Swal.fire({
+        icon: "success",
+        title: "Thành công",
+        text: result.message || "Cập nhật thông tin cá nhân thành công!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (err: any) {
       Swal.fire({
         icon: "error",
@@ -309,13 +203,27 @@ export default function CustomerProfilePage() {
   };
 
   if (loading) {
-    return <div className={styles.state}>Đang tải...</div>;
+    return (
+      <div className={styles.page}>
+        <div className={styles.contentWrapper}>
+          <Header />
+          <div className={styles.headerSpacer} />
+          <div className={styles.state}>Đang tải...</div>
+        </div>
+      </div>
+    );
   }
 
   if (!profile) {
     return (
-      <div className={styles.error}>
-        {profileStatus.message || "Không có dữ liệu hồ sơ"}
+      <div className={styles.page}>
+        <div className={styles.contentWrapper}>
+          <Header />
+          <div className={styles.headerSpacer} />
+          <div className={styles.error}>
+            {profileStatus.message || "Không có dữ liệu hồ sơ"}
+          </div>
+        </div>
       </div>
     );
   }
@@ -458,159 +366,7 @@ export default function CustomerProfilePage() {
               </div>
             </form>
 
-            {/* OTP Verification Modal */}
-            {showOtpVerification && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  zIndex: 1000,
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "8px",
-                    padding: "2rem",
-                    maxWidth: "400px",
-                    width: "90%",
-                    textAlign: "center",
-                  }}
-                >
-                  <h3 style={{ marginBottom: "1rem", color: "#0f172a" }}>
-                    Xác minh số điện thoại
-                  </h3>
-                  <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-                    Nhập mã OTP được gửi đến {pendingPhoneNumber}
-                  </p>
-
-                  <input
-                    type="text"
-                    placeholder="Nhập 6 chữ số OTP"
-                    value={otpCode}
-                    onChange={(e) =>
-                      setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      fontSize: "1.5rem",
-                      letterSpacing: "0.5rem",
-                      textAlign: "center",
-                      marginBottom: "1rem",
-                    }}
-                    maxLength={6}
-                  />
-
-                  <button
-                    onClick={async () => {
-                      if (otpCode.length !== 6 || !confirmationResult) {
-                        Swal.fire({
-                          icon: "error",
-                          title: "Lỗi",
-                          text: "Vui lòng nhập đúng 6 chữ số",
-                          confirmButtonText: "OK",
-                        });
-                        return;
-                      }
-
-                      try {
-                        setVerifyingOtp(true);
-                        await confirmationResult.confirm(otpCode);
-
-                        // Call backend to mark phone as verified
-                        await verifyOtpApi({
-                          phone: pendingPhoneNumber
-                            .replace(/\D/g, "")
-                            .slice(-10),
-                          otp: "FIREBASE_VERIFIED",
-                        });
-
-                        setShowOtpVerification(false);
-                        setOtpCode("");
-                        setPendingPhoneNumber("");
-
-                        // Reload profile
-                        const customerProfile =
-                          await profileApi.getMyCustomerProfile();
-                        setProfile({
-                          ...customerProfile,
-                          username: customerProfile.username ?? "",
-                          isPhoneVerified: true,
-                        });
-
-                        Swal.fire({
-                          icon: "success",
-                          title: "Thành công",
-                          text: "Số điện thoại đã được xác minh thành công!",
-                          timer: 2000,
-                          showConfirmButton: false,
-                        });
-                      } catch (err: any) {
-                        Swal.fire({
-                          icon: "error",
-                          title: "Lỗi",
-                          text:
-                            err?.message ||
-                            "Xác minh OTP thất bại. Vui lòng thử lại!",
-                          confirmButtonText: "OK",
-                        });
-                      } finally {
-                        setVerifyingOtp(false);
-                      }
-                    }}
-                    disabled={verifyingOtp || otpCode.length !== 6}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      backgroundColor:
-                        otpCode.length === 6 ? "#f97316" : "#cbd5e1",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "1rem",
-                      fontWeight: "600",
-                      cursor: otpCode.length === 6 ? "pointer" : "not-allowed",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    {verifyingOtp ? "Đang xác minh..." : "Xác minh"}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowOtpVerification(false);
-                      setOtpCode("");
-                      setPendingPhoneNumber("");
-                      if (recaptchaVerifier) recaptchaVerifier.clear();
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      backgroundColor: "transparent",
-                      color: "#64748b",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "6px",
-                      fontSize: "1rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div id="recaptcha-container" />
+            {/* OTP verification has been disabled */}
           </div>
         )}
 

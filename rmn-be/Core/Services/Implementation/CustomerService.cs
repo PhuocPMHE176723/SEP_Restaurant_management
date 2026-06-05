@@ -272,9 +272,10 @@ namespace rmn_be.Core.Services.Implementation
 
                     if (phoneChanged)
                     {
-                        user.PendingPhoneNumber = normalizedPhone;
-                        user.IsPhoneVerified = false;
-                        user.PhoneNumberConfirmed = false;
+                        user.PhoneNumber = normalizedPhone;
+                        user.PendingPhoneNumber = null;
+                        user.IsPhoneVerified = true;
+                        user.PhoneNumberConfirmed = true;
                     }
                     else if (!string.IsNullOrWhiteSpace(normalizedPhone))
                     {
@@ -292,15 +293,7 @@ namespace rmn_be.Core.Services.Implementation
             }
 
             existingCustomer.FullName = normalizedFullName;
-            if (phoneChanged)
-            {
-                // Keep the current stored phone until OTP verification succeeds.
-                // The pending value is stored on AspNetUsers.
-            }
-            else
-            {
-                existingCustomer.Phone = normalizedPhone;
-            }
+            existingCustomer.Phone = normalizedPhone;
             existingCustomer.Email = normalizedEmail;
 
             customerRepo.Update(existingCustomer);
@@ -308,28 +301,6 @@ namespace rmn_be.Core.Services.Implementation
 
             if (result <= 0)
                 return new UpdateCustomerResultDTO { Message = "Không thể cập nhật khách hàng" };
-
-            if (phoneChanged && !string.IsNullOrWhiteSpace(normalizedPhone))
-            {
-                var resendResult = await _authService.ResendOtpAsync(
-                    new ResendOtpRequestDTO { PhoneNumber = normalizedPhone }
-                );
-
-                if (!resendResult.Succeeded)
-                {
-                    return new UpdateCustomerResultDTO
-                    {
-                        Message = "Cập nhật thành công nhưng không thể gửi OTP. Vui lòng thử lại.",
-                        PhoneRequiresVerification = true,
-                    };
-                }
-
-                return new UpdateCustomerResultDTO
-                {
-                    Message = "Vui lòng xác minh số điện thoại mới qua OTP để hoàn tất cập nhật.",
-                    PhoneRequiresVerification = true,
-                };
-            }
 
             return new UpdateCustomerResultDTO
             {
