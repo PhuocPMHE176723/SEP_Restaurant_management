@@ -707,205 +707,6 @@ export default function DashboardPage() {
     );
   }
 
-  if (isAdmin) {
-    return (
-      <div className={styles.container}>
-        {/* Welcome Section */}
-        <div className={styles.welcomeSection}>
-          <div className={styles.welcomeText}>
-            <h1>Hệ thống Quản trị & Cấu hình</h1>
-            <p>Thiết lập thông số hệ thống, quản lý tài khoản người dùng và điều chỉnh cơ chế tích điểm thành viên.</p>
-          </div>
-          <div className={`${styles.roleBadge} ${styles.roleBadgeAdmin}`}>
-            <Activity size={13} />
-            Admin Portal
-          </div>
-        </div>
-
-        {/* Admin Configuration KPI Cards */}
-        <div className={styles.kpiGrid}>
-          <div className={styles.kpiCard}>
-            <div className={styles.kpiIconWrapper} style={{ color: "#3b82f6", backgroundColor: "rgba(59, 130, 246, 0.08)" }}>
-              <Users size={22} />
-            </div>
-            <div className={styles.kpiMeta}>
-              <span className={styles.kpiTitle}>Khách hàng hội viên</span>
-              <span className={styles.kpiValue}>{stats.totalCustomers}</span>
-              <span className={styles.kpiSub}>Thành viên đăng ký tích điểm</span>
-            </div>
-          </div>
-
-          <div className={styles.kpiCard}>
-            <div className={styles.kpiIconWrapper} style={{ color: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.08)" }}>
-              <CheckCircle2 size={22} />
-            </div>
-            <div className={styles.kpiMeta}>
-              <span className={styles.kpiTitle}>Nhân sự hệ thống</span>
-              <span className={styles.kpiValue}>{stats.totalStaff}</span>
-              <span className={styles.kpiSub}>Nhân viên đang hoạt động</span>
-            </div>
-          </div>
-
-          <div className={styles.kpiCard}>
-            <div className={styles.kpiIconWrapper} style={{ color: "#ea580c", backgroundColor: "rgba(234, 88, 12, 0.08)" }}>
-              <FileText size={22} />
-            </div>
-            <div className={styles.kpiMeta}>
-              <span className={styles.kpiTitle}>Cấu hình Thuế (VAT)</span>
-              <span className={styles.kpiValue} style={{ fontSize: "1.25rem" }}>
-                {stats.vatEnabled === "true" ? `ĐANG BẬT (${stats.vatRate}%)` : "ĐANG TẮT"}
-              </span>
-              <span className={styles.kpiSub}>Trạng thái VAT hệ thống</span>
-            </div>
-          </div>
-
-          <div className={styles.kpiCard}>
-            <div className={styles.kpiIconWrapper} style={{ color: "#a855f7", backgroundColor: "rgba(168, 85, 247, 0.08)" }}>
-              <Award size={22} />
-            </div>
-            <div className={styles.kpiMeta}>
-              <span className={styles.kpiTitle}>Hạng thành viên</span>
-              <span className={styles.kpiValue}>{stats.loyaltyTiers.length}</span>
-              <span className={styles.kpiSub}>Mốc tích lũy loyalty</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Configuration Shortcuts Grid */}
-        <div className={styles.bottomGrid} style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-          {/* VAT Configuration Shortcut */}
-          <div className={styles.widgetCard} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div className={styles.widgetHeader}>
-                <h3 className={styles.widgetTitle} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <FileText size={18} style={{ color: "#ea580c" }} />
-                  Cấu hình Thuế (VAT)
-                </h3>
-              </div>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", lineHeight: "1.5", marginBottom: "1rem" }}>
-                Thay đổi trạng thái bật/tắt tính thuế VAT cho nhà hàng và cập nhật mức thuế suất VAT mặc định áp dụng trên các hóa đơn thanh toán.
-              </p>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "10px", border: "1px solid #f1f5f9", marginBottom: "1rem" }}>
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Trạng thái hiện tại</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "800", color: stats.vatEnabled === "true" ? "#ea580c" : "#64748b" }}>
-                  {stats.vatEnabled === "true" ? `Đang kích hoạt (Thuế suất: ${stats.vatRate}%)` : "Chưa kích hoạt"}
-                </span>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className={styles.toggleBtn} 
-              style={{ width: "100%", justifyContent: "center", background: "#3b82f6", color: "#ffffff", padding: "0.625rem", borderRadius: "10px" }}
-              onClick={() => router.push("/manager/system-config")}
-            >
-              Đi tới cấu hình VAT <ArrowRight size={14} />
-            </button>
-          </div>
-
-          {/* User Management Shortcut */}
-          <div className={styles.widgetCard} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div className={styles.widgetHeader}>
-                <h3 className={styles.widgetTitle} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Users size={18} style={{ color: "#3b82f6" }} />
-                  Quản lý Người dùng
-                </h3>
-              </div>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", lineHeight: "1.5", marginBottom: "1rem" }}>
-                Quản lý danh sách tài khoản nhân viên (Admin, Manager, Staff...) và khách hàng thành viên. Cấp quyền truy cập hệ thống hoặc thực hiện khóa tài khoản.
-              </p>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "10px", border: "1px solid #f1f5f9", marginBottom: "1rem" }}>
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Thông số tài khoản</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "800", color: "#3b82f6" }}>
-                  {stats.totalStaff} Nhân viên | {stats.totalCustomers} Khách hàng
-                </span>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className={styles.toggleBtn} 
-              style={{ width: "100%", justifyContent: "center", background: "#3b82f6", color: "#ffffff", padding: "0.625rem", borderRadius: "10px" }}
-              onClick={() => router.push("/manager/userList")}
-            >
-              Quản lý thành viên <ArrowRight size={14} />
-            </button>
-          </div>
-
-          {/* Loyalty Config Shortcut */}
-          <div className={styles.widgetCard} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div className={styles.widgetHeader}>
-                <h3 className={styles.widgetTitle} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Award size={18} style={{ color: "#a855f7" }} />
-                  Cấu hình Tích điểm
-                </h3>
-              </div>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", lineHeight: "1.5", marginBottom: "1rem" }}>
-                Điều chỉnh các mốc điểm tích lũy tối thiểu và tỷ lệ chiết khấu giảm giá cho từng hạng thành viên (Loyalty Tiers) áp dụng cho chương trình khách hàng thân thiết.
-              </p>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "10px", border: "1px solid #f1f5f9", marginBottom: "1rem" }}>
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Số lượng phân hạng</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "800", color: "#a855f7" }}>
-                  Có {stats.loyaltyTiers.length} hạng thành viên active
-                </span>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className={styles.toggleBtn} 
-              style={{ width: "100%", justifyContent: "center", background: "#3b82f6", color: "#ffffff", padding: "0.625rem", borderRadius: "10px" }}
-              onClick={() => router.push("/manager/loyalty-config")}
-            >
-              Cấu hình tích điểm <ArrowRight size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Audits Table (as a system logs panel) */}
-        <div className={styles.bottomGrid} style={{ gridTemplateColumns: "1fr" }}>
-          <div className={styles.widgetCard}>
-            <div className={styles.widgetHeader}>
-              <h3 className={styles.widgetTitle}>Lịch sử kiểm kê kho mới nhất</h3>
-              <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>Hoạt động kiểm kê hệ thống</span>
-            </div>
-            <table className={styles.leaderboardTable} style={{ width: "100%" }}>
-              <thead>
-                <tr>
-                  <th>Mã kiểm kê</th>
-                  <th>Ngày thực hiện</th>
-                  <th>Nhân viên thực hiện</th>
-                  <th style={{ textAlign: "center" }}>Số lượng mặt hàng</th>
-                  <th>Ghi chú</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.recentAudits.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: "center", color: "#94a3b8" }}>
-                      Chưa ghi nhận đợt kiểm kê kho nào
-                    </td>
-                  </tr>
-                ) : (
-                  stats.recentAudits.map((audit, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: "700", color: "#1e293b" }}>{audit.auditCode}</td>
-                      <td>{formatDate(audit.auditDate).split(" ")[0]}</td>
-                      <td>{audit.staffName}</td>
-                      <td style={{ textAlign: "center", fontWeight: "700" }}>{audit.itemsCount}</td>
-                      <td style={{ color: "#64748b", fontSize: "0.8rem", maxWidth: "200px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                        {audit.note || "---"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.container}>
       {/* Header section with view toggle */}
@@ -920,26 +721,28 @@ export default function DashboardPage() {
         </div>
         
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div className={styles.viewToggleContainer}>
-            <button 
-              type="button" 
-              className={`${styles.toggleBtn} ${view === "operations" ? styles.toggleBtnActive : ""}`}
-              onClick={() => setView("operations")}
-            >
-              <Clock size={14} /> Vận hành
-            </button>
-            <button 
-              type="button" 
-              className={`${styles.toggleBtn} ${view === "financial" ? styles.toggleBtnActive : ""}`}
-              onClick={() => setView("financial")}
-            >
-              <DollarSign size={14} /> Doanh thu & Tài chính
-            </button>
-          </div>
+          {isAdmin && (
+            <div className={styles.viewToggleContainer}>
+              <button 
+                type="button" 
+                className={`${styles.toggleBtn} ${view === "operations" ? styles.toggleBtnActive : ""}`}
+                onClick={() => setView("operations")}
+              >
+                <Clock size={14} /> Vận hành
+              </button>
+              <button 
+                type="button" 
+                className={`${styles.toggleBtn} ${view === "financial" ? styles.toggleBtnActive : ""}`}
+                onClick={() => setView("financial")}
+              >
+                <DollarSign size={14} /> Doanh thu & Tài chính
+              </button>
+            </div>
+          )}
           
-          <div className={styles.roleBadge}>
+          <div className={`${styles.roleBadge} ${isAdmin ? styles.roleBadgeAdmin : ""}`}>
             <Activity size={13} />
-            Manager
+            {isAdmin ? "Admin" : "Manager"}
           </div>
         </div>
       </div>

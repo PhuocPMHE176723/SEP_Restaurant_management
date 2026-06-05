@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 import managerStyles from "../manager.module.css";
 import userStyles from "./user.module.css";
@@ -549,6 +551,16 @@ function ConfirmStatusModal({
 }
 
 export default function UserPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const isAdmin = user?.roles.some(role => role.toLowerCase() === "admin") ?? false;
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      router.replace("/manager");
+    }
+  }, [user, isAdmin, router]);
+
   const [activeTab, setActiveTab] = useState<"employee" | "customer">(
     "employee"
   );
@@ -751,6 +763,14 @@ export default function UserPage() {
 
   const currentMeta = activeTab === "employee" ? staffMeta : customerMeta;
   const currentItems = activeTab === "employee" ? employees : customers;
+
+  if (!user || !isAdmin) {
+    return (
+      <div className={managerStyles.contentCard} style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px" }}>
+        Đang tải...
+      </div>
+    );
+  }
 
   return (
     <>

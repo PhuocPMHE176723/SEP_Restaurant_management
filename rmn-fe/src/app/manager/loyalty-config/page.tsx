@@ -12,7 +12,20 @@ import styles from "../manager.module.css";
 import { showSuccess, showError } from "../../../lib/ui/alerts";
 import { LoyaltyTier } from "../../../types/models/promotion";
 
+import { useAuth } from "../../../contexts/AuthContext";
+import { useRouter } from "next/navigation";
+
 export default function LoyaltyConfigPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+    const isAdmin = user?.roles.some(role => role.toLowerCase() === "admin") ?? false;
+
+    useEffect(() => {
+        if (user && !isAdmin) {
+            router.replace("/manager");
+        }
+    }, [user, isAdmin, router]);
+
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
     const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
     const [loading, setLoading] = useState(true);
@@ -92,7 +105,7 @@ export default function LoyaltyConfigPage() {
         setTiers(newTiers);
     };
 
-    if (loading) return <div className={styles.loading}>Đang tải...</div>;
+    if (!user || !isAdmin || loading) return <div className={styles.loading}>Đang tải...</div>;
 
     return (
         <div className={styles.page}>
