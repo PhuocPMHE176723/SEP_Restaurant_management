@@ -14,7 +14,7 @@ function CashierOrdersContent() {
   const [allOrders, setAllOrders] = useState<OrderResponse[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("OPEN");
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split("T")[0],

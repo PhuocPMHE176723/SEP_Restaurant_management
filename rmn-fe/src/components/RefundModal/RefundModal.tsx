@@ -191,7 +191,7 @@ export default function RefundModal({
               >
                 {reservation.refund_proof_url ? (
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${reservation.refund_proof_url}`}
+                    src={`${reservation.refund_proof_url}`}
                     alt="Refund Proof"
                     className={
                       styles.preview

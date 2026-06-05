@@ -1,6 +1,6 @@
 "use client";
 
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import styles from "./callin.module.css";
@@ -573,7 +573,7 @@ export default function CashierReservationPage() {
                         </select>
                     </div>
                     <div className={styles.menuGrid}>
-                        {menuItems.map((item) => (
+                        {filteredMenuItems.map((item) => (
                             <div
                                 key={item.itemId}
                                 className={styles.menuCard}
